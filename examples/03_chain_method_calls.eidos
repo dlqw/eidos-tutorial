@@ -1,0 +1,7 @@
+id :: Int -> Int { x => x }
+inc :: Int -> Int { x => x + 1 }
+double :: Int -> Int { x => x + x }
+
+chain :: id(1).inc().double();
+chain2 :: id(1).inc.double;
+chain3 :: 3.inc.double;

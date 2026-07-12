@@ -1,0 +1,32 @@
+// 56_ffi_pointer_ops.eidos — 指针操作：空指针、算术、读写
+
+@ffi("malloc")
+malloc :: Int -> RawPtr
+
+main :: Int -> Int need FFI, IO
+{
+    _ => {
+        // 空指针
+        null := ptr_null();
+        is_null := ptr_is_null(null);       // true
+        not_null := ptr_is_null(malloc(8)); // false
+
+        // 分配内存
+        buf := malloc(24);
+
+        // 写入 i64 值（每个占 8 字节）
+        ptr_store_int(buf, 100);
+        ptr_store_int(ptr_add(buf, 8), 200);
+        ptr_store_int(ptr_add(buf, 16), 300);
+
+        // 读取
+        a := ptr_load_int(buf);
+        b := ptr_load_int(ptr_add(buf, 8));
+        c := ptr_load_int(ptr_add(buf, 16));
+
+        print_int(a + b + c);  // 600
+        print_newline();
+
+        0
+    }
+}

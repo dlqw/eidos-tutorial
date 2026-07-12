@@ -1,0 +1,13 @@
+Box[T] :: type {
+    reader: Ref[T], writer: MRef[T], tag: Int
+}
+
+read :: Ref[Int] -> Int
+{
+    r => r
+}
+
+inspect :: Ref[Box[Int]] -> Int
+{
+    box => box.reader.read + box.writer.read
+}

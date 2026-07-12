@@ -1,0 +1,26 @@
+normalize :: Int -> Int
+{
+    n => n
+}
+
+classify_guard_arith :: Int -> Int
+{
+    _ => match [1, 0, 0]
+    {
+        [] => 0,
+        [(normalize -> ((1 as x) | (2 as x))), _, _] when x + 1 == 4 => 1,
+        [1, 0, 0] => 2,
+        [_, ..] => 3
+    }
+}
+
+classify_guard_bool :: Bool -> Int
+{
+    b => match [1]
+    {
+        [] => 0,
+        [1] when b && !b => 1,
+        [1] => 2,
+        [_, ..] => 3
+    }
+}

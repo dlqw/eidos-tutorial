@@ -1,0 +1,25 @@
+inc :: Int -> Int
+{
+    x => x + 1
+}
+
+identity[T] :: T -> T
+{
+    x => x
+}
+
+add :: Int -> Int -> Int
+{
+    left => right => left + right
+}
+
+sum3 :: Int -> Int -> Int -> Int
+{
+    a => b => c => a + b + c
+}
+
+a :: inc(1);
+b :: identity(42);
+c :: add(1, 2);
+d :: sum3(1, 2)(3);
+e :: 1 `add` 2;

@@ -1,0 +1,26 @@
+Applicative[F: kind2] :: trait {
+    pure[A] :: A -> F[A]
+}
+
+Triple[A, B, C] :: type {
+    Triple(A, B, C)
+}
+
+KeepEdges[L, R, X] :: type = Triple[L, X, R];
+
+ApplicativeKeepEdgesStringBool :: instance Applicative[KeepEdges[String, Bool]] {
+    pure[A] :: A -> KeepEdges[String, Bool, A]
+    {
+        value => Triple("ctx", value, true)
+    }
+}
+
+lift[A, G: kind2 : Applicative[G]] :: A -> G[A]
+{
+    value => pure(value)
+}
+
+make :: Unit -> Triple[String, Int, Bool]
+{
+    _ => lift(1)
+}

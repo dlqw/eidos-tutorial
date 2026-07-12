@@ -1,0 +1,12 @@
+Option[T] :: type { Some(T), None }
+
+accumulate_if_some :: Option[Int] -> Int
+{
+    value => {
+        mut total := 0;
+        while let Some(n) = value then {
+            total = total + n;
+        };
+        total
+    }
+}

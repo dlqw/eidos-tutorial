@@ -1,0 +1,31 @@
+format :: Int -> String
+{
+    _ => "int"
+}
+
+format :: String -> String
+{
+    text => text
+}
+
+format[T] :: T -> String
+{
+    _ => "generic"
+}
+
+format_int :: Int -> String = format;
+
+join :: Int -> Int -> String
+{
+    _ => _ => "ints"
+}
+
+join :: String -> String -> String
+{
+    left => right => left ++ right
+}
+
+main :: Unit -> String
+{
+    _ => format(1) ++ " " ++ "ok".format() ++ " " ++ (1 |> format) ++ " " ++ (1 `join` 2) ++ " " ++ format_int(2)
+}

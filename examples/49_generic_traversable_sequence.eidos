@@ -1,0 +1,112 @@
+import Std::Applicative
+import Std::Seq
+import Std::Option
+import Std::Result
+import Std::Traversable
+
+Triple[A, B, C] :: type {
+    Triple(A, B, C)
+}
+
+KeepEdges[L, R, X] :: type = Triple[L, X, R];
+BoxedResult[E, T] :: type = Result[T, E];
+DeepBoxedResult[E, T] :: type = BoxedResult[E, T];
+
+join_ctx :: String -> String -> String
+{
+    left => right => left ++ "|" ++ right
+}
+
+ApplicativeKeepEdgesStringBool :: instance Applicative::Applicative[KeepEdges[String, Bool]] {
+    pure[A] :: A -> KeepEdges[String, Bool, A]
+    {
+        value => Triple("pure", value, true)
+    }
+    apply[A, B, E: effects] :: KeepEdges[String, Bool, A -> B need E] -> KeepEdges[String, Bool, A] -> KeepEdges[String, Bool, B] need E
+    {
+        Triple(leftCtx, f, leftOk) => Triple(rightCtx, value, rightOk) => Triple(join_ctx(leftCtx)(rightCtx), f(value), leftOk && rightOk)
+    }
+}
+
+ApplicativeDeepBoxedResultString :: instance Applicative::Applicative[DeepBoxedResult[String]] {
+    pure[A] :: A -> DeepBoxedResult[String, A]
+    {
+        value => Ok(value)
+    }
+    apply[A, B, E: effects] :: DeepBoxedResult[String, A -> B need E] -> DeepBoxedResult[String, A] -> DeepBoxedResult[String, B] need E
+    {
+        fResult => valueResult => match (fResult, valueResult)
+        {
+            (Ok(f), Ok(value)) => Ok(f(value)),
+            (Err(error), _) => Err(error),
+            (_, Err(error)) => Err(error)
+        }
+    }
+}
+
+generic_sequence[A, T: kind2 : Traversable::Traversable[T], G: kind2 : Applicative::Applicative[G]] :: T[G[A]] -> G[T[A]]
+{
+    values => Traversable::sequence(values)
+}
+
+collapse_open_result :: Triple[String, Result[Int, String], Bool] -> Int
+{
+    Triple(_, inner, ok) => if ok then {
+        Result::unwrap_or(inner)(0)
+    } else { 0 }
+}
+
+collapse_open_Seq :: Triple[String, Seq[Int], Bool] -> Int
+{
+    Triple(_, values, ok) => if ok then {
+        Seq::head_or(values)(0)
+    } else { 0 }
+}
+
+collapse_open_option :: Triple[String, Option[Int], Bool] -> Int
+{
+    Triple(_, inner, ok) => if ok then {
+        Option::unwrap_or(inner)(0)
+    } else { 0 }
+}
+
+collapse_option_result :: Result[Option[Int], String] -> Int
+{
+    Ok(inner) => Option::unwrap_or(inner)(0),
+    Err(_) => 0
+}
+
+collapse_seq_result :: Result[Seq[Int], String] -> Int
+{
+    Ok(values) => Seq::head_or(values)(0),
+    Err(_) => 0
+}
+
+collapse_result_result :: Result[Result[Int, String], String] -> Int
+{
+    Ok(inner) => Result::unwrap_or(inner)(0),
+    Err(_) => 0
+}
+
+main :: Unit -> Int
+{
+    _ => {
+        openResultDirect := collapse_open_result(sequence(Ok(Triple("edge", 2, true))));
+        openResultViaHelper := collapse_open_result(generic_sequence(Ok(Triple("edge", 2, true))));
+        openListDirect := collapse_open_Seq(sequence([Triple("left", 3, true), Triple("right", 4, true)]));
+        openListViaHelper := collapse_open_Seq(generic_sequence([Triple("left", 3, true), Triple("right", 4, true)]));
+        openOptionDirect := collapse_open_option(sequence(Some(Triple("solo", 5, true))));
+        openOptionViaHelper := collapse_open_option(generic_sequence(Some(Triple("solo", 5, true))));
+
+        optionResultDirect := collapse_option_result(sequence(Some(Ok(6))));
+        optionResultViaHelper := collapse_option_result(generic_sequence(Some(Ok(6))));
+        listResultDirect := collapse_seq_result(sequence([Ok(7), Ok(8)]));
+        listResultViaHelper := collapse_seq_result(generic_sequence([Ok(7), Ok(8)]));
+        resultResultDirect := collapse_result_result(sequence(Ok(Ok(9))));
+        resultResultViaHelper := collapse_result_result(generic_sequence(Ok(Ok(9))));
+
+        openResultDirect + openResultViaHelper + openListDirect + openListViaHelper +
+        openOptionDirect + openOptionViaHelper + optionResultDirect + optionResultViaHelper +
+        listResultDirect + listResultViaHelper + resultResultDirect + resultResultViaHelper
+    }
+}

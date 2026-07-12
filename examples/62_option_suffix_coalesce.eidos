@@ -1,0 +1,6 @@
+import Std::Option
+fallback :: Int? -> Int {
+    value => value ?? 42
+}
+from_some :: fallback(Some(7));
+from_none :: fallback(None());

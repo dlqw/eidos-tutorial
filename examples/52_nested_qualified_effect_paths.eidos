@@ -1,0 +1,27 @@
+Cap.Io :: module {
+    Writer :: effect;
+
+    write :: String -> Int need Writer
+    {
+        _ => 1
+    }
+}
+
+Demo.Main :: module {
+    import Cap.Io
+
+    run_imported :: String -> Int need Io::Writer
+    {
+        text => Io::write(text)
+    }
+
+    run_root :: String -> Int need Cap.Io::Writer
+    {
+        text => Cap.Io::write(text)
+    }
+
+    main :: Unit -> Int need Io::Writer
+    {
+        _ => run_imported("hello") + run_root("world")
+    }
+}

@@ -1,0 +1,52 @@
+import Std::Prelude::*
+import Std::Fn
+import Std::Seq
+import Std::Option
+import Std::Result
+
+inc :: Int -> Int
+{
+    x => x + 1
+}
+
+double :: Int -> Int
+{
+    x => x * 2
+}
+
+add :: Int -> Int -> Int
+{
+    left => right => left + right
+}
+
+gt_two :: Int -> Bool
+{
+    x => x > 2
+}
+
+positive_opt :: Int -> Option[Int]
+{
+    x => if x > 0 then { Some(x + 1) } else { None() }
+}
+
+positive_result :: Int -> Result::ResultWith[String, Int]
+{
+    x => if x > 0 then { Ok(x + 1) } else { Err("bad") }
+}
+
+main :: Unit -> Int
+{
+    _ => {
+        piped := 3 |> inc |> double;
+        composed := 3 |> (inc >>> double);
+        chained := 3.inc().double();
+        listPipeline := Seq::fold_left(Seq::filter(Seq::map([1, 2, 3])(inc))(gt_two))(0)(add);
+        appendedLen := Seq::len([1, 2] <> [3, 4]);
+        mappedOption := Option::unwrap_or(inc <$> Some(4))(0);
+        appliedOption := Option::unwrap_or(Some(add(10)) <*> Some(5))(0);
+        boundOption := Option::unwrap_or(Some(2) >>= positive_opt)(0);
+        boundResult := Result::unwrap_or(Ok(2) >>= positive_result)(0);
+
+        piped + composed + chained + listPipeline + appendedLen + mappedOption + appliedOption + boundOption + boundResult
+    }
+}

@@ -1,0 +1,14 @@
+normalize_nonneg :: Int -> Int
+{
+    x => if x < 0 then { return 0 } else { x }
+}
+
+add_one_nonneg :: Int -> Int
+{
+    x => {
+        n := normalize_nonneg(x);
+        n + 1
+    }
+}
+
+result :: add_one_nonneg(-3);

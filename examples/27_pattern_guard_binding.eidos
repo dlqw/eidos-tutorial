@@ -1,0 +1,28 @@
+OptionI :: type {
+    Some(Int), None
+}
+
+unwrap_or_zero :: OptionI -> Int
+{
+    x when Some(n) <- x => n,
+    _ => 0
+}
+
+unwrap_match_or_zero :: OptionI -> Int
+{
+    x => match x
+    {
+        _ when Some(n) <- x => n,
+        _ => 0
+    }
+}
+
+first_from_pair :: (OptionI, Int) -> Int
+{
+    pair when (Some(n), _) <- pair => n,
+    _ => 0
+}
+
+from_func_branch :: unwrap_or_zero(Some(7));
+from_match_branch :: unwrap_match_or_zero(Some(8));
+from_tuple_guard :: first_from_pair((Some(9), 0));

@@ -1,0 +1,11 @@
+classify :: Int -> Int
+{
+    x => match x
+    {
+        n when n > 0 => 1,
+        _ => 0
+    }
+}
+
+positive :: classify(3);
+nonPositive :: classify(-1);

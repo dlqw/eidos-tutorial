@@ -1,0 +1,263 @@
+// Snake Game — Eidos + raylib FFI demo
+// All mutable state stored via FFI pointers to avoid ownership/borrow issues
+
+link "raylib"
+link "snake_shim"
+
+@ffi("malloc")
+malloc :: Int -> RawPtr
+
+@ffi("free")
+free :: RawPtr -> Unit
+
+@ffi("InitWindow")
+init_window :: Int -> Int -> RawPtr -> Unit
+
+@ffi("CloseWindow")
+close_window :: Unit -> Unit
+
+@ffi("WindowShouldClose")
+window_should_close :: Unit -> Bool
+
+@ffi("SetTargetFPS")
+set_target_fps :: Int -> Unit
+
+@ffi("BeginDrawing")
+begin_drawing :: Unit -> Unit
+
+@ffi("EndDrawing")
+end_drawing :: Unit -> Unit
+
+@ffi("shim_clear_background")
+clear_background :: Int -> Int -> Int -> Int -> Unit
+
+@ffi("shim_draw_rectangle")
+draw_rectangle :: Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit
+
+@ffi("shim_draw_text")
+draw_text :: RawPtr -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit
+
+@ffi("IsKeyPressed")
+is_key_pressed :: Int -> Bool
+
+@ffi("shim_get_random_value")
+get_random_value :: Int -> Int -> Int
+
+
+// Array helpers — index into Int64 array
+arr_set :: RawPtr -> Int -> Int -> Unit need FFI
+{
+    (arr, i, v) => {
+        ptr_store_int(ptr_add(arr, i * 8), v)
+    }
+}
+
+arr_get :: RawPtr -> Int -> Int need FFI
+{
+    (arr, i) => {
+        ptr_load_int(ptr_add(arr, i * 8))
+    }
+}
+
+// Compute new direction from keyboard input (pure function)
+new_dir :: Int -> Int -> Int
+{
+    (old, key) => {
+        if key == 262 then {
+            if old != 2 then { 0 } else { old }
+        } else {
+            if key == 263 then {
+                if old != 0 then { 2 } else { old }
+            } else {
+                if key == 264 then {
+                    if old != 3 then { 1 } else { old }
+                } else {
+                    if key == 265 then {
+                        if old != 1 then { 3 } else { old }
+                    } else {
+                        old
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Check all 4 arrow keys and return updated direction
+check_input :: Int -> Int need FFI
+{
+    (dir) => {
+        d1 := new_dir(dir, 262);
+        hit1 := is_key_pressed(262);
+        d2 := new_dir(dir, 263);
+        hit2 := is_key_pressed(263);
+        d3 := new_dir(dir, 264);
+        hit3 := is_key_pressed(264);
+        d4 := new_dir(dir, 265);
+        hit4 := is_key_pressed(265);
+        if hit1 then { d1 } else {
+            if hit2 then { d2 } else {
+                if hit3 then { d3 } else {
+                    if hit4 then { d4 } else { dir }
+                }
+            }
+        }
+    }
+}
+
+// Direction to dx offset
+dx :: Int -> Int
+{
+    (dir) => {
+        if dir == 0 then { 1 } else {
+            if dir == 2 then { -1 } else { 0 }
+        }
+    }
+}
+
+// Direction to dy offset
+dy :: Int -> Int
+{
+    (dir) => {
+        if dir == 1 then { 1 } else {
+            if dir == 3 then { -1 } else { 0 }
+        }
+    }
+}
+
+// Main entry point
+main :: Int -> Int need FFI, IO
+{
+    _ => {
+        // Allocate game state in raw memory
+        xs := malloc(3200);
+        ys := malloc(3200);
+        state := malloc(64);
+
+        // State layout: [0]=len, [1]=dir, [2]=score, [3]=timer, [4]=speed
+        // [5]=food_x, [6]=food_y
+
+        // Initial snake: 3 segments at (10,10) going right
+        arr_set(xs, 0, 10);
+        arr_set(ys, 0, 10);
+        arr_set(xs, 1, 9);
+        arr_set(ys, 1, 10);
+        arr_set(xs, 2, 8);
+        arr_set(ys, 2, 10);
+
+        ptr_store_int(state, 3);       // len
+        ptr_store_int(ptr_add(state, 8), 0);   // dir
+        ptr_store_int(ptr_add(state, 16), 0);  // score
+        ptr_store_int(ptr_add(state, 24), 0);  // timer
+        ptr_store_int(ptr_add(state, 32), 8);  // speed
+        ptr_store_int(ptr_add(state, 40), get_random_value(0, 19));  // food_x
+        ptr_store_int(ptr_add(state, 48), get_random_value(0, 19));  // food_y
+
+        title := string_to_cstr("Snake - Eidos raylib");
+        init_window(500, 500, title);
+        set_target_fps(60);
+
+        loop {
+            if window_should_close() then {
+                break 0
+            };
+
+            // Read current state
+            cur_dir := ptr_load_int(ptr_add(state, 8));
+            cur_timer := ptr_load_int(ptr_add(state, 24));
+            cur_speed := ptr_load_int(ptr_add(state, 32));
+
+            // Update direction
+            next_dir := check_input(cur_dir);
+            ptr_store_int(ptr_add(state, 8), next_dir);
+
+            // Update timer
+            next_timer := cur_timer + 1;
+            ptr_store_int(ptr_add(state, 24), next_timer);
+
+            if next_timer >= cur_speed then {
+                ptr_store_int(ptr_add(state, 24), 0);
+
+                // Move snake
+                len := ptr_load_int(state);
+                hx := arr_get(xs, 0);
+                hy := arr_get(ys, 0);
+                nx := hx + dx(next_dir);
+                ny := hy + dy(next_dir);
+
+                // Wall check
+                if nx < 0 then { break 0 };
+                if nx >= 20 then { break 0 };
+                if ny < 0 then { break 0 };
+                if ny >= 20 then { break 0 };
+
+                // Shift body
+                mut j := len - 1;
+                while let 0 = j then {
+                    arr_set(xs, j, arr_get(xs, j - 1));
+                    arr_set(ys, j, arr_get(ys, j - 1));
+                    j = j - 1;
+                };
+
+                // Move head
+                arr_set(xs, 0, nx);
+                arr_set(ys, 0, ny);
+
+                // Check food
+                fx := ptr_load_int(ptr_add(state, 40));
+                fy := ptr_load_int(ptr_add(state, 48));
+                if nx == fx then {
+                    if ny == fy then {
+                        cur_score := ptr_load_int(ptr_add(state, 16));
+                        ptr_store_int(ptr_add(state, 16), cur_score + 10);
+                        ptr_store_int(state, len + 1);
+                        sp := ptr_load_int(ptr_add(state, 32));
+                        if sp > 3 then {
+                            ptr_store_int(ptr_add(state, 32), sp - 1);
+                        };
+                        ptr_store_int(ptr_add(state, 40), get_random_value(0, 19));
+                        ptr_store_int(ptr_add(state, 48), get_random_value(0, 19));
+                    }
+                }
+            };
+
+            // --- Drawing ---
+            begin_drawing();
+            clear_background(40, 40, 40, 255);
+
+            draw_len := ptr_load_int(state);
+            mut k := 0;
+            while let 0 = k - draw_len then {
+                sx := arr_get(xs, k);
+                sy := arr_get(ys, k);
+                if k == 0 then {
+                    draw_rectangle(sx * 25, sy * 25, 24, 24, 0, 220, 0, 255)
+                } else {
+                    draw_rectangle(sx * 25, sy * 25, 24, 24, 0, 160, 0, 255)
+                };
+                k = k + 1;
+            };
+
+            fdx := ptr_load_int(ptr_add(state, 40));
+            fdy := ptr_load_int(ptr_add(state, 48));
+            draw_rectangle(fdx * 25, fdy * 25, 24, 24, 220, 0, 0, 255);
+
+            st := string_to_cstr("Score:");
+            draw_text(st, 10, 10, 20, 255, 255, 255, 255);
+
+            end_drawing()
+        };
+
+        close_window();
+
+        final_score := ptr_load_int(ptr_add(state, 16));
+        print_int(final_score);
+        print_newline();
+
+        free(xs);
+        free(ys);
+        free(state);
+
+        0
+    }
+}

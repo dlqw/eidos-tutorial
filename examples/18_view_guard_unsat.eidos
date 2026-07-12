@@ -1,0 +1,15 @@
+normalize :: Bool -> Bool
+{
+    b => b
+}
+
+classify_view_guard :: Int -> Int
+{
+    _ => match [true]
+    {
+        [] => 0,
+        [(normalize -> (true as b))] when !b => 1,
+        [true] => 2,
+        [_, ..] => 3
+    }
+}

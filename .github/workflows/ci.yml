@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout tutorial
+        uses: actions/checkout@v4
+        with: { path: docs/tutorial }
+      - name: Checkout compatible Eidosc
+        uses: actions/checkout@v4
+        with:
+          repository: dlqw/Eidosc
+          ref: main
+          path: Eidosc
+          token: ${{ secrets.ECOSYSTEM_REPO_TOKEN }}
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: 10.0.x }
+      - name: Build Eidosc
+        run: dotnet build Eidosc/Eidosc.sln --nologo
+      - name: Verify language release metadata
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File docs/tutorial/scripts/verify-release-metadata.ps1
+      - name: Verify tutorial examples
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File docs/tutorial/verify-examples.ps1 -NoBuild

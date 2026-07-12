@@ -1,0 +1,42 @@
+Option[T] :: type { Some(T), None }
+UserId :: type = Int;
+GameState :: type {
+    GameState {
+        score: Int,
+        tick: Int
+    }
+}
+Shape :: type {
+    Circle {
+        radius: Int,
+        color: Int
+    }
+    | Rect {
+        width: Int,
+        height: Int,
+        color: Int
+    }
+}
+
+maybe :: Some(1);
+uid :: UserId = 7;
+initial :: GameState { score: 10, tick: 3 };
+
+unwrap_or_zero :: Option[Int] -> Int
+{
+    value => match value
+    {
+        Some(v) => v,
+        None => 0
+    }
+}
+
+reset_tick :: GameState -> GameState
+{
+    state => { state.{ tick: 0 } }
+}
+
+repaint :: Shape -> Shape
+{
+    shape => { shape.{ color: 1 } }
+}

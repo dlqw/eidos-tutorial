@@ -1,0 +1,17 @@
+Box[A] :: type {
+    Wrap(A)
+}
+
+ApplyToInt[F: kind2] :: type {
+    ApplyToInt(F[Int])
+}
+
+ho[F: kind2 -> kind1, G: kind2] :: F[G] -> F[G]
+{
+    x => x
+}
+
+use :: ApplyToInt[Box] -> ApplyToInt[Box]
+{
+    x => ho(x)
+}

@@ -1,0 +1,30 @@
+DirectionVector :: trait {
+    dx :: Self -> Int
+    dy :: Self -> Int
+}
+
+Axis :: type {
+    Vertical, Horizontal
+}
+
+Direction[A] :: type {
+    North -> Direction[Vertical],
+    South -> Direction[Vertical],
+    East -> Direction[Horizontal],
+    West -> Direction[Horizontal]
+}
+
+DirectionVectorDirection[A] :: instance DirectionVector for Direction[A] {
+    North => { dx = 0, dy = -1 } |
+    South => { dx = 0, dy = 1 } |
+    East => { dx = 1, dy = 0 } |
+    West => { dx = -1, dy = 0 }
+}
+
+step_x[A] :: Direction[A] -> Int {
+    dir => dir.dx()
+}
+
+main :: Int -> Int {
+    _ => step_x(East())
+}

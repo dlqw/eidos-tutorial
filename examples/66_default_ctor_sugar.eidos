@@ -1,0 +1,37 @@
+// 66_default_ctor_sugar.eidos — 裸积类型语法糖
+// 类型体直接写字段，编译期自动合成与类型同名的默认构造子。
+// Point :: type { x: Int, y: Int }  等价于  Point :: type { Point { x: Int, y: Int } }
+
+Point :: type {
+    x: Int,
+    y: Int
+}
+
+@derive(Eq)
+@derive(Show)
+Record :: type {
+    name: Int,
+    age: Int
+}
+
+origin :: Point { x: 0, y: 0 };
+
+make :: Int -> Int -> Point
+{
+    x => y => Point { x: x, y: y }
+}
+
+sum_coords :: Point -> Int
+{
+    p => p.x + p.y
+}
+
+reset_x :: Point -> Point
+{
+    p => { p.{ x: 0 } }
+}
+
+read_x :: Point -> Int
+{
+    Point { x: a, y: _ } => a
+}

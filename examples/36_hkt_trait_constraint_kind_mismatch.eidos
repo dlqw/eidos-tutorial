@@ -1,0 +1,12 @@
+Box[A] :: type {
+    Wrap(A)
+}
+
+Functor[F: kind2] :: trait {
+    fmap :: F[Int] -> Self
+}
+
+bad[T: Functor[Int]] :: T -> T
+{
+    x => x
+}

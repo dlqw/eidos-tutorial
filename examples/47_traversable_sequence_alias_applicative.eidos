@@ -1,0 +1,99 @@
+import Std::Applicative
+import Std::Seq
+import Std::Option
+import Std::Result
+
+Triple[A, B, C] :: type {
+    Triple(A, B, C)
+}
+
+KeepEdges[L, R, X] :: type = Triple[L, X, R];
+BoxedResult[E, T] :: type = Result[T, E];
+DeepBoxedResult[E, T] :: type = BoxedResult[E, T];
+
+join_ctx :: String -> String -> String
+{
+    left => right => left ++ "|" ++ right
+}
+
+ApplicativeKeepEdgesStringBool :: instance Applicative::Applicative[KeepEdges[String, Bool]] {
+    pure[A] :: A -> KeepEdges[String, Bool, A]
+    {
+        value => Triple("pure", value, true)
+    }
+    apply[A, B, E: effects] :: KeepEdges[String, Bool, A -> B need E] -> KeepEdges[String, Bool, A] -> KeepEdges[String, Bool, B] need E
+    {
+        Triple(leftCtx, f, leftOk) => Triple(rightCtx, value, rightOk) => Triple(join_ctx(leftCtx)(rightCtx), f(value), leftOk && rightOk)
+    }
+}
+
+ApplicativeDeepBoxedResultString :: instance Applicative::Applicative[DeepBoxedResult[String]] {
+    pure[A] :: A -> DeepBoxedResult[String, A]
+    {
+        value => Ok(value)
+    }
+    apply[A, B, E: effects] :: DeepBoxedResult[String, A -> B need E] -> DeepBoxedResult[String, A] -> DeepBoxedResult[String, B] need E
+    {
+        fResult => valueResult => match (fResult, valueResult)
+        {
+            (Ok(f), Ok(value)) => Ok(f(value)),
+            (Err(error), _) => Err(error),
+            (_, Err(error)) => Err(error)
+        }
+    }
+}
+
+sequence_result_with_alias_applicative[A, G: kind2 : Applicative::Applicative[G]] :: Result[G[A], String] -> G[Result[A, String]]
+{
+    values => sequence(values)
+}
+
+sequence_seq_with_alias_applicative[A, G: kind2 : Applicative::Applicative[G]] :: Seq[G[A]] -> G[Seq[A]]
+{
+    values => sequence(values)
+}
+
+sequence_option_with_alias_applicative[A, G: kind2 : Applicative::Applicative[G]] :: Option[G[A]] -> G[Option[A]]
+{
+    values => sequence(values)
+}
+
+collapse_open_result :: Triple[String, Result[Int, String], Bool] -> Int
+{
+    Triple(_, inner, ok) => if ok then {
+        match inner
+        {
+            Ok(value) => value,
+            Err(_) => 0
+        }
+    } else { 0 }
+}
+
+collapse_open_Seq :: Triple[String, Seq[Int], Bool] -> Int
+{
+    Triple(_, values, ok) => if ok then {
+        Option::unwrap_or(Seq::head(values))(0)
+    } else { 0 }
+}
+
+collapse_open_option :: Triple[String, Option[Int], Bool] -> Int
+{
+    Triple(_, inner, ok) => if ok then {
+        Option::unwrap_or(inner)(0)
+    } else { 0 }
+}
+
+main :: Unit -> Int
+{
+    _ => {
+        openResultDirect := collapse_open_result(sequence(Ok(Triple("edge", 2, true))));
+        openResultViaHelper := collapse_open_result(sequence_result_with_alias_applicative(Ok(Triple("edge", 2, true))));
+        openListDirect := collapse_open_Seq(sequence([Triple("left", 3, true), Triple("right", 4, true)]));
+        openListViaHelper := collapse_open_Seq(sequence_seq_with_alias_applicative([Triple("left", 3, true), Triple("right", 4, true)]));
+        openOptionDirect := collapse_open_option(sequence(Some(Triple("solo", 5, true))));
+        openOptionViaHelper := collapse_open_option(sequence_option_with_alias_applicative(Some(Triple("solo", 5, true))));
+
+        openResultDirect + openResultViaHelper + openListDirect + openListViaHelper +
+        openOptionDirect + openOptionViaHelper
+    }
+}

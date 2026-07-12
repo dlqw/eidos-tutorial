@@ -1,0 +1,16 @@
+normalize :: Int -> Int
+{
+    n => n
+}
+
+classify :: Int -> Int
+{
+    _ => match [1]
+    {
+        [] => 0,
+        // `(!2 & !3)` yields `other(exclude {2,3})`, so `n == 2` is provably false.
+        [(normalize -> ((!2 & !3) as n))] when n == 2 => 1,
+        [1] => 2,
+        [_, ..] => 3
+    }
+}

@@ -1,0 +1,50 @@
+// 58_ffi_qsort.eidos — 完整回调集成：Eidos 比较函数 + C qsort
+
+@ffi("qsort")
+qsort :: RawPtr -> Int -> Int -> Cfn[Int, Int, Int] -> Unit
+
+@ffi("malloc")
+malloc :: Int -> RawPtr
+
+@ffi
+puts :: RawPtr -> Int
+
+// 升序比较函数：使用嵌套 lambda 语法
+my_cmp :: Int -> Int -> Int
+{
+    a => b => a - b
+}
+
+main :: Int -> Int need FFI, IO
+{
+    _ => {
+        // 分配 5 个 i64 的数组
+        arr := malloc(40);
+
+        // 写入 [5, 3, 1, 4, 2]
+        ptr_store_int(arr, 5);
+        ptr_store_int(ptr_add(arr, 8), 3);
+        ptr_store_int(ptr_add(arr, 16), 1);
+        ptr_store_int(ptr_add(arr, 24), 4);
+        ptr_store_int(ptr_add(arr, 32), 2);
+
+        // 将比较函数转为 C 函数指针，传给 qsort
+        cmp_fn := cfn_from(my_cmp);
+        qsort(arr, 5, 8, cmp_fn);
+
+        // 读取排序结果 [1, 2, 3, 4, 5]
+        sum := ptr_load_int(arr)
+                + ptr_load_int(ptr_add(arr, 8))
+                + ptr_load_int(ptr_add(arr, 16))
+                + ptr_load_int(ptr_add(arr, 24))
+                + ptr_load_int(ptr_add(arr, 32));
+
+        print_int(sum);  // 15
+        print_newline();
+
+        ok := string_to_cstr("qsort OK");
+        puts(ok);
+
+        0
+    }
+}

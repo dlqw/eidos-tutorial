@@ -1,0 +1,18 @@
+Functor[F: kind2] :: trait {
+    fmap :: Self -> F[Int]
+}
+
+Person :: type {
+    Person(Int)
+}
+
+Box[A] :: type {
+    Box(A)
+}
+
+FunctorBox :: instance Functor[Box] {
+    fmap :: Person -> Box[Int]
+    {
+        p => Box(1)
+    }
+}

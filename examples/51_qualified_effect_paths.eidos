@@ -1,0 +1,18 @@
+Demo.Logger :: module {
+    Logger :: effect;
+
+    log :: String -> Unit need Logger
+    {
+        _ => ()
+    }
+
+    helper :: Int -> Unit need Logger::Logger
+    {
+        _ => Logger::log("hello")
+    }
+
+    main :: Unit -> Unit need Logger::Logger
+    {
+        _ => helper(0)
+    }
+}

@@ -1,0 +1,10 @@
+manifestSchema = 3
+
+sourceRoots = ["examples", "ffi-c-interop"]
+
+[language]
+version = "0.4.0-alpha.1"
+
+[package]
+name = "dev.eidos.tutorial"
+version = "0.1.0"

@@ -1,0 +1,6 @@
+answer :: 42;
+pi :: 3.14;
+greeting :: "hello";
+ok :: true;
+initial :: 'a';
+let mut counter = 1;

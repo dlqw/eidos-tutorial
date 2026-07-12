@@ -1,0 +1,111 @@
+// Snake game — minimal raylib FFI bindings
+
+link "raylib"
+link "snake_shim"
+
+// Memory management
+@ffi("malloc")
+malloc :: Int -> RawPtr
+
+@ffi("free")
+free :: RawPtr -> Unit
+
+// Window management
+@ffi("InitWindow")
+init_window :: Int32 -> Int32 -> RawPtr -> Unit
+
+@ffi("CloseWindow")
+close_window :: Unit -> Unit
+
+@ffi("WindowShouldClose")
+window_should_close :: Unit -> Bool
+
+@ffi("SetTargetFPS")
+set_target_fps :: Int32 -> Unit
+
+// Drawing
+@ffi("BeginDrawing")
+begin_drawing :: Unit -> Unit
+
+@ffi("EndDrawing")
+end_drawing :: Unit -> Unit
+
+@ffi("shim_clear_background")
+clear_background :: Int32 -> Int32 -> Int32 -> Int32 -> Unit
+
+@ffi("shim_draw_rectangle")
+draw_rectangle :: Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit
+
+@ffi("shim_draw_text")
+draw_text :: RawPtr -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit
+
+// Input
+@ffi("IsKeyPressed")
+is_key_pressed :: Int32 -> Bool
+
+@ffi("IsKeyDown")
+is_key_down :: Int32 -> Bool
+
+// Utilities
+@ffi("shim_get_random_value")
+get_random_value :: Int32 -> Int32 -> Int32
+
+@ffi("GetFrameTime")
+get_frame_time :: Unit -> Float32
+
+// String interop
+string_to_cstr :: String -> RawPtr
+cstr_to_string :: RawPtr -> String
+
+// Pointer operations
+ptr_null :: Unit -> RawPtr
+ptr_is_null :: RawPtr -> Bool
+ptr_add :: RawPtr -> Int -> RawPtr
+ptr_load_int :: RawPtr -> Int
+ptr_store_int :: RawPtr -> Int -> Unit
+ptr_load_i32 :: RawPtr -> Int
+ptr_store_i32 :: RawPtr -> Int -> Unit
+ptr_load_float :: RawPtr -> Float
+ptr_store_float :: RawPtr -> Float -> Unit
+
+// Keyboard constants
+key_right :: Int32 = 262
+key_left :: Int32 = 263
+key_down :: Int32 = 264
+key_up :: Int32 = 265
+key_w :: Int32 = 87
+key_s :: Int32 = 83
+key_a :: Int32 = 65
+key_d :: Int32 = 68
+key_space :: Int32 = 32
+
+// Colors (r, g, b, a)
+color_black_r :: Int32 = 0
+color_black_g :: Int32 = 0
+color_black_b :: Int32 = 0
+color_black_a :: Int32 = 255
+
+color_white_r :: Int32 = 255
+color_white_g :: Int32 = 255
+color_white_b :: Int32 = 255
+color_white_a :: Int32 = 255
+
+color_green_r :: Int32 = 0
+color_green_g :: Int32 = 200
+color_green_b :: Int32 = 0
+color_green_a :: Int32 = 255
+
+color_dark_green_r :: Int32 = 0
+color_dark_green_g :: Int32 = 150
+color_dark_green_b :: Int32 = 0
+color_dark_green_a :: Int32 = 255
+
+color_red_r :: Int32 = 200
+color_red_g :: Int32 = 0
+color_red_b :: Int32 = 0
+color_red_a :: Int32 = 255
+
+color_gray_r :: Int32 = 40
+color_gray_g :: Int32 = 40
+color_gray_b :: Int32 = 40
+color_gray_a :: Int32 = 255

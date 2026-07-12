@@ -1,0 +1,48 @@
+import Std::Option
+import Std::Result
+
+maybe_positive :: Int -> Option[Int]
+{
+    value => if value > 0 then { Some(value + 1) } else { None() }
+}
+
+option_pipeline :: Int -> Option[Int]
+{
+    value => {
+        let? first = maybe_positive(value);
+        let? second = maybe_positive(first);
+        Some(second + 1)
+    }
+}
+
+parse_positive :: Int -> Result::ResultWith[String, Int]
+{
+    value => if value > 0 then { Ok(value + 1) } else { Err("non-positive") }
+}
+
+result_pipeline :: Int -> Result::ResultWith[String, Int]
+{
+    value => {
+        let? first = parse_positive(value);
+        let? second = parse_positive(first);
+        Ok(second + 1)
+    }
+}
+
+main :: Unit -> Int
+{
+    _ => {
+        optionValue := match option_pipeline(1)
+        {
+            Some(value) => value,
+            None() => 0
+        };
+        resultValue := match result_pipeline(1)
+        {
+            Ok(value) => value,
+            Err(_) => 0
+        };
+
+        optionValue + resultValue
+    }
+}

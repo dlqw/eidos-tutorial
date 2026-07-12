@@ -1,0 +1,12 @@
+classify :: Int -> Int
+{
+    _ => match [true]
+    {
+        [] => 0,
+        [x] when x => 1,
+        [x] when !x => 2,
+        [_, ..] => 3
+    }
+}
+
+sample :: classify(0);

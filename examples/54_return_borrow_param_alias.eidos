@@ -1,0 +1,7 @@
+keep_alias :: Ref[Int] -> Ref[Int]
+{
+    r => {
+        alias := r;
+        alias
+    }
+}

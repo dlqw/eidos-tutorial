@@ -1,0 +1,15 @@
+normalize :: Int -> Int
+{
+    n => n
+}
+
+classify_view_guard_finite :: Int -> Int
+{
+    _ => match [1]
+    {
+        [] => 0,
+        [(normalize -> ((1 as x) | (2 as x)))] when x == 3 => 1,
+        [1] => 2,
+        [_, ..] => 3
+    }
+}

@@ -1,0 +1,12 @@
+binding_modes :: (Int, Int) -> Ref[Int]
+{
+    pair => {
+        (a, b) := pair;
+        ref ra := a;
+        mref mb := b;
+        match a
+        {
+            (a as ref keep) => keep
+        }
+    }
+}

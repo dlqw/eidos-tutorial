@@ -1,0 +1,6 @@
+Option[T] :: type { Some(T), None }
+
+unwrap_or_zero :: Option[Int] -> Int
+{
+    value => if let Some(n) = value then { n } else { 0 }
+}

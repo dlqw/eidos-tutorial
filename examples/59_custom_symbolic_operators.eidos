@@ -1,0 +1,27 @@
+import Std::Fn
+
+(|+|) :: Int -> Int -> Int
+{
+    left => right => left + right + 10
+}
+
+inc :: Int -> Int
+{
+    x => x + 1
+}
+
+double :: Int -> Int
+{
+    x => x + x
+}
+
+main :: Unit -> Int
+{
+    _ => {
+        infixed := 1 |+| 2;
+        prefixed := (|+|)(3, 4);
+        piped := 4 |> inc;
+        composed := (inc >>> double)(3);
+        infixed + prefixed + piped + composed
+    }
+}

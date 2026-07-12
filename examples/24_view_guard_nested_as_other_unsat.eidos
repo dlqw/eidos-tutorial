@@ -1,0 +1,19 @@
+normalize :: Int -> Int
+{
+    n => n
+}
+
+OptionI :: type {
+    Some(Int), None
+}
+
+classify :: OptionI -> Int
+{
+    x => match x
+    {
+        // The outer `as m` inherits inner `other(exclude {2,3})`.
+        Some(((normalize -> ((!2 & !3) as n)) as m)) when m == 2 => 1,
+        Some(_) => 2,
+        None => 0
+    }
+}

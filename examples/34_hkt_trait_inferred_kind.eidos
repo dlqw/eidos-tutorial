@@ -1,0 +1,7 @@
+Box[A] :: type {
+    Wrap(A)
+}
+
+HK[K] :: trait {
+    run :: K[Box] -> Self
+}

@@ -1,0 +1,7 @@
+add1ViaBlock :: Int -> Int
+{
+    x => {
+        y := x + 1;
+        y
+    }
+}

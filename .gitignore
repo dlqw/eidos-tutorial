@@ -1,0 +1,17 @@
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local scratch and generated outputs
+tmp/
+debug/
+coverage/
+*.log
+*.exe
+*.dll
+*.lib
+*.a
+*.so
+*.dylib

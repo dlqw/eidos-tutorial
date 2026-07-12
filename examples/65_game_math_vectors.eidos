@@ -1,0 +1,29 @@
+import Std::FloatMath
+import Std::GameMath
+import Std::Math
+
+main :: Unit -> Int need FFI
+{
+    _ => {
+        board := GameMath::ivec2(20)(10);
+        point := GameMath::ivec2(-1)(12);
+        wrapped := GameMath::wrap_i(point)(board.x)(board.y);
+        velocity := GameMath::vec2(3.0)(4.0);
+        rotated := GameMath::rotate_degrees(GameMath::unit_x)(90.0);
+        moved := GameMath::move_toward(GameMath::zero)(GameMath::vec2(10.0)(0.0))(2.5);
+
+        intsOk :=
+            Math::wrap(-1)(20) == 19 &&
+            Math::align_up(33)(8) == 40 &&
+            wrapped == GameMath::ivec2(19)(2);
+
+        floatsOk :=
+            FloatMath::smoothstep(0.0)(10.0)(5.0) == 0.5 &&
+            FloatMath::angle_delta_degrees(350.0)(10.0) == 20.0 &&
+            FloatMath::approx_eq(GameMath::length(velocity))(5.0)(0.000001) &&
+            GameMath::approx_eq_vec2(rotated)(GameMath::vec2(0.0)(1.0))(0.000001) &&
+            FloatMath::approx_eq(moved.x)(2.5)(0.000001);
+
+        if intsOk && floatsOk then { 1 } else { 0 }
+    }
+}

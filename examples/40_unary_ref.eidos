@@ -1,0 +1,6 @@
+id :: Int -> Ref[Int]
+{
+    x => ref x
+}
+
+value :: id(7);

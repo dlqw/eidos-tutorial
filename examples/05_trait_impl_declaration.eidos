@@ -1,0 +1,14 @@
+Show :: trait {
+    show :: Self -> String
+}
+
+Point :: type {
+    Point(Int, Int)
+}
+
+ShowPoint :: instance Show {
+    show :: Point -> String
+    {
+        p => "Point"
+    }
+}

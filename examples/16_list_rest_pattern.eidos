@@ -1,0 +1,9 @@
+head_or_zero :: Int -> Int
+{
+    _ => match [1, 2, 3]
+    {
+        [head, ..tail] => head,
+        [] => 0,
+        [..] => 0
+    }
+}

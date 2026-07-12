@@ -1,0 +1,16 @@
+normalize :: Int -> Int
+{
+    n => n
+}
+
+classify :: Int -> Int
+{
+    _ => match [1]
+    {
+        [] => 0,
+        // `((1 | 2) & !2)` narrows to `1`, so `x != 1` is provably false.
+        [(normalize -> ((((1 | 2) & !2) as x)))] when x != 1 => 1,
+        [1] => 2,
+        [_, ..] => 3
+    }
+}

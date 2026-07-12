@@ -1,0 +1,16 @@
+normalize :: Int -> Int
+{
+    n => n
+}
+
+classify :: Int -> Int
+{
+    _ => match [1]
+    {
+        [] => 0,
+        // `(1 | !1)` is always-match over Int, so this branch covers all length-1 lists.
+        [((normalize -> (1 | !1)) | 2)] => 1,
+        [1] => 2,
+        [_, ..] => 3
+    }
+}

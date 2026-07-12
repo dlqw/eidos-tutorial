@@ -1,0 +1,15 @@
+normalize :: Int -> Int
+{
+    n => n
+}
+
+classify :: Int -> Int
+{
+    _ => match [3]
+    {
+        [] => 0,
+        [((normalize -> (1..2)) | (normalize -> 3))] when true => 1,
+        [3] => 2,
+        [_, ..] => 3
+    }
+}

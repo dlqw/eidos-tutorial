@@ -1,0 +1,59 @@
+import Std::Seq
+import Std::Option
+import Std::Result
+
+collapse_option_result :: Result[Option[Int], String] -> Int
+{
+    Ok(inner) => Option::unwrap_or(inner)(0),
+    Err(_) => 0
+}
+
+collapse_seq_result :: Result[Seq[Int], String] -> Int
+{
+    Ok(values) => Seq::head_or(values)(0),
+    Err(_) => 0
+}
+
+collapse_result_result :: Result[Result[Int, String], String] -> Int
+{
+    Ok(inner) => Result::unwrap_or(inner)(0),
+    Err(_) => 0
+}
+
+main :: Unit -> Int
+{
+    _ => {
+        optionDirect := collapse_option_result(sequence(Some(Ok(1))));
+        optionErr := match sequence(Some(Err("bad")))
+        {
+            Ok(Some(value)) => value,
+            Err(_) => 1
+        };
+
+        listDirect := collapse_seq_result(sequence([Ok(2), Ok(3)]));
+        listErr := match sequence([Ok(2), Err("bad")])
+        {
+            Ok(values) => Seq::len(values),
+            Err(_) => 1
+        };
+
+        resultDirect := collapse_result_result(sequence(Ok(Ok(4))));
+        resultInnerErr := match sequence(Ok(Err("inner")))
+        {
+            Ok(inner) => match inner
+            {
+                Ok(value) => value,
+                Err(_) => 1
+            },
+            Err(_) => 0
+        };
+
+        resultOuterErr := match sequence(Err("outer"))
+        {
+            Ok(_) => 0,
+            Err(_) => 1
+        };
+
+        optionDirect + optionErr + listDirect + listErr + resultDirect + resultInnerErr + resultOuterErr
+    }
+}

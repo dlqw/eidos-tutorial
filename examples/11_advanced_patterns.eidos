@@ -1,0 +1,68 @@
+normalize :: Int -> Int
+{
+    x => x
+}
+
+key_pressed :: Int -> Int -> Bool
+{
+    expected => key => key == expected
+}
+
+classify :: Int -> Int
+{
+    x => match x
+    {
+        !0 => 99,
+        1 | 2 => 12,
+        3..5 => 35,
+        (normalize -> 9) => 90,
+        _ => 0
+    }
+}
+
+classify_key :: Int -> Int
+{
+    key => match key
+    {
+        (key_pressed(81) -> true) => 10,
+        (key_pressed(82) -> true) => 20,
+        _ => 0
+    }
+}
+
+classify_with_bind :: Int -> Int
+{
+    x => match x
+    {
+        (1 as n) | (2 as n) => n,
+        _ => 0
+    }
+}
+
+classify_with_expr_view :: Int -> Int
+{
+    x => match x
+    {
+        (if true then { normalize } else { normalize } -> 9) => 90,
+        _ => 0
+    }
+}
+
+Pair :: type {
+    Pair(Int, Int)
+}
+
+classify_with_and :: Pair -> Int
+{
+    pair => match pair
+    {
+        Pair(a, _) & Pair(_, b) => a + b,
+        _ => 0
+    }
+}
+
+demo :: classify(3);
+demo_key :: classify_key(81);
+demo_bind :: classify_with_bind(2);
+demo_expr :: classify_with_expr_view(9);
+demo_and :: classify_with_and(Pair(4, 5));

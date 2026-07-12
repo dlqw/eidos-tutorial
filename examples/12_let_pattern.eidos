@@ -1,0 +1,7 @@
+sum_pair :: (Int, Int) -> Int
+{
+    pair => {
+        (a, b) := pair;
+        a + b
+    }
+}
