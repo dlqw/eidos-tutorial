@@ -73,7 +73,7 @@ block_expr_after_expr ::= ";" block_body | "}"
 ```
 说明：块只有在最后一项是未带分号的表达式时才有显式 tail expression，该表达式是块值。没有显式 tail expression 的块值为 `Unit`，包括空块、只包含声明/赋值的块，或最后一个表达式带分号的块。
 
-说明：在 `0.4.0-alpha.1` 中，`comptime name := expr;` 表示局部编译期绑定，`name :: comptime A -> B { ... }` 表示 comptime-only 函数。第一阶段不支持 `comptime mut`，对 comptime binding 赋值会报告语义错误，运行期引用或调用 comptime-only 函数也会被拒绝。第一阶段 comptime evaluator 接受字面量、对已求值 comptime binding 的引用、无 named argument 且无 `with` 子句的 grouped 或 curried comptime-only 函数调用、无 spread 的 tuple/list、简单纯 unary/binary operator、条件可求为 comptime `Bool` 的 `if` 表达式，以及 literal、整数 range、wildcard、or-pattern、tuple pattern 和 list pattern `match` 表达式。comptime-only 函数体可调用其他 comptime-only 函数。by-value pattern、list rest 和纯 pattern-guard 绑定会在选中分支中成为 comptime value，被选中的分支可使用纯 `Bool` guard 和只有结果表达式的纯 block。普通 runtime/static 函数调用、带语句的 block、borrow 绑定、带副作用操作、named-argument comptime call、partial comptime application 和 `with` 子句仍会被拒绝为暂不可编译期求值。标量 comptime 引用会在 MIR 前内联；模块级 comptime binding 不生成 module value getter，局部 comptime binding 不创建运行期 local。
+说明：在 `0.5.0-alpha.1` 中，`comptime name := expr;` 表示局部编译期绑定，`name :: comptime A -> B { ... }` 表示 comptime-only 函数。`comptime mut`、对 comptime binding 赋值、运行期引用 comptime 值和运行期调用 comptime-only 函数都会被拒绝。类型化 evaluator 接受标量与 String、无 spread 的 tuple/list、普通 ADT 构造器与字段、递归 comptime-only 调用、带局部绑定的纯 block、纯 unary/binary operator、编译期 `if`，以及带 literal/range/wildcard/or/tuple/list/constructor pattern 和纯 guard 的 `match`。named-argument call、partial comptime application、borrow、effect、FFI、`with`、文件/环境/进程访问和运行期资源身份不属于 pure CTFE。被重新具化的 comptime 值直接进入类型化 HIR，不生成运行期 getter 或 local。
 
 说明：`let?` 只在函数或 lambda 的块内有效，不是合法顶层声明；parser 可接受顶层形态用于给出定向诊断。`let? pattern = expr;` 的右侧必须是 `Option[A]` 或 `Result[A, E]`，`pattern` 当前要求不可反驳。`Option` 形态要求当前返回上下文为 `Option[R]`，失败分支短路返回 `None()`；`Result` 形态要求当前返回上下文为 `Result[R, E]`（或 canonical 等价 alias），失败分支短路返回原 `Err(e)`。`let?` 是前端语法糖，只存在于 Parser/AST/NameResolver/Types 阶段；HIR 构建时会消除为普通 `match` + `return`，HIR/MIR/LLVM 不存在 `let?` 专用节点。
 
@@ -97,10 +97,13 @@ effect_path  ::= (module_path "::")? upper_identifier
                | package_path "::" upper_identifier
 trait_path   ::= (module_path "::")? upper_identifier
                | package_path "::" upper_identifier
-trait_ref    ::= trait_path type_args?
+trait_ref    ::= trait_path generic_args?
 
 type_params  ::= "[" type_param ("," type_param)* "]"
-type_param   ::= "comptime"? upper_identifier (":" ("comptime"? "Type" | kind | "effects"))? trait_constraints?
+type_param   ::= upper_identifier (":" ("comptime"? "Type" | kind | "effects"))? trait_constraints?
+               | "comptime" upper_identifier ":" type
+generic_args ::= "[" generic_arg ("," generic_arg)* "]"
+generic_arg  ::= type | expr
 trait_constraints ::= ":" trait_ref ("+" trait_ref)*
 generic_where ::= "where" where_constraint ("," where_constraint)*
 where_constraint ::= upper_identifier ":" (kind | trait_ref ("+" trait_ref)*)
@@ -151,8 +154,9 @@ attribute    ::= "@" lower_identifier ("(" arg_list? ")")?
 说明：`by` 是 proof 语境关键词；在普通函数、模式和表达式语境中仍可作为 `lower_identifier` 使用。
 说明：属性、derive trait、自定义 operator 与 unsupported value 的语义支持状态见 `docs/reference/semantic-capability-support-matrix.md`。`@derive(Eq, Show)` 会按参数顺序处理多个内建 derive trait。
 说明：effect 声明上的 `@borrow(...)` 仅作为可接受的元数据，不会授予借用权限；borrow 检查与 effect 授权相互独立。
-说明：当前 0.4.0-alpha.1 slice 接受 `comptime T: Type` 与 `T: comptime Type` 作为 type-level comptime 泛型参数，并保留到 symbol 与 HIR。`comptime N: Int` 这类值级 const generic 会被解析，但在 const-generic typechecking/lowering 落地前会在命名阶段拒绝。
-说明：`@impl(...)` 也会在命名阶段做语义校验：函数名/签名必须与目标 trait 方法匹配；泛型 trait 的类型实参不会由约定式注册自动推断；impl 重叠会在 alias canonicalization 后比较：严格更具体的头可以与更宽泛的头共存，但若 canonical 形状等价或不可比较，仍会直接以 `E3004` 拒绝。
+说明：generic argument 按声明顺序和目标参数 domain 解析。类型参数消费 type argument，`comptime N: T` 消费编译期 value expression，`effects` 参数消费 effect-row argument。ADT、type alias、constructor、function、trait、`@impl(...)` 与 named instance 使用同一套有序 domain 模型。
+说明：在 `0.5.0-alpha.1` 中，`comptime T: Type` 与 `T: comptime Type` 是类型域泛型参数，`comptime N: Int` 是值域 const generic。值实参必须可编译期求值且类型正确，并参与 type identity、layout、name mangling、specialization、trait coherence、cache fingerprint 和 IDE hover/completion。浮点值不能作为 specialization key；带运行期资源身份的值不能跨越该边界。
+说明：`@impl(...)` 也会在命名阶段做语义校验：函数名/签名必须与目标 trait 方法匹配；泛型 trait 实参不会由约定式注册自动推断；const-generic trait 实参会替换进方法签名；impl 重叠会在 alias canonicalization 后比较：严格更具体的头可以与更宽泛的头共存，但若 canonical 形状等价或不可比较，仍会直接以 `E3004` 拒绝。
 说明：named `instance` 声明是 0.4.0-alpha.1 已实现的 evidence 声明表面。`given` 表达式可用 `expr given InstanceName` 显式选择一个 named instance；被选择的 evidence 会通过普通 module/import 可见性规则解析，注册到结构化 trait impl 表，参与 coherence 检查，并在类型推断与 HIR/MIR dispatch 中映射到具体 trait 方法。`Name :: instance Trait for Type { Ctor => { method = expr } }` 是构造器 instance bridge：它从目标 ADT 每个构造器的同名 fact entry 生成对应 trait 方法。
 说明：当前分支不再把 `proof` / lawful 语法作为教程基线的一部分；相关能力移至单独的 proof 分支维护。
 说明：构造器名后的 `type_params?` 是构造器局部类型参数。没有出现在返回类型中的局部参数会在构造后隐藏，只能通过模式匹配分支重新打开，例如 `type AnyDirection { AnyDirection[A](Direction[A]) -> AnyDirection }`。

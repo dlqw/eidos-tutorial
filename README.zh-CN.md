@@ -1,6 +1,6 @@
 # Eidos 教程（中文）
 
-> 语言基线：本教程以 Eidos 0.4.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`；旧源码只通过显式迁移命令处理。
+> 语言基线：本教程以 Eidos 0.5.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`；旧源码只通过显式迁移命令处理。
 
 ## 1. 教程范围与验证基线
 本教程只描述当前仓库中已经实现并可复现的功能。所有可运行的示例均在 [`docs/tutorial/examples/`](examples/) 目录下。
@@ -26,7 +26,7 @@ powershell -ExecutionPolicy Bypass -File docs/tutorial/verify-examples.ps1
 manifestSchema = 3
 
 [language]
-version = "0.4.0-alpha.1"
+version = "0.5.0-alpha.1"
 
 [package]
 name = "dev.eidos.app"
@@ -175,6 +175,32 @@ e :: 1 `add` 2;
 ```
 
 对柯里化函数，逗号分隔的调用参数会从左到右逐个应用：`add(1, 2)` 等价于 `add(1)(2)`，`sum3(1, 2)` 仍可返回等待最后一个参数的函数。反引号中缀调用沿用同一规则：``left `add` right`` 等价于 `add(left)(right)`。
+
+#### 值级 const generic（0.5.0-alpha.1）
+
+`comptime N: Int` 声明值域泛型参数；`comptime T: Type` 仍声明类型域参数。参数顺序就是应用顺序，编译器在 AST、symbol、HIR/MIR、缓存和 IDE 中保留 type/value/effect-row 三种 domain，不再把值参数伪装成类型参数。
+
+```eidos
+Buffer[comptime N: Int, comptime T: Type] :: type {
+    Buffer(T)
+}
+
+FixedBuffer[comptime N: Int, comptime T: Type] :: type = Buffer[N, T];
+
+constant[comptime N: Int] :: Unit -> Int
+{
+    _ => N
+}
+
+use :: Unit -> Int
+{
+    _ => constant[4](()) + constant[5](())
+}
+```
+
+值实参必须在实例化点可编译期求值，并且类型与参数注解一致。未被普通参数类型约束的值参数必须显式提供；能从 `Buffer[N, T]` 这类参数/结果类型推出时可以省略。值会进入 nominal type identity、layout、name mangling、generic specialization、trait coherence 和增量缓存键，因此 `Buffer[4, Int]` 与 `Buffer[5, Int]` 是不同类型。浮点值在 alpha.1 中不能作为 specialization key；引用、指针、closure 和其他带运行期资源身份的值也不能越过 comptime/type identity 边界。
+
+ADT、type alias、函数、trait、`@impl(...)` 和 named instance trait 引用均使用同一套有序 generic argument 规则。例如 `Sized[comptime N: Int] :: trait { ... }` 的实现必须显式写成 `@impl(Sized[4])`；trait 方法签名中的 `N` 会按该值替换，coherence 也会比较结构化值 key。完整示例见 `examples/68_const_generics.eidos`。
 
 普通同一作用域函数可以同名，只要参数签名不同。调用点会根据实参类型选择重载，
 覆盖普通调用、限定路径调用、链式方法调用、中缀调用和管道调用。裸重载函数引用
