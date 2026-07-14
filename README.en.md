@@ -1,6 +1,6 @@
 # Eidos Tutorial (English)
 
-> Language baseline: this tutorial targets Eidos 0.4.0-alpha.1. New code uses `name :: Type { ... }`, `name :: expr;`, and local `name := expr;` / `mut name := expr;`; legacy source is handled only by the explicit migration command.
+> Language baseline: this tutorial targets Eidos 0.5.0-alpha.1. New code uses `name :: Type { ... }`, `name :: expr;`, and local `name := expr;` / `mut name := expr;`; legacy source is handled only by the explicit migration command.
 
 ## 1. Scope and Validation Baseline
 This tutorial only describes features that are implemented and reproducible in this repository today. All runnable snippets are under [`docs/tutorial/examples/`](examples/).  
@@ -26,7 +26,7 @@ Recommended minimal `eidos.toml`:
 manifestSchema = 3
 
 [language]
-version = "0.4.0-alpha.1"
+version = "0.5.0-alpha.1"
 
 [package]
 name = "dev.eidos.app"
@@ -175,6 +175,32 @@ e :: 1 `add` 2;
 ```
 
 For curried functions, comma-separated call arguments apply the function left-to-right: `add(1, 2)` is equivalent to `add(1)(2)`, and `sum3(1, 2)` can still return a function waiting for the final argument. Backtick infix calls use the same rule: ``left `add` right`` is equivalent to `add(left)(right)`.
+
+#### Value-level const generics (0.5.0-alpha.1)
+
+`comptime N: Int` declares a value-domain generic parameter, while `comptime T: Type` remains a type-domain parameter. Declaration order is application order. The compiler preserves type, value, and effect-row domains independently through AST, symbols, HIR/MIR, caches, and IDE output instead of representing values as fake type arguments.
+
+```eidos
+Buffer[comptime N: Int, comptime T: Type] :: type {
+    Buffer(T)
+}
+
+FixedBuffer[comptime N: Int, comptime T: Type] :: type = Buffer[N, T];
+
+constant[comptime N: Int] :: Unit -> Int
+{
+    _ => N
+}
+
+use :: Unit -> Int
+{
+    _ => constant[4](()) + constant[5](())
+}
+```
+
+A value argument must be compile-time evaluable at the instantiation site and must match its declared type. A value parameter that is not constrained by ordinary parameter types must be supplied explicitly; it may be omitted when it can be inferred through a type such as `Buffer[N, T]`. Values participate in nominal type identity, layout, name mangling, generic specialization, trait coherence, and incremental cache keys, so `Buffer[4, Int]` and `Buffer[5, Int]` are distinct types. Floating-point values are not specialization keys in alpha.1. References, pointers, closures, and other values with runtime resource identity cannot cross the comptime/type-identity boundary.
+
+ADTs, type aliases, functions, traits, `@impl(...)`, and named-instance trait references use the same ordered generic-argument rules. For example, an implementation of `Sized[comptime N: Int] :: trait { ... }` must explicitly name a value such as `@impl(Sized[4])`; `N` is substituted through the trait method signature and coherence compares the structured value key. See `examples/68_const_generics.eidos` for the complete example.
 
 Ordinary same-scope functions may share a name when their parameter signatures
 are distinct. Calls resolve the overload from argument types, including direct

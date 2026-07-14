@@ -1,0 +1,39 @@
+Buffer[comptime N: Int, comptime T: Type] :: type {
+    Buffer(T)
+}
+
+FixedBuffer[comptime N: Int, comptime T: Type] :: type = Buffer[N, T];
+
+constant[comptime N: Int] :: Unit -> Int
+{
+    _ => N
+}
+
+forward[comptime N: Int] :: Unit -> Int
+{
+    _ => constant[N](())
+}
+
+Sized[comptime N: Int] :: trait {
+    make :: Self -> Buffer[N, Int]
+}
+
+Holder :: type {
+    Holder(Int)
+}
+
+@impl(Sized[4])
+make :: Holder -> Buffer[4, Int]
+{
+    _ => Buffer[4, Int](4)
+}
+
+identity :: FixedBuffer[4, Int] -> Buffer[4, Int]
+{
+    value => value
+}
+
+main :: Unit -> Int
+{
+    _ => forward[4](()) + constant[5](())
+}
