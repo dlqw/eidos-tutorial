@@ -258,6 +258,60 @@ eidosc meta expand source.eidos --emit-generated generated
 eidosc meta expand source.eidos --trace-comptime --comptime-budget 200000
 ```
 
+#### Capability-constrained Build host and BuildGraph (0.5.0-alpha.4)
+
+Like `Meta`, `Build` is a compiler-built-in domain that needs no import, but capabilities are issued only while compiling the program named by `[build].program`. Ordinary pure comptime may resolve `Build::context()` but is rejected if it tries to acquire filesystem, environment, process, or artifact-emission capabilities.
+
+```toml
+[build]
+program = "build.eidos"
+fileInputs = ["schema/model.json", "assets"]
+environment = ["SDK_ROOT"]
+outputRoots = ["build/generated"]
+
+[[build.tools]]
+name = "generator"
+path = "tools/generator.exe"
+```
+
+`fileInputs` may name files or directories. Directories expand recursively in stable project-relative order. Input contents, registered environment-variable presence and values, registered executable path/hash identity, the build program, and the host and target triples all participate in the Build host cache key. The build program, file inputs, and outputs must remain inside the project root; the program and file inputs must be disjoint from output roots. Tools use explicit registered paths rather than ambient `PATH` lookup.
+
+A build program uses separate `Build::Fs`, `Build::Env`, `Build::Process`, and `Build::Emit` capabilities and returns one top-level `BuildGraph`:
+
+```eidos
+Context :: comptime Build::context();
+Process :: comptime Build::process(Context);
+Emit :: comptime Build::emit(Context);
+
+Generate :: comptime Build::command(
+    Process,
+    "generate",
+    "generator",
+    ["schema/model.json", "build/generated/Model.eidos"],
+    ["schema/model.json"],
+    ["build/generated/Model.eidos"],
+    []
+);
+
+Generated :: comptime Build::generatedSource(
+    Emit,
+    "build/generated/Model.eidos",
+    "generate",
+    "main"
+);
+
+BuildGraph :: comptime Build::graph(Emit, [Generate], [Generated]);
+```
+
+`Build::readText(Fs, path)` can read only files expanded from `fileInputs`; `Build::environment(Env, name)` can read only a registered variable that is present. `Build::command` describes a registered host tool, its arguments, inputs, outputs, and step dependencies; it does not perform hidden side effects during expression evaluation. The compiler checks cycles, duplicate outputs, undeclared inputs, missing dependency edges, output roots, producers, and target use, then executes steps in stable topological order and verifies every declared output. A `generatedSource` directory is added automatically to the selected target's import roots.
+
+```powershell
+eidosc build --project . --target-name main --trace-build
+eidosc build --project . --emit-build-graph build/graph.json
+```
+
+`--trace-build` reports capability dependencies and accesses, graph hashes, step/cache decisions, and tool output. `--emit-build-graph` writes canonical JSON. Identical programs, declared inputs, environment, executable hashes, host/target pairs, and graphs reuse a BuildGraph cache whose output hashes are revalidated. See `examples/build_host/` for a minimal verified project.
+
 Ordinary same-scope functions may share a name when their parameter signatures
 are distinct. Calls resolve the overload from argument types, including direct
 calls, qualified calls, method-call syntax, infix calls, and pipe calls. A bare

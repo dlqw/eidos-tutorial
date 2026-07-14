@@ -1,0 +1,12 @@
+manifestSchema = 3
+
+[language]
+version = "0.5.0-alpha.1"
+
+[package]
+name = "dev.eidos.tutorial.build-host"
+version = "0.1.0"
+
+[build]
+program = "build.eidos"
+outputRoots = ["build/generated"]
