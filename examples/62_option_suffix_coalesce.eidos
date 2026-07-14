@@ -1,4 +1,4 @@
-import Std::Option
+import Std.Option
 fallback :: Int? -> Int {
     value => value ?? 42
 }

@@ -11,7 +11,7 @@ Shape :: type {
         radius: Int,
         color: Int
     }
-    | Rect {
+    , Rect {
         width: Int,
         height: Int,
         color: Int

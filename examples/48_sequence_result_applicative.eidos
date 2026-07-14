@@ -1,22 +1,22 @@
-import Std::Seq
-import Std::Option
-import Std::Result
+import Std.Seq
+import Std.Option
+import Std.Result
 
 collapse_option_result :: Result[Option[Int], String] -> Int
 {
-    Ok(inner) => Option::unwrap_or(inner)(0),
+    Ok(inner) => Option.unwrap_or(inner)(0),
     Err(_) => 0
 }
 
 collapse_seq_result :: Result[Seq[Int], String] -> Int
 {
-    Ok(values) => Seq::head_or(values)(0),
+    Ok(values) => Seq.head_or(values)(0),
     Err(_) => 0
 }
 
 collapse_result_result :: Result[Result[Int, String], String] -> Int
 {
-    Ok(inner) => Result::unwrap_or(inner)(0),
+    Ok(inner) => Result.unwrap_or(inner)(0),
     Err(_) => 0
 }
 
@@ -33,7 +33,7 @@ main :: Unit -> Int
         listDirect := collapse_seq_result(sequence([Ok(2), Ok(3)]));
         listErr := match sequence([Ok(2), Err("bad")])
         {
-            Ok(values) => Seq::len(values),
+            Ok(values) => Seq.len(values),
             Err(_) => 1
         };
 

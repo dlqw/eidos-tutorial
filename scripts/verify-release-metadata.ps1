@@ -22,6 +22,12 @@ if (-not $manifestVersion.Success -or $manifestVersion.Groups[1].Value -ne $vers
 }
 
 $changelog = Join-Path $RepositoryRoot "changelogs/$version.md"
-if (-not (Test-Path -LiteralPath $changelog)) { throw "Missing language changelog: $changelog" }
+$fragmentDirectory = Join-Path $RepositoryRoot "changelogs/$version"
+$hasFragment = (Test-Path -LiteralPath $fragmentDirectory -PathType Container) -and
+    ($null -ne (Get-ChildItem -LiteralPath $fragmentDirectory -File -Filter "$version-*.md" | Select-Object -First 1))
+if (-not (Test-Path -LiteralPath $changelog) -and -not $hasFragment)
+{
+    throw "Missing language changelog or target-version fragment for $version."
+}
 
-Write-Host "Eidos language release metadata verified: $version"
+Write-Host "Eidos language metadata verified: $version"

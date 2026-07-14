@@ -1,7 +1,7 @@
-import Std::Applicative
-import Std::Seq
-import Std::Option
-import Std::Result
+import Std.Applicative
+import Std.Seq
+import Std.Option
+import Std.Result
 
 Triple[A, B, C] :: type {
     Triple(A, B, C)
@@ -16,7 +16,7 @@ join_ctx :: String -> String -> String
     left => right => left ++ "|" ++ right
 }
 
-ApplicativeKeepEdgesStringBool :: instance Applicative::Applicative[KeepEdges[String, Bool]] {
+ApplicativeKeepEdgesStringBool :: instance Applicative.Applicative[KeepEdges[String, Bool]] {
     pure[A] :: A -> KeepEdges[String, Bool, A]
     {
         value => Triple("pure", value, true)
@@ -27,7 +27,7 @@ ApplicativeKeepEdgesStringBool :: instance Applicative::Applicative[KeepEdges[St
     }
 }
 
-ApplicativeDeepBoxedResultString :: instance Applicative::Applicative[DeepBoxedResult[String]] {
+ApplicativeDeepBoxedResultString :: instance Applicative.Applicative[DeepBoxedResult[String]] {
     pure[A] :: A -> DeepBoxedResult[String, A]
     {
         value => Ok(value)
@@ -43,9 +43,9 @@ ApplicativeDeepBoxedResultString :: instance Applicative::Applicative[DeepBoxedR
     }
 }
 
-traverse_seq_with_alias_applicative[A, B, G: kind2 : Applicative::Applicative[G]] :: Seq[A] -> (A -> G[B]) -> G[Seq[B]]
+traverse_seq_with_alias_applicative[A, B, G: kind2 : Applicative.Applicative[G]] :: Seq[A] -> (A -> G[B]) -> G[Seq[B]]
 {
-    xs => f => Seq::traverse(xs)(f)
+    xs => f => Seq.traverse(xs)(f)
 }
 
 produce_keep_edges :: Int -> Triple[String, Int, Bool]
@@ -61,22 +61,22 @@ produce_deep_boxed_result :: Int -> Result[Int, String]
 collapse_open_list_result :: Triple[String, Seq[Int], Bool] -> Int
 {
     Triple(_, values, ok) => if ok then {
-        Option::unwrap_or(Seq::head(values))(0)
+        Option.unwrap_or(Seq.head(values))(0)
     } else { 0 }
 }
 
 collapse_deep_list_result :: Result[Seq[Int], String] -> Int
 {
-    Ok(values) => Option::unwrap_or(Seq::head(values))(0),
+    Ok(values) => Option.unwrap_or(Seq.head(values))(0),
     Err(_) => 0
 }
 
 main :: Unit -> Int
 {
     _ => {
-        openDirect := collapse_open_list_result(Seq::traverse([1, 2])(produce_keep_edges));
+        openDirect := collapse_open_list_result(Seq.traverse([1, 2])(produce_keep_edges));
         openViaHelper := collapse_open_list_result(traverse_seq_with_alias_applicative([1, 2])(produce_keep_edges));
-        deepDirect := collapse_deep_list_result(Seq::traverse([1, 2])(produce_deep_boxed_result));
+        deepDirect := collapse_deep_list_result(Seq.traverse([1, 2])(produce_deep_boxed_result));
         deepViaHelper := collapse_deep_list_result(traverse_seq_with_alias_applicative([1, 2])(produce_deep_boxed_result));
 
         openDirect + openViaHelper + deepDirect + deepViaHelper

@@ -1,6 +1,6 @@
 # Eidos Tutorial (English)
 
-> Language baseline: this tutorial targets Eidos 0.5.0-alpha.1. New code uses `name :: Type { ... }`, `name :: expr;`, and local `name := expr;` / `mut name := expr;`; legacy source is handled only by the explicit migration command.
+> Language baseline: this tutorial targets Eidos 0.6.0-alpha.1. New code uses `name :: Type { ... }`, `name :: expr;`, local `name := expr;` / `mut name := expr;`, dot-qualified Namespaces, and comma-separated ADT constructors. Older source is handled only by the explicit migration command.
 
 ## 1. Scope and Validation Baseline
 This tutorial only describes features that are implemented and reproducible in this repository today. All runnable snippets are under [`docs/tutorial/examples/`](examples/).  
@@ -26,7 +26,7 @@ Recommended minimal `eidos.toml`:
 manifestSchema = 3
 
 [language]
-version = "0.5.0-alpha.1"
+version = "0.6.0-alpha.1"
 
 [package]
 name = "dev.eidos.app"
@@ -52,6 +52,24 @@ let mut counter = 1;
 ```
 
 Naming tiers: runtime values use lower-case-leading identifiers, while compile-time values use upper-case-leading identifiers. Types are first-class compile-time values, so types, traits, effects, constructors, module path segments, and generic parameters that denote types belong to the upper-case namespace. A constructor call produces a runtime value, but the constructor symbol itself is still a compile-time value.
+
+#### Namespace and naming style
+
+Eidos 0.6 uses one member-selection surface:
+
+```eidos
+import Std.Option
+
+Info :: comptime Meta.typeInfo(User);
+fallback := Std.Option.unwrap_or(input)(0);
+name := user.profile.display_name;
+```
+
+1. `::` binds a declared name to its declaration and has no qualified-name meaning.
+2. `.` selects through every Namespace: packages, modules, types, traits, effects, constructors, compile-time values, and their members.
+3. Module segments, types, traits, effects, constructors, and compile-time values start upper-case. Runtime functions, values, parameters, and fields start lower-case and should prefer `lower_snake_case`.
+4. A dependency alias may remain `lower_snake_case`; its next segment is an upper-case module, as in `crypto_a.Hash.Sha256.digest(bytes)`.
+5. A lower-case root followed by lower-case segments is an ordinary runtime member chain, such as `user.profile.display_name`; an upper-case root, or a lower-case package alias followed by an upper-case module, starts a Namespace path.
 
 Update (2026-03-16): builtin I/O now includes `print_char: Int -> Unit`, which prints one character by code point (for example `34` for `"`, `39` for `'`).
 
@@ -122,7 +140,7 @@ option_pipeline :: Int -> Option[Int]
     }
 }
 
-result_pipeline :: Int -> Result::ResultWith[String, Int]
+result_pipeline :: Int -> Result.ResultWith[String, Int]
 {
     value => {
         let? first = parse_positive(value);
@@ -207,34 +225,34 @@ ADTs, type aliases, functions, traits, `@impl(...)`, and named-instance trait re
 `Meta` is a compiler-built-in domain. It is not part of `Std` and does not require an `import`. Reflection exposes only completed, stably serializable compiler facts; it does not expose mutable AST objects or internal `SymbolId` values:
 
 ```eidos
-Info :: comptime Meta::typeInfo(User);
-Kind :: comptime Meta::typeKind(Info);
-HasName :: comptime Meta::hasField(User, "name");
-NameType :: comptime Meta::fieldType(User, "name");
-IntLayout :: comptime Meta::layoutOf(Int, "x86_64-pc-windows-msvc");
+Info :: comptime Meta.typeInfo(User);
+Kind :: comptime Meta.typeKind(Info);
+HasName :: comptime Meta.hasField(User, "name");
+NameType :: comptime Meta.fieldType(User, "name");
+IntLayout :: comptime Meta.layoutOf(Int, "x86_64-pc-windows-msvc");
 ```
 
-`Meta::typeInfo` covers primitives, tuples, functions, references, ADTs, and traits. Constructors, fields, associated declarations, and attributes retain stable source order. `Meta::layoutOf` is a separate target-dependent query and requires an explicit supported target triple. A type whose layout is not complete produces a phase diagnostic instead of falling back to host layout.
+`Meta.typeInfo` covers primitives, tuples, functions, references, ADTs, and traits. Constructors, fields, associated declarations, and attributes retain stable source order. `Meta.layoutOf` is a separate target-dependent query and requires an explicit supported target triple. A type whose layout is not complete produces a phase diagnostic instead of falling back to host layout.
 
-A user derive must have the type `comptime Meta::DeriveInput -> Meta::Expansion`:
+A user derive must have the type `comptime Meta.DeriveInput -> Meta.Expansion`:
 
 ```eidos
 Marker :: trait {
     marker :: Self -> String
 }
 
-deriveMarker :: comptime Meta::DeriveInput -> Meta::Expansion {
+deriveMarker :: comptime Meta.DeriveInput -> Meta.Expansion {
     input => {
-        target := Meta::target(input);
-        parameter := Meta::parameter("value", target);
-        method := Meta::function(
+        target := Meta.target(input);
+        parameter := Meta.parameter("value", target);
+        method := Meta.function(
             "marker",
             [parameter],
             String,
-            Meta::exprString(Meta::typeName(target))
+            Meta.exprString(Meta.typeName(target))
         );
-        Meta::expansion([
-            Meta::implementation(Meta::decl(Marker), target, [method])
+        Meta.expansion([
+            Meta.implementation(Meta.decl(Marker), target, [method])
         ])
     }
 }
@@ -246,7 +264,7 @@ User :: type {
 }
 ```
 
-`Meta::Expansion` can structurally generate implementations, functions, comptime values, attribute attachments, tests, diagnostics, and module members. Function bodies use `Meta::Expr` builders, while pattern branches use `Meta::Pattern` / `Meta::Branch` builders. Declaration references use `Meta::Decl`; generator-local references use `Meta::Parameter` / `Meta::Binding` handles for hygiene. Generated declarations participate in ordinary name resolution, type checking, trait coherence, completion, hover, definition, and references, with stable `eidos-generated://` origins.
+`Meta.Expansion` can structurally generate implementations, functions, comptime values, attribute attachments, tests, diagnostics, and module members. Function bodies use `Meta.Expr` builders, while pattern branches use `Meta.Pattern` / `Meta.Branch` builders. Declaration references use `Meta.Decl`; generator-local references use `Meta.Parameter` / `Meta.Binding` handles for hygiene. Generated declarations participate in ordinary name resolution, type checking, trait coherence, completion, hover, definition, and references, with stable `eidos-generated://` origins.
 
 Current boundaries: there is no string source insertion and no arbitrary AST replacement or deletion. Semantic attributes such as `@impl` cannot be written back through an attribute attachment; generate the corresponding structured declaration instead. Pure comptime cannot access files, environment variables, processes, networks, or FFI. Expansions execute to a fixed point in dependency and source order; cycles, duplicate stable identities, invalid protocol signatures, budget exhaustion, and incomplete reflection produce deterministic diagnostics. See `examples/69_meta_reflection_derive.eidos` for the complete example.
 
@@ -260,7 +278,7 @@ eidosc meta expand source.eidos --trace-comptime --comptime-budget 200000
 
 #### Capability-constrained Build host and BuildGraph (0.5.0-alpha.4)
 
-Like `Meta`, `Build` is a compiler-built-in domain that needs no import, but capabilities are issued only while compiling the program named by `[build].program`. Ordinary pure comptime may resolve `Build::context()` but is rejected if it tries to acquire filesystem, environment, process, or artifact-emission capabilities.
+Like `Meta`, `Build` is a compiler-built-in domain that needs no import, but capabilities are issued only while compiling the program named by `[build].program`. Ordinary pure comptime may resolve `Build.context()` but is rejected if it tries to acquire filesystem, environment, process, or artifact-emission capabilities.
 
 ```toml
 [build]
@@ -276,14 +294,14 @@ path = "tools/generator.exe"
 
 `fileInputs` may name files or directories. Directories expand recursively in stable project-relative order. Input contents, registered environment-variable presence and values, registered executable path/hash identity, the build program, and the host and target triples all participate in the Build host cache key. The build program, file inputs, and outputs must remain inside the project root; the program and file inputs must be disjoint from output roots. Tools use explicit registered paths rather than ambient `PATH` lookup.
 
-A build program uses separate `Build::Fs`, `Build::Env`, `Build::Process`, and `Build::Emit` capabilities and returns one top-level `BuildGraph`:
+A build program uses separate `Build.Fs`, `Build.Env`, `Build.Process`, and `Build.Emit` capabilities and returns one top-level `BuildGraph`:
 
 ```eidos
-Context :: comptime Build::context();
-Process :: comptime Build::process(Context);
-Emit :: comptime Build::emit(Context);
+Context :: comptime Build.context();
+Process :: comptime Build.process(Context);
+Emit :: comptime Build.emit(Context);
 
-Generate :: comptime Build::command(
+Generate :: comptime Build.command(
     Process,
     "generate",
     "generator",
@@ -293,17 +311,17 @@ Generate :: comptime Build::command(
     []
 );
 
-Generated :: comptime Build::generatedSource(
+Generated :: comptime Build.generatedSource(
     Emit,
     "build/generated/Model.eidos",
     "generate",
     "main"
 );
 
-BuildGraph :: comptime Build::graph(Emit, [Generate], [Generated]);
+BuildGraph :: comptime Build.graph(Emit, [Generate], [Generated]);
 ```
 
-`Build::readText(Fs, path)` can read only files expanded from `fileInputs`; `Build::environment(Env, name)` can read only a registered variable that is present. `Build::command` describes a registered host tool, its arguments, inputs, outputs, and step dependencies; it does not perform hidden side effects during expression evaluation. The compiler checks cycles, duplicate outputs, undeclared inputs, missing dependency edges, output roots, producers, and target use, then executes steps in stable topological order and verifies every declared output. A `generatedSource` directory is added automatically to the selected target's import roots.
+`Build.readText(Fs, path)` can read only files expanded from `fileInputs`; `Build.environment(Env, name)` can read only a registered variable that is present. `Build.command` describes a registered host tool, its arguments, inputs, outputs, and step dependencies; it does not perform hidden side effects during expression evaluation. The compiler checks cycles, duplicate outputs, undeclared inputs, missing dependency edges, output roots, producers, and target use, then executes steps in stable topological order and verifies every declared output. A `generatedSource` directory is added automatically to the selected target's import roots.
 
 ```powershell
 eidosc build --project . --target-name main --trace-build
@@ -354,9 +372,9 @@ asInfix :: 1 |+| 2;
 asFunction :: (|+|)(3, 4);
 ```
 
-Custom symbolic operators are left-associative at the default custom-infix precedence, between additive operators and `::`/composition. Built-in operators such as `|>`, `>>=`, `>>>`, `<<<`, `<$>`, `<*>`, and `<>` keep their standard precedence and lowering.
+Custom symbolic operators are left-associative at the default custom-infix precedence, between additive operators and function composition. `::` is a declaration binding token, not an expression operator. Built-in operators such as `|>`, `>>=`, `>>>`, `<<<`, `<$>`, `<*>`, and `<>` keep their standard precedence and lowering.
 
-Style convention (2026-05-28): new tutorial and standard-library examples should prefer Eidos' functional reading style. Use `value |> f |> g` for linear data flow, `f >>> g` or `g <<< f` for function composition, `f <$> value`, `mf <*> mx`, and `mx >>= f` for `Functor` / `Applicative` / `Monad` code, and chained calls such as `xs.map(f).filter(p).fold_left(seed)(step)` for container pipelines. Keep `Module::function(value)(arg)` when the qualified path makes intent or dispatch clearer. Ordinary grouped calls such as `function(value)` / `function(value, arg)` are also stable default call style and are not reported only because they could be written as fluent or infix calls. CLI/IDE/LSP reports mechanically convertible consecutive curried prefix calls as help/hint-level style suggestions with Quick Fixes: `Seq::append(a)(b)` can become fluent `a.append(b)` or grouped as `Seq::append(a, b)`.
+Style convention (2026-05-28): new tutorial and standard-library examples should prefer Eidos' functional reading style. Use `value |> f |> g` for linear data flow, `f >>> g` or `g <<< f` for function composition, `f <$> value`, `mf <*> mx`, and `mx >>= f` for `Functor` / `Applicative` / `Monad` code, and chained calls such as `xs.map(f).filter(p).fold_left(seed)(step)` for container pipelines. Keep `Module.function(value)(arg)` when the qualified path makes intent or dispatch clearer. Ordinary grouped calls such as `function(value)` / `function(value, arg)` are also stable default call style and are not reported only because they could be written as fluent or infix calls. CLI/IDE/LSP reports mechanically convertible consecutive curried prefix calls as help/hint-level style suggestions with Quick Fixes: `Seq.append(a)(b)` can become fluent `a.append(b)` or grouped as `Seq.append(a, b)`.
 
 Update (2026-03-27): Higher-kinded type parameter annotations are supported in signatures.
 1. Unary constructor kind: `F: kind2`
@@ -369,7 +387,7 @@ Update (2026-03-27): Higher-kinded type parameter annotations are supported in s
 8. Effect-row parameters are explicit and use the `effects` kind (for example `E: effects`); higher-kinded value type parameters continue to use `kind1`, `kind2`, or `kind3`.
 9. Kind constraints are solved by cumulative unification: constraints on the same type variable share one inferred kind state, so incompatible constraints (for example both `kind2` and `kind1`) are reported as errors instead of being treated independently.
 10. Trait declarations support type parameters as first-class syntax (`Functor[F: kind2] :: trait { ... }`), and trait type-parameter kinds are also inferred from method signatures when omitted (for example `HK[K] :: trait { run :: K[Box] -> Self }` infers `K: kind2 -> kind1`), with metadata preserved into symbol/HIR layers.
-11. Type-parameter trait constraints support module-qualified trait refs with type arguments (`T: Core::Functor[Box]`); trait-argument arity and kind are checked in Types phase.
+11. Type-parameter trait constraints support module-qualified trait refs with type arguments (`T: Core.Functor[Box]`); trait-argument arity and kind are checked in Types phase.
 12. Type-parameter trait constraints accept traits only. Effect authorization belongs in function `need` clauses instead (for example `String -> Unit need Writer`).
 13. Generic constraints support lightweight `where` clauses, so complex kind/trait constraints can move out of the parameter list; for example, `lift[A, G] :: A -> G[A] where G: kind2, G: Applicative[G]`.
 Example files: `examples/31_hkt_parenthesized_kind.eidos`, `examples/32_hkt_adt_inferred_kind.eidos`, `examples/33_hkt_effect_polymorphism.eidos`, `examples/34_hkt_trait_inferred_kind.eidos`, `examples/35_hkt_trait_constraint_type_args.eidos`, `examples/36_hkt_trait_constraint_kind_mismatch.eidos`.
@@ -508,7 +526,7 @@ DirectionLabelDirection[A] :: instance DirectionLabel for Direction[A] {
 }
 ```
 
-Bridge fact input supports literals, tuples, lists, restricted unary/binary expressions, value names or path references, and constructor/function call expressions. The generated impl copies those expressions into the matching constructor branch and then type-checks them normally, so constructor facts such as `delta = GameMath::up_i` and `opposite = South()` are valid. Bridges support `Self -> R` and extra-argument shapes such as `Self -> A -> R`; `Self` in return types and extra parameters is substituted with the target type.
+Bridge fact input supports literals, tuples, lists, restricted unary/binary expressions, value names or path references, and constructor/function call expressions. The generated impl copies those expressions into the matching constructor branch and then type-checks them normally, so constructor facts such as `delta = GameMath.up_i` and `opposite = South()` are valid. Bridges support `Self -> R` and extra-argument shapes such as `Self -> A -> R`; `Self` in return types and extra parameters is substituted with the target type.
 
 When constructor instance bridges are combined with GADTs, generated generic impls are checked with branch-local refinement. For example, the `North` branch locally knows `A = Vertical`, and that equality does not leak to other branches or outside the branch.
 
@@ -551,13 +569,13 @@ For generic traits, `@impl` supports explicit trait type arguments (for example 
 Convention-based impl registration does not infer generic trait arguments; use explicit `@impl(Trait[...])` for generic traits.
 Impl heads are compared after alias canonicalization. Strict specialization is allowed when one head is structurally narrower than the other (for example `Option[Int]` over `Option[T]`), but equivalent or incomparable overlaps are still rejected during naming with `E3004` (`overlapping impl registration`). Alias-only rewrites do not create specialization, so overlaps introduced purely through equivalent aliases on either the trait-argument side or the implementing-type side are still rejected.
 Open alias heads used as higher-kinded trait arguments now also participate in reverse matching during type inference and MIR specialization. For example, `@impl(Applicative[KeepEdges[String, Bool]])` can satisfy `G[A]` when the surrounding context expects `Triple[String, A, Bool]`; see `examples/43_open_alias_trait_impl.eidos`.
-The same reverse matching now survives precompiled stdlib generic combinators as well: `Result::traverse(Ok(2))(produce_keep_edges)` can infer `G = KeepEdges[String, Bool]` even when the callback returns the underlying `Triple[String, Int, Bool]`, and deep alias chains such as `DeepBoxedResult[String]` continue to specialize correctly through both direct and helper-wrapped traversal; see `examples/44_std_traversable_alias_applicative.eidos`.
-This now also holds for recursive traversables: `Seq::traverse([1, 2])(produce_keep_edges)` can thread a user-defined alias-backed `Applicative` through repeated `map2_applicative(cons)(...)` specialization without losing the open-alias or deep-alias impl; see `examples/45_std_list_traversable_alias_applicative.eidos`.
-Short-circuit traversable branches now behave the same way. `Option::traverse(None())(...)` and `Seq::traverse([])(...)` still specialize `lift_pure`/`pure` through the user-defined alias-backed `Applicative`, so empty inputs no longer depend on the callback path to keep the impl reachable; see `examples/46_traversable_alias_applicative_empty_cases.eidos`.
-`Option`, `Seq`, and `Result` now also expose public `sequence` helpers built on top of their traversable implementations. This gives a stable stdlib path for flipping `Option[G[A]]`, `Seq[G[A]]`, or `Result[G[A], E]` into `G[Option[A]]`, `G[Seq[A]]`, or `G[Result[A, E]]`; the current alias-backed coverage is locked through open aliases such as `KeepEdges[String, Bool]`, and built-in `ResultWith[E]` nesting now also works through `Option::sequence(Some(Ok(...)))`, `Seq::sequence([Ok(...), ...])`, and `Result::sequence(Ok(Ok(...)))`; see `examples/47_traversable_sequence_alias_applicative.eidos` and `examples/48_sequence_result_applicative.eidos`.
-`Std::Traversable` now also exposes a public generic `Traversable::sequence`, so callers no longer need to choose the outer container-specific helper up front. The generic form now specializes through both user-defined alias-backed applicatives and built-in `ResultWith[E]` nesting for `Option`, `List`, and `Result`; see `examples/49_generic_traversable_sequence.eidos`.
-Qualified trait-method paths are now first-class callable value paths as well. In generic code you can call methods through the imported module alias (`Applicative::pure`, `Traversable::traverse`), nested imported-module owner paths (`Trait::Eq::eq`), the fully qualified stdlib root (`Std::Applicative::pure`, `Std::Traversable::traverse`), or the current module's own same-named trait path (for example `Show::show` inside `Demo.Show :: module { ... }`); the precompiled `Std::Traversable` helpers now rely on that module-relative form internally, while `examples/50_qualified_trait_method_paths.eidos` now covers alias/root/nested-import forms together.
-Qualified effect paths and ordinary function paths resolve independently. Use `Logger::Logger`, `Io::Writer`, or `Cap.Io::Writer` in `need`, and call ordinary module functions as `Logger::log(...)`, `Io::write(...)`, or `Cap.Io::write(...)`. See `examples/51_qualified_effect_paths.eidos` and `examples/52_nested_qualified_effect_paths.eidos`.
+The same reverse matching now survives precompiled stdlib generic combinators as well: `Result.traverse(Ok(2))(produce_keep_edges)` can infer `G = KeepEdges[String, Bool]` even when the callback returns the underlying `Triple[String, Int, Bool]`, and deep alias chains such as `DeepBoxedResult[String]` continue to specialize correctly through both direct and helper-wrapped traversal; see `examples/44_std_traversable_alias_applicative.eidos`.
+This now also holds for recursive traversables: `Seq.traverse([1, 2])(produce_keep_edges)` can thread a user-defined alias-backed `Applicative` through repeated `map2_applicative(cons)(...)` specialization without losing the open-alias or deep-alias impl; see `examples/45_std_list_traversable_alias_applicative.eidos`.
+Short-circuit traversable branches now behave the same way. `Option.traverse(None())(...)` and `Seq.traverse([])(...)` still specialize `lift_pure`/`pure` through the user-defined alias-backed `Applicative`, so empty inputs no longer depend on the callback path to keep the impl reachable; see `examples/46_traversable_alias_applicative_empty_cases.eidos`.
+`Option`, `Seq`, and `Result` now also expose public `sequence` helpers built on top of their traversable implementations. This gives a stable stdlib path for flipping `Option[G[A]]`, `Seq[G[A]]`, or `Result[G[A], E]` into `G[Option[A]]`, `G[Seq[A]]`, or `G[Result[A, E]]`; the current alias-backed coverage is locked through open aliases such as `KeepEdges[String, Bool]`, and built-in `ResultWith[E]` nesting now also works through `Option.sequence(Some(Ok(...)))`, `Seq.sequence([Ok(...), ...])`, and `Result.sequence(Ok(Ok(...)))`; see `examples/47_traversable_sequence_alias_applicative.eidos` and `examples/48_sequence_result_applicative.eidos`.
+`Std.Traversable` now also exposes a public generic `Traversable.sequence`, so callers no longer need to choose the outer container-specific helper up front. The generic form now specializes through both user-defined alias-backed applicatives and built-in `ResultWith[E]` nesting for `Option`, `List`, and `Result`; see `examples/49_generic_traversable_sequence.eidos`.
+Qualified trait-method paths are now first-class callable value paths as well. In generic code you can call methods through the imported module alias (`Applicative.pure`, `Traversable.traverse`), nested imported-module owner paths (`Trait.Eq.eq`), the fully qualified stdlib root (`Std.Applicative.pure`, `Std.Traversable.traverse`), or the current module's own same-named trait path (for example `Show.show` inside `Demo.Show :: module { ... }`); the precompiled `Std.Traversable` helpers now rely on that module-relative form internally, while `examples/50_qualified_trait_method_paths.eidos` now covers alias/root/nested-import forms together.
+Qualified effect paths and ordinary function paths resolve independently. Use `Logger.Logger`, `Io.Writer`, or `Cap.Io.Writer` in `need`, and call ordinary module functions as `Logger.log(...)`, `Io.write(...)`, or `Cap.Io.write(...)`. See `examples/51_qualified_effect_paths.eidos` and `examples/52_nested_qualified_effect_paths.eidos`.
 
 Note (2026-06-18): this branch no longer treats `proof` / lawful material as part of the tutorial baseline; the experimental material lives on the dedicated proof branch.
 
@@ -585,10 +603,10 @@ Current trait-constraint solving behavior (2026-03-15):
 5. Trait-argument matching is exact: a no-arg bound (for example `T: Functor`) does not match only-specialized impls like `@impl(Functor[Box])`.
 6. `@impl` registration canonicalizes aliases before overlap checking. Strictly more specific heads may coexist with broader heads, but equivalent or incomparable canonical shapes still fail with `E3004`. For example, `@impl(Show)` on `Option[Int]` may coexist with `@impl(Show)` on `Option[T]`, while `ResultWith[E, T] = Result[T, E]` and `AlsoResult[E, T] = Result[T, E]` still conflict because both heads collapse to the same underlying shape.
 7. Partially applied aliases in generic trait bounds can now be inferred back from concrete underlying return types. A helper like `lift[A, G: kind2 : Applicative[G]] :: A -> G[A]` may specialize through `KeepEdges[String, Bool] = Triple[String, _, Bool]` and produce `Triple[String, Int, Bool]` at the call site.
-8. The same alias-backed reverse inference now composes with precompiled stdlib helpers like `Result::traverse`, so user-defined `Applicative` impls over open aliases or deep alias chains remain reachable even when the callback surface uses the underlying constructor type.
-9. Recursive traversables such as `Seq::traverse` now preserve the same behavior across repeated `map2_applicative` specialization, so alias-backed `Applicative` impls remain usable beyond single-step containers.
-10. Empty/short-circuit traversable branches also preserve alias-backed specialization: `Option::traverse(None())` and `Seq::traverse([])` keep routing through the user impl's `pure`, not just through the callback-driven branch.
-11. `Option::sequence`, `Seq::sequence`, and `Result::sequence` are available as public container-specific helpers, and `Traversable::sequence` is now available as the generic outer-container version. Together they inherit the same specialization behavior for stable cases, so nested values like `Option[KeepEdges[String, Bool, A]]`, `Seq[KeepEdges[String, Bool, A]]`, `Result[KeepEdges[String, Bool, A], E]`, `Option[Result[A, E]]`, `Seq[Result[A, E]]`, or `Result[Result[A, E], E]` can be flipped directly through stdlib code.
+8. The same alias-backed reverse inference now composes with precompiled stdlib helpers like `Result.traverse`, so user-defined `Applicative` impls over open aliases or deep alias chains remain reachable even when the callback surface uses the underlying constructor type.
+9. Recursive traversables such as `Seq.traverse` now preserve the same behavior across repeated `map2_applicative` specialization, so alias-backed `Applicative` impls remain usable beyond single-step containers.
+10. Empty/short-circuit traversable branches also preserve alias-backed specialization: `Option.traverse(None())` and `Seq.traverse([])` keep routing through the user impl's `pure`, not just through the callback-driven branch.
+11. `Option.sequence`, `Seq.sequence`, and `Result.sequence` are available as public container-specific helpers, and `Traversable.sequence` is now available as the generic outer-container version. Together they inherit the same specialization behavior for stable cases, so nested values like `Option[KeepEdges[String, Bool, A]]`, `Seq[KeepEdges[String, Bool, A]]`, `Result[KeepEdges[String, Bool, A], E]`, `Option[Result[A, E]]`, `Seq[Result[A, E]]`, or `Result[Result[A, E], E]` can be flipped directly through stdlib code.
 
 ### 3.5.1 Module `export` and `re-export`
 Example file: `examples/53_module_exports_and_reexports.eidos`  
@@ -597,14 +615,14 @@ Current behavior:
 2. If a module contains no `export` at all, the current compatibility behavior remains implicit full export.
 3. `export` can now prefix both regular declarations and `import`: for example `export let`, `export let mut`, `export func`, `export effect`, `export trait`, `export type`, and `export import`.
 4. `export BaseApi :: import Demo.Base;` publishes the module alias `BaseApi` into the current module's public exports, so downstream code can keep traversing through that re-exported module alias. The 0.4.0-alpha.1 name-first module-alias binding form `Alias :: import Module.Path;` is the canonical import-as syntax; the legacy keyword form `import Module.Path as Alias` is accepted only in `legacy` syntax mode.
-5. `export import Demo.Base::{Writer as W}` publishes the selective-import alias as part of the public API, while `export import Demo.Base::*` re-exports all currently visible public bindings from the imported module.
+5. `export import Demo.Base.{Writer as W}` publishes the selective-import alias as part of the public API, while `export import Demo.Base.*` re-exports all currently visible public bindings from the imported module.
 6. `export import` now flows through the real module path model instead of the old string heuristic, so alias re-exports, qualified paths, IDE completion, and the precompiled export table all share the same visibility semantics.
 
 ```eidos
 Demo.Facade :: module
 {
     export BaseApi :: import Demo.Base;
-    export import Demo.Base::{Writer as W}
+    export import Demo.Base.{Writer as W}
 }
 ```
 
@@ -656,7 +674,7 @@ write :: String -> Unit need Writer
 ```
 
 1. A caller must declare every effect required by the functions it invokes. Missing authorization is reported as `E3003`.
-2. Effects do not own functions. Qualified effect paths such as `Io::Writer` are used only in `need`; ordinary functions are called through their module path, for example `Io::write(text)`.
+2. Effects do not own functions. Qualified effect paths such as `Io.Writer` are used only in `need`; ordinary functions are called through their module path, for example `Io.write(text)`.
 3. Higher-order APIs use row parameters such as `E: effects`: `apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E`.
 4. Fixed and polymorphic rows can be combined, for example `need FFI, E`. Effect variables are generalized and preserved across module summaries and cached compilation state.
 5. Effects are erased before runtime. There are no handlers, `with`, `resume`, CPS rewriting, or runtime effect dispatch.
@@ -884,14 +902,14 @@ The compiler now ships precompiled stdlib modules as embedded resources, and the
 
 | Capability | Modules | What this group is for | Representative APIs |
 | --- | --- | --- | --- |
-| Functional | `Std::Fn`, `Std::Prelude`, `Std::Functor`, `Std::Applicative`, `Std::Foldable`, `Std::Traversable`, `Std::Monad`, `Std::Option`, `Std::Result`, `Std::Ordering`, `Std::Trait`, `Std::TraitInvoke` | `Std::Fn` is the home for function tools, `Std::Prelude` keeps common Text safe helpers plus basic File text-I/O fallback helpers, and the rest covers optional/error pipelines plus reusable `Functor`/`Applicative`/`Foldable`/`Traversable`/`Monad` abstractions; `Option/Result/Seq` now expose the full `fmap/pure/apply/traverse/bind` surface and share `fold_left/fold_right`, while `Option/Result/Ordering` also expose the basic value-type `Eq` / `Ord` / `Show` surface; `T?` is available as sugar for `Std::Option::Option[T]`, `??` is available as an `Option::unwrap_or` fallback operator, and `let?` is available for early-return `Option/Result` binding; tutorial style now prefers `|>`, `>>>`, `<<<`, `<$>`, `<*>`, `>>=`, `<>`, `??`, `let?`, and chained calls | `value |> f |> g`, `f >>> g`, `inc <$> Some(1)`, `Some(f) <*> Some(x)`, `Some(x) >>= f`, `maybe_count ?? 0`, `let? value = maybe_value`, `xs.map(f).filter(p)`, `Fn::compose`, `Option::traverse`, `Seq::traverse`, `Result::and_then` |
-| Math | `Std::Math`, `Std::FloatMath`, `Std::GameMath` | Scalar math, angle/interpolation helpers, and game-oriented `IVec2`/`Vec2`/`IRect`/`Rect` geometry plus grid helpers | `Math::wrap`, `FloatMath::smoothstep`, `FloatMath::angle_delta_degrees`, `GameMath::ivec2`, `GameMath::grid_cell_rect` |
-| Containers | `Std::Seq`, `Std::SeqBuilder` | Read-side sequence querying, mapping, filtering, folding, concatenation, and zipping plus explicit builder-side push/set/swap/freeze workflows | `Seq::head`, `Seq::tail`, `Seq::find`, `Seq::map`, `Seq::filter`, `Seq::fold_left`, `SeqBuilder::push`, `SeqBuilder::freeze` |
-| File IO | `Std::File` | File existence checks, whole-file text reads/writes, fallback reads, and last IO status | `File::exists`, `File::read_text_or`, `File::last_error`, `File::write_text` |
-| Console IO | `Std::Console` | Text/integer/float/char/bool output, prefix+value line output, plus single-line input | `Console::write_line`, `Console::write_int`, `Console::write_text_int_line`, `Console::read_line_text` |
-| Network | `Std::Network` | Minimal text-oriented HTTP GET access | `Network::http_get_text_or_empty` |
-| Serialization | `Std::Binary`, `Std::Json` | Basic binary encoding/decoding plus JSON text construction for strings, arrays, and objects | `Binary::encode_u32_le`, `Binary::bytes_to_string`, `Json::array`, `Json::object` |
-| Other foundation | `Std::Text` | String length, emptiness, primitive-to-text construction, trimming, slicing, safe char/code-point reads, and substring search; safe lookup helpers now come in both `*_opt` and `*_or` forms | `Text::len`, `Text::from_int`, `Text::from_bool`, `Text::trim`, `Text::slice`, `Text::char_code_at_opt`, `Text::char_code_at_or`, `Text::char_at_opt`, `Text::index_of_or` |
+| Functional | `Std.Fn`, `Std.Prelude`, `Std.Functor`, `Std.Applicative`, `Std.Foldable`, `Std.Traversable`, `Std.Monad`, `Std.Option`, `Std.Result`, `Std.Ordering`, `Std.Trait`, `Std.TraitInvoke` | `Std.Fn` is the home for function tools, `Std.Prelude` keeps common Text safe helpers plus basic File text-I/O fallback helpers, and the rest covers optional/error pipelines plus reusable `Functor`/`Applicative`/`Foldable`/`Traversable`/`Monad` abstractions; `Option/Result/Seq` now expose the full `fmap/pure/apply/traverse/bind` surface and share `fold_left/fold_right`, while `Option/Result/Ordering` also expose the basic value-type `Eq` / `Ord` / `Show` surface; `T?` is available as sugar for `Std.Option.Option[T]`, `??` is available as an `Option.unwrap_or` fallback operator, and `let?` is available for early-return `Option/Result` binding; tutorial style now prefers `|>`, `>>>`, `<<<`, `<$>`, `<*>`, `>>=`, `<>`, `??`, `let?`, and chained calls | `value |> f |> g`, `f >>> g`, `inc <$> Some(1)`, `Some(f) <*> Some(x)`, `Some(x) >>= f`, `maybe_count ?? 0`, `let? value = maybe_value`, `xs.map(f).filter(p)`, `Fn.compose`, `Option.traverse`, `Seq.traverse`, `Result.and_then` |
+| Math | `Std.Math`, `Std.FloatMath`, `Std.GameMath` | Scalar math, angle/interpolation helpers, and game-oriented `IVec2`/`Vec2`/`IRect`/`Rect` geometry plus grid helpers | `Math.wrap`, `FloatMath.smoothstep`, `FloatMath.angle_delta_degrees`, `GameMath.ivec2`, `GameMath.grid_cell_rect` |
+| Containers | `Std.Seq`, `Std.SeqBuilder` | Read-side sequence querying, mapping, filtering, folding, concatenation, and zipping plus explicit builder-side push/set/swap/freeze workflows | `Seq.head`, `Seq.tail`, `Seq.find`, `Seq.map`, `Seq.filter`, `Seq.fold_left`, `SeqBuilder.push`, `SeqBuilder.freeze` |
+| File IO | `Std.File` | File existence checks, whole-file text reads/writes, fallback reads, and last IO status | `File.exists`, `File.read_text_or`, `File.last_error`, `File.write_text` |
+| Console IO | `Std.Console` | Text/integer/float/char/bool output, prefix+value line output, plus single-line input | `Console.write_line`, `Console.write_int`, `Console.write_text_int_line`, `Console.read_line_text` |
+| Network | `Std.Network` | Minimal text-oriented HTTP GET access | `Network.http_get_text_or_empty` |
+| Serialization | `Std.Binary`, `Std.Json` | Basic binary encoding/decoding plus JSON text construction for strings, arrays, and objects | `Binary.encode_u32_le`, `Binary.bytes_to_string`, `Json.array`, `Json.object` |
+| Other foundation | `Std.Text` | String length, emptiness, primitive-to-text construction, trimming, slicing, safe char/code-point reads, and substring search; safe lookup helpers now come in both `*_opt` and `*_or` forms | `Text.len`, `Text.from_int`, `Text.from_bool`, `Text.trim`, `Text.slice`, `Text.char_code_at_opt`, `Text.char_code_at_or`, `Text.char_at_opt`, `Text.index_of_or` |
 
 If you want the live module/export list, use the CLI directly:
 
@@ -903,11 +921,11 @@ dotnet run --project src/Eidosc/Eidosc.Cli -- info --stdlib
 
 Validation scope as of 2026-04-11:
 1. `examples/29_precompiled_stdlib.eidos` still covers the core functional modules and passes LLVM-phase validation; the example now explicitly exercises composed `Option/Result/Seq/Text/Ordering` flows, Prelude wildcard Text/File helpers, Text trimming, safe fallback helpers, and a subset of trait-driven APIs.
-2. `examples/42_stdlib_safe_and_traits.eidos` now provides a shorter combined entry point that simultaneously exercises `Option/Result/Seq` `Functor/Applicative/Foldable/Traversable/Monad` usage, `Option/Result/Ordering` `Eq/Ord/Show`, and `Text` `*_opt` / `*_or` helpers; the current baseline also includes `Result::traverse` inferring its applicative back to `ResultWith[E]`.
-3. `Std::Option`, `Std::Result`, `Std::Ordering`, `Std::Seq`, and `Std::Text` all have dedicated import fixtures plus LLVM integration assertions; `Option/Result/Seq` now cover the full `fmap/pure/apply/bind` path plus `fold_left/fold_right`; `let?` `Option/Result` binding sugar is also covered by `examples/63_let_question_option_result.eidos` and `projects/test/src/stdlib/std_let_question_binding.eidos`.
-4. `Std::Math`, `Std::FloatMath`, `Std::GameMath`, `Std::Console`, `Std::File`, `Std::Network`, `Std::Binary`, and `Std::Json` have dedicated import fixtures plus targeted tests; `Std::Prelude::*` is additionally covered by `projects/test/src/stdlib/std_prelude_core_import.eidos` for direct Text/File core-helper imports; `Std::Functor`, `Std::Applicative`, `Std::Foldable`, `Std::Traversable`, `Std::Monad`, and `Std::TraitInvoke` are currently covered through export-table checks and CLI grouping visibility.
-5. `Std::Network` is still intentionally minimal: the current implementation is a best-effort text fetch and returns an empty string on failure instead of modeling a full HTTP client surface.
-6. `Std::Json` is currently encode-oriented rather than a full JSON parser, and `Std::Binary` currently focuses on foundational bool/int/string helpers.
+2. `examples/42_stdlib_safe_and_traits.eidos` now provides a shorter combined entry point that simultaneously exercises `Option/Result/Seq` `Functor/Applicative/Foldable/Traversable/Monad` usage, `Option/Result/Ordering` `Eq/Ord/Show`, and `Text` `*_opt` / `*_or` helpers; the current baseline also includes `Result.traverse` inferring its applicative back to `ResultWith[E]`.
+3. `Std.Option`, `Std.Result`, `Std.Ordering`, `Std.Seq`, and `Std.Text` all have dedicated import fixtures plus LLVM integration assertions; `Option/Result/Seq` now cover the full `fmap/pure/apply/bind` path plus `fold_left/fold_right`; `let?` `Option/Result` binding sugar is also covered by `examples/63_let_question_option_result.eidos` and `projects/test/src/stdlib/std_let_question_binding.eidos`.
+4. `Std.Math`, `Std.FloatMath`, `Std.GameMath`, `Std.Console`, `Std.File`, `Std.Network`, `Std.Binary`, and `Std.Json` have dedicated import fixtures plus targeted tests; `Std.Prelude.*` is additionally covered by `projects/test/src/stdlib/std_prelude_core_import.eidos` for direct Text/File core-helper imports; `Std.Functor`, `Std.Applicative`, `Std.Foldable`, `Std.Traversable`, `Std.Monad`, and `Std.TraitInvoke` are currently covered through export-table checks and CLI grouping visibility.
+5. `Std.Network` is still intentionally minimal: the current implementation is a best-effort text fetch and returns an empty string on failure instead of modeling a full HTTP client surface.
+6. `Std.Json` is currently encode-oriented rather than a full JSON parser, and `Std.Binary` currently focuses on foundational bool/int/string helpers.
 
 ## 4. BNF Entry
 See the compact grammar guide in [`BNF.en.md`](BNF.en.md).

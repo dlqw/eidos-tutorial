@@ -1,5 +1,5 @@
-import Std::Option
-import Std::Result
+import Std.Option
+import Std.Result
 
 maybe_positive :: Int -> Option[Int]
 {
@@ -15,12 +15,12 @@ option_pipeline :: Int -> Option[Int]
     }
 }
 
-parse_positive :: Int -> Result::ResultWith[String, Int]
+parse_positive :: Int -> Result.ResultWith[String, Int]
 {
     value => if value > 0 then { Ok(value + 1) } else { Err("non-positive") }
 }
 
-result_pipeline :: Int -> Result::ResultWith[String, Int]
+result_pipeline :: Int -> Result.ResultWith[String, Int]
 {
     value => {
         let? first = parse_positive(value);

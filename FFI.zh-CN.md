@@ -339,23 +339,23 @@ main :: Int -> Int need FFI
 
 ### 标准库内存管理
 
-`Std::FFI` 提供 C 标准内存管理绑定和两个作用域式辅助函数：
+`Std.FFI` 提供 C 标准内存管理绑定和两个作用域式辅助函数：
 
 | 函数 | 签名 | 说明 |
 |------|------|------|
-| `FFI::malloc` | `Int -> RawPtr` | 调用 C `malloc` |
-| `FFI::free` | `RawPtr -> Unit` | 调用 C `free` |
-| `FFI::calloc` | `Int -> Int -> RawPtr` | 调用 C `calloc` |
-| `FFI::realloc` | `RawPtr -> Int -> RawPtr` | 调用 C `realloc` |
-| `FFI::with_malloc[A]` | `Int -> (RawPtr -> A) -> A` | 分配后执行回调，返回前自动 `free` |
-| `FFI::with_malloc_zeroed[A]` | `Int -> (RawPtr -> A) -> A` | 使用 `calloc` 分配零初始化内存，返回前自动 `free` |
+| `FFI.malloc` | `Int -> RawPtr` | 调用 C `malloc` |
+| `FFI.free` | `RawPtr -> Unit` | 调用 C `free` |
+| `FFI.calloc` | `Int -> Int -> RawPtr` | 调用 C `calloc` |
+| `FFI.realloc` | `RawPtr -> Int -> RawPtr` | 调用 C `realloc` |
+| `FFI.with_malloc[A]` | `Int -> (RawPtr -> A) -> A` | 分配后执行回调，返回前自动 `free` |
+| `FFI.with_malloc_zeroed[A]` | `Int -> (RawPtr -> A) -> A` | 使用 `calloc` 分配零初始化内存，返回前自动 `free` |
 
 示例：
 
 ```eidos
-import Std::FFI
+import Std.FFI
 
-value := FFI::with_malloc[Int](8)({ ptr => {
+value := FFI.with_malloc[Int](8)({ ptr => {
     stored := ptr_store_as[Int](ptr, 7);
     ptr_load_as[Int](ptr)
 }});
@@ -421,18 +421,18 @@ Demo = { path = "../bindings/demo", target = "lib" }
 代码里通过包别名导入生成模块：
 
 ```eidos
-import Demo::Window
+import Demo.Window
 
 main :: Int -> Int need FFI {
     _ => {
-        Window::init(640, 400, "Eidos".string_to_cstr());
+        Window.init(640, 400, "Eidos".string_to_cstr());
         0
     }
 }
 ```
 
 限定名结构是 `包名::模块名::符号名`；0.4.0-alpha.1 文档中模块名内部使用 dot-separated segments，例如
-`Demo::Graphics.Color::red`；旧 slash-separated 写法只作为迁移兼容形式出现。
+`Demo.Graphics.Color.red`；旧 slash-separated 写法只作为显式 migration 输入，不属于 Eidos 0.6 编译语法。
 
 ## 11. 已知限制
 
@@ -447,5 +447,5 @@ main :: Int -> Int need FFI {
    - 无法直接映射 C `struct`，需手动通过 `ptr_add` + `ptr_load_int` 操作字段
 
 5. **RawPtr 生命周期仍需人工约束**
-   - 标准库已提供 `Std::FFI::free`、`with_malloc` 和 `with_malloc_zeroed`
+   - 标准库已提供 `Std.FFI.free`、`with_malloc` 和 `with_malloc_zeroed`
    - `with_malloc` 系列不会让类型系统自动证明指针未逃逸；复杂 ownership 仍应使用项目本地封装或 C shim 明确约束
