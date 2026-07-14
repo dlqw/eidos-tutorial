@@ -202,6 +202,62 @@ A value argument must be compile-time evaluable at the instantiation site and mu
 
 ADTs, type aliases, functions, traits, `@impl(...)`, and named-instance trait references use the same ordered generic-argument rules. For example, an implementation of `Sized[comptime N: Int] :: trait { ... }` must explicitly name a value such as `@impl(Sized[4])`; `N` is substituted through the trait method signature and coherence compares the structured value key. See `examples/68_const_generics.eidos` for the complete example.
 
+#### Read-only reflection, user derives, and structured generation (0.5.0-alpha.3)
+
+`Meta` is a compiler-built-in domain. It is not part of `Std` and does not require an `import`. Reflection exposes only completed, stably serializable compiler facts; it does not expose mutable AST objects or internal `SymbolId` values:
+
+```eidos
+Info :: comptime Meta::typeInfo(User);
+Kind :: comptime Meta::typeKind(Info);
+HasName :: comptime Meta::hasField(User, "name");
+NameType :: comptime Meta::fieldType(User, "name");
+IntLayout :: comptime Meta::layoutOf(Int, "x86_64-pc-windows-msvc");
+```
+
+`Meta::typeInfo` covers primitives, tuples, functions, references, ADTs, and traits. Constructors, fields, associated declarations, and attributes retain stable source order. `Meta::layoutOf` is a separate target-dependent query and requires an explicit supported target triple. A type whose layout is not complete produces a phase diagnostic instead of falling back to host layout.
+
+A user derive must have the type `comptime Meta::DeriveInput -> Meta::Expansion`:
+
+```eidos
+Marker :: trait {
+    marker :: Self -> String
+}
+
+deriveMarker :: comptime Meta::DeriveInput -> Meta::Expansion {
+    input => {
+        target := Meta::target(input);
+        parameter := Meta::parameter("value", target);
+        method := Meta::function(
+            "marker",
+            [parameter],
+            String,
+            Meta::exprString(Meta::typeName(target))
+        );
+        Meta::expansion([
+            Meta::implementation(Meta::decl(Marker), target, [method])
+        ])
+    }
+}
+
+@derive(deriveMarker)
+User :: type {
+    name: String,
+    age: Int
+}
+```
+
+`Meta::Expansion` can structurally generate implementations, functions, comptime values, attribute attachments, tests, diagnostics, and module members. Function bodies use `Meta::Expr` builders, while pattern branches use `Meta::Pattern` / `Meta::Branch` builders. Declaration references use `Meta::Decl`; generator-local references use `Meta::Parameter` / `Meta::Binding` handles for hygiene. Generated declarations participate in ordinary name resolution, type checking, trait coherence, completion, hover, definition, and references, with stable `eidos-generated://` origins.
+
+Current boundaries: there is no string source insertion and no arbitrary AST replacement or deletion. Semantic attributes such as `@impl` cannot be written back through an attribute attachment; generate the corresponding structured declaration instead. Pure comptime cannot access files, environment variables, processes, networks, or FFI. Expansions execute to a fixed point in dependency and source order; cycles, duplicate stable identities, invalid protocol signatures, budget exhaustion, and incomplete reflection produce deterministic diagnostics. See `examples/69_meta_reflection_derive.eidos` for the complete example.
+
+CLI surfaces:
+
+```powershell
+eidosc meta expand source.eidos --format json
+eidosc meta expand source.eidos --emit-generated generated
+eidosc meta expand source.eidos --trace-comptime --comptime-budget 200000
+```
+
 Ordinary same-scope functions may share a name when their parameter signatures
 are distinct. Calls resolve the overload from argument types, including direct
 calls, qualified calls, method-call syntax, infix calls, and pipe calls. A bare
