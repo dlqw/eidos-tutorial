@@ -120,6 +120,37 @@ try
         $results.Add("PASS | $displayPath | phase=$($case.Phase) | expected failure observed")
     }
 
+    $buildHostProject = Join-Path $examplesRoot "build_host"
+    if (Test-Path $buildHostProject)
+    {
+        $graphOutput = Join-Path ([System.IO.Path]::GetTempPath()) "eidos-build-host-tutorial-$([Guid]::NewGuid().ToString('N')).json"
+        try
+        {
+            $runArgs = @("run", "--project", $CliProject)
+            if ($NoBuild)
+            {
+                $runArgs += "--no-build"
+            }
+
+            $runArgs += @("--", "build", "--project", $buildHostProject, "--target", "typed", "--no-cache", "--emit-build-graph", $graphOutput, "--no-color")
+            $output = & dotnet @runArgs 2>&1
+            if ($LASTEXITCODE -ne 0 -or -not (Test-Path $graphOutput))
+            {
+                $failed = $true
+                $results.Add("FAIL | examples/build_host | expected Build host project to emit a graph")
+                $results.Add(($output | Out-String).TrimEnd())
+            }
+            else
+            {
+                $results.Add("PASS | examples/build_host | capability-constrained BuildGraph")
+            }
+        }
+        finally
+        {
+            Remove-Item -LiteralPath $graphOutput -Force -ErrorAction SilentlyContinue
+        }
+    }
+
     $results | ForEach-Object { Write-Host $_ }
 
     if ($failed)

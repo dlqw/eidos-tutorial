@@ -154,6 +154,7 @@ attribute    ::= "@" lower_identifier ("(" arg_list? ")")?
 说明：`by` 是 proof 语境关键词；在普通函数、模式和表达式语境中仍可作为 `lower_identifier` 使用。
 说明：属性、derive trait、自定义 operator 与 unsupported value 的语义支持状态见 `docs/reference/semantic-capability-support-matrix.md`。`@derive(Eq, Show)` 会按参数顺序处理多个内建 derive trait。`0.5.0-alpha.3` 起，参数也可以解析为签名严格等于 `comptime Meta::DeriveInput -> Meta::Expansion` 的用户函数；内建 derive 与用户 generator 均按 attribute occurrence 和参数源码顺序执行到固定点。
 说明：`Meta` 是无需 import 的编译器内建域。`Meta::typeInfo(Type)`、`typeName`、`hasField`、`fieldType` 与 `declarationInfo` 提供只读、target-independent 事实；`Meta::layoutOf(Type, target)` 必须显式给出 target。`Meta::Expansion` 只接受结构化 declaration / expression / pattern builder，不接受字符串源码插入或任意 AST 修改。
+说明：`Build` 同样是无需 import 的编译器内建域，但不增加新的 grammar production。只有 `[build].program` 指定的构建程序能取得 `Build::Fs`、`Build::Env`、`Build::Process` 与 `Build::Emit` 能力并声明唯一顶层 `BuildGraph`；普通 pure comptime 对 `Build` 的能力访问会被拒绝。构建程序仍使用普通 name-first comptime binding、list 和 call 语法。
 说明：effect 声明上的 `@borrow(...)` 仅作为可接受的元数据，不会授予借用权限；borrow 检查与 effect 授权相互独立。
 说明：generic argument 按声明顺序和目标参数 domain 解析。类型参数消费 type argument，`comptime N: T` 消费编译期 value expression，`effects` 参数消费 effect-row argument。ADT、type alias、constructor、function、trait、`@impl(...)` 与 named instance 使用同一套有序 domain 模型。
 说明：在 `0.5.0-alpha.1` 中，`comptime T: Type` 与 `T: comptime Type` 是类型域泛型参数，`comptime N: Int` 是值域 const generic。值实参必须可编译期求值且类型正确，并参与 type identity、layout、name mangling、specialization、trait coherence、cache fingerprint 和 IDE hover/completion。浮点值不能作为 specialization key；带运行期资源身份的值不能跨越该边界。

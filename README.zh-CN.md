@@ -258,6 +258,60 @@ eidosc meta expand source.eidos --emit-generated generated
 eidosc meta expand source.eidos --trace-comptime --comptime-budget 200000
 ```
 
+#### 能力约束的 Build host 与 BuildGraph（0.5.0-alpha.4）
+
+`Build` 与 `Meta` 一样是无需 import 的编译器内建域，但只能在 `[build].program` 指定的构建程序中取得能力。普通 pure comptime 即使能解析 `Build::context()`，也会被拒绝访问文件、环境、进程与 artifact emit。
+
+```toml
+[build]
+program = "build.eidos"
+fileInputs = ["schema/model.json", "assets"]
+environment = ["SDK_ROOT"]
+outputRoots = ["build/generated"]
+
+[[build.tools]]
+name = "generator"
+path = "tools/generator.exe"
+```
+
+`fileInputs` 可以声明文件或目录；目录会递归展开并按项目相对路径稳定排序。所有输入内容、登记环境变量的存在性和值、登记工具的可执行文件路径/hash、build program、host triple 与 target triple 都进入 Build host cache key。build program、文件输入与输出必须留在 project root 内，program 和文件输入都不得与 output root 重叠；工具必须用显式路径登记，不依赖偶然的 `PATH` 查找。
+
+构建程序使用分离的 `Build::Fs`、`Build::Env`、`Build::Process` 与 `Build::Emit` 能力，并返回唯一的顶层 `BuildGraph`：
+
+```eidos
+Context :: comptime Build::context();
+Process :: comptime Build::process(Context);
+Emit :: comptime Build::emit(Context);
+
+Generate :: comptime Build::command(
+    Process,
+    "generate",
+    "generator",
+    ["schema/model.json", "build/generated/Model.eidos"],
+    ["schema/model.json"],
+    ["build/generated/Model.eidos"],
+    []
+);
+
+Generated :: comptime Build::generatedSource(
+    Emit,
+    "build/generated/Model.eidos",
+    "generate",
+    "main"
+);
+
+BuildGraph :: comptime Build::graph(Emit, [Generate], [Generated]);
+```
+
+`Build::readText(Fs, path)` 只能读取 `fileInputs` 展开的文件；`Build::environment(Env, name)` 只能读取已登记且存在的变量。`Build::command` 只描述 host 上执行的登记工具、参数、输入、输出和 step dependency，不会在表达式求值时产生隐式副作用。编译器验证 cycle、重复 output、未声明 input、缺失 dependency edge、output root、producer 与 target；随后按稳定拓扑顺序执行，并确认每个声明 output 已实际生成。`generatedSource` 的目录会自动加入当前 target 的 import roots。
+
+```powershell
+eidosc build --project . --target-name main --trace-build
+eidosc build --project . --emit-build-graph build/graph.json
+```
+
+`--trace-build` 输出 capability dependency、实际 capability access、graph hash、step/cache 状态和工具输出。`--emit-build-graph` 写出 canonical JSON。相同 program、声明输入、环境、工具 hash、host/target 与 graph 会复用经过 output hash 验证的 BuildGraph cache。最小可验证项目见 `examples/build_host/`。
+
 普通同一作用域函数可以同名，只要参数签名不同。调用点会根据实参类型选择重载，
 覆盖普通调用、限定路径调用、链式方法调用、中缀调用和管道调用。裸重载函数引用
 必须有期望函数类型；否则编译器会报告歧义。
