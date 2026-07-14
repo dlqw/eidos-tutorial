@@ -6,12 +6,12 @@ Demo.Logger :: module {
         _ => ()
     }
 
-    helper :: Int -> Unit need Logger::Logger
+    helper :: Int -> Unit need Logger.Logger
     {
-        _ => Logger::log("hello")
+        _ => Logger.log("hello")
     }
 
-    main :: Unit -> Unit need Logger::Logger
+    main :: Unit -> Unit need Logger.Logger
     {
         _ => helper(0)
     }

@@ -1,8 +1,8 @@
-import Std::Applicative
-import Std::Seq
-import Std::Option
-import Std::Result
-import Std::Traversable
+import Std.Applicative
+import Std.Seq
+import Std.Option
+import Std.Result
+import Std.Traversable
 
 Triple[A, B, C] :: type {
     Triple(A, B, C)
@@ -17,7 +17,7 @@ join_ctx :: String -> String -> String
     left => right => left ++ "|" ++ right
 }
 
-ApplicativeKeepEdgesStringBool :: instance Applicative::Applicative[KeepEdges[String, Bool]] {
+ApplicativeKeepEdgesStringBool :: instance Applicative.Applicative[KeepEdges[String, Bool]] {
     pure[A] :: A -> KeepEdges[String, Bool, A]
     {
         value => Triple("pure", value, true)
@@ -28,7 +28,7 @@ ApplicativeKeepEdgesStringBool :: instance Applicative::Applicative[KeepEdges[St
     }
 }
 
-ApplicativeDeepBoxedResultString :: instance Applicative::Applicative[DeepBoxedResult[String]] {
+ApplicativeDeepBoxedResultString :: instance Applicative.Applicative[DeepBoxedResult[String]] {
     pure[A] :: A -> DeepBoxedResult[String, A]
     {
         value => Ok(value)
@@ -44,47 +44,47 @@ ApplicativeDeepBoxedResultString :: instance Applicative::Applicative[DeepBoxedR
     }
 }
 
-generic_sequence[A, T: kind2 : Traversable::Traversable[T], G: kind2 : Applicative::Applicative[G]] :: T[G[A]] -> G[T[A]]
+generic_sequence[A, T: kind2 : Traversable.Traversable[T], G: kind2 : Applicative.Applicative[G]] :: T[G[A]] -> G[T[A]]
 {
-    values => Traversable::sequence(values)
+    values => Traversable.sequence(values)
 }
 
 collapse_open_result :: Triple[String, Result[Int, String], Bool] -> Int
 {
     Triple(_, inner, ok) => if ok then {
-        Result::unwrap_or(inner)(0)
+        Result.unwrap_or(inner)(0)
     } else { 0 }
 }
 
 collapse_open_Seq :: Triple[String, Seq[Int], Bool] -> Int
 {
     Triple(_, values, ok) => if ok then {
-        Seq::head_or(values)(0)
+        Seq.head_or(values)(0)
     } else { 0 }
 }
 
 collapse_open_option :: Triple[String, Option[Int], Bool] -> Int
 {
     Triple(_, inner, ok) => if ok then {
-        Option::unwrap_or(inner)(0)
+        Option.unwrap_or(inner)(0)
     } else { 0 }
 }
 
 collapse_option_result :: Result[Option[Int], String] -> Int
 {
-    Ok(inner) => Option::unwrap_or(inner)(0),
+    Ok(inner) => Option.unwrap_or(inner)(0),
     Err(_) => 0
 }
 
 collapse_seq_result :: Result[Seq[Int], String] -> Int
 {
-    Ok(values) => Seq::head_or(values)(0),
+    Ok(values) => Seq.head_or(values)(0),
     Err(_) => 0
 }
 
 collapse_result_result :: Result[Result[Int, String], String] -> Int
 {
-    Ok(inner) => Result::unwrap_or(inner)(0),
+    Ok(inner) => Result.unwrap_or(inner)(0),
     Err(_) => 0
 }
 

@@ -10,17 +10,17 @@ Cap.Io :: module {
 Demo.Main :: module {
     import Cap.Io
 
-    run_imported :: String -> Int need Io::Writer
+    run_imported :: String -> Int need Io.Writer
     {
-        text => Io::write(text)
+        text => Io.write(text)
     }
 
-    run_root :: String -> Int need Cap.Io::Writer
+    run_root :: String -> Int need Cap.Io.Writer
     {
-        text => Cap.Io::write(text)
+        text => Cap.Io.write(text)
     }
 
-    main :: Unit -> Int need Io::Writer
+    main :: Unit -> Int need Io.Writer
     {
         _ => run_imported("hello") + run_root("world")
     }

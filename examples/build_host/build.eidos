@@ -1,5 +1,5 @@
-Context :: comptime Build::context();
-Host :: comptime Build::host(Context);
-Target :: comptime Build::target(Context);
-Emit :: comptime Build::emit(Context);
-BuildGraph :: comptime Build::graph(Emit, [], []);
+Context :: comptime Build.context();
+Host :: comptime Build.host(Context);
+Target :: comptime Build.target(Context);
+Emit :: comptime Build.emit(Context);
+BuildGraph :: comptime Build.graph(Emit, [], []);

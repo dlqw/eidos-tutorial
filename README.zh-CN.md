@@ -1,6 +1,6 @@
 # Eidos 教程（中文）
 
-> 语言基线：本教程以 Eidos 0.5.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`；旧源码只通过显式迁移命令处理。
+> 语言基线：本教程以 Eidos 0.6.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`、点号 Namespace 与逗号分隔的 ADT 构造器；旧源码只通过显式迁移命令处理。
 
 ## 1. 教程范围与验证基线
 本教程只描述当前仓库中已经实现并可复现的功能。所有可运行的示例均在 [`docs/tutorial/examples/`](examples/) 目录下。
@@ -26,7 +26,7 @@ powershell -ExecutionPolicy Bypass -File docs/tutorial/verify-examples.ps1
 manifestSchema = 3
 
 [language]
-version = "0.5.0-alpha.1"
+version = "0.6.0-alpha.1"
 
 [package]
 name = "dev.eidos.app"
@@ -52,6 +52,24 @@ let mut counter = 1;
 ```
 
 命名分层：运行时值使用小写开头标识符；编译期值使用大写开头标识符。类型是一等编译期值，因此类型、trait、effect、构造器、模块路径和表示类型的泛型参数属于大写命名空间。构造器调用会产生运行时值，但构造器符号本身仍是编译期值。
+
+#### Namespace 与命名风格
+
+Eidos 0.6 统一使用一套成员选择表面：
+
+```eidos
+import Std.Option
+
+Info :: comptime Meta.typeInfo(User);
+fallback := Std.Option.unwrap_or(input)(0);
+name := user.profile.display_name;
+```
+
+1. `::` 只把声明名绑定到声明，不再表示限定名。
+2. `.` 选择一切 Namespace：package、module、type、trait、effect、constructor、编译期值及其成员。
+3. module 段、type、trait、effect、constructor 与编译期值使用大写开头；运行时函数、值、参数和字段使用小写开头，并推荐 `lower_snake_case`。
+4. 依赖 alias 可以保持 `lower_snake_case`；其下一段必须是大写 module，例如 `crypto_a.Hash.Sha256.digest(bytes)`。
+5. 小写根后继续小写段表示普通运行时成员链，例如 `user.profile.display_name`；大写根，或“小写 package alias + 大写 module”，开始一条 Namespace 路径。
 
 补充（2026-03-16）：内置 I/O 新增 `print_char: Int -> Unit`，按字符码输出单字符（例如 `34` 为 `"`，`39` 为 `'`）。
 
@@ -122,7 +140,7 @@ option_pipeline :: Int -> Option[Int]
     }
 }
 
-result_pipeline :: Int -> Result::ResultWith[String, Int]
+result_pipeline :: Int -> Result.ResultWith[String, Int]
 {
     value => {
         let? first = parse_positive(value);
@@ -207,34 +225,34 @@ ADT、type alias、函数、trait、`@impl(...)` 和 named instance trait 引用
 `Meta` 是编译器内建域，不属于 `Std`，也不需要 `import`。反射只返回已经完成且可稳定序列化的编译器事实，不暴露可变 AST 或内部 `SymbolId`：
 
 ```eidos
-Info :: comptime Meta::typeInfo(User);
-Kind :: comptime Meta::typeKind(Info);
-HasName :: comptime Meta::hasField(User, "name");
-NameType :: comptime Meta::fieldType(User, "name");
-IntLayout :: comptime Meta::layoutOf(Int, "x86_64-pc-windows-msvc");
+Info :: comptime Meta.typeInfo(User);
+Kind :: comptime Meta.typeKind(Info);
+HasName :: comptime Meta.hasField(User, "name");
+NameType :: comptime Meta.fieldType(User, "name");
+IntLayout :: comptime Meta.layoutOf(Int, "x86_64-pc-windows-msvc");
 ```
 
-`Meta::typeInfo` 覆盖 primitive、tuple、function、reference、ADT 与 trait；构造器、字段、关联声明和属性保持稳定源码顺序。`Meta::layoutOf` 是独立的 target-dependent 查询，必须显式给出受支持的 target triple；尚未完成布局的类型会产生 phase diagnostic，不会退回 host layout。
+`Meta.typeInfo` 覆盖 primitive、tuple、function、reference、ADT 与 trait；构造器、字段、关联声明和属性保持稳定源码顺序。`Meta.layoutOf` 是独立的 target-dependent 查询，必须显式给出受支持的 target triple；尚未完成布局的类型会产生 phase diagnostic，不会退回 host layout。
 
-用户 derive 必须是 `comptime Meta::DeriveInput -> Meta::Expansion`：
+用户 derive 必须是 `comptime Meta.DeriveInput -> Meta.Expansion`：
 
 ```eidos
 Marker :: trait {
     marker :: Self -> String
 }
 
-deriveMarker :: comptime Meta::DeriveInput -> Meta::Expansion {
+deriveMarker :: comptime Meta.DeriveInput -> Meta.Expansion {
     input => {
-        target := Meta::target(input);
-        parameter := Meta::parameter("value", target);
-        method := Meta::function(
+        target := Meta.target(input);
+        parameter := Meta.parameter("value", target);
+        method := Meta.function(
             "marker",
             [parameter],
             String,
-            Meta::exprString(Meta::typeName(target))
+            Meta.exprString(Meta.typeName(target))
         );
-        Meta::expansion([
-            Meta::implementation(Meta::decl(Marker), target, [method])
+        Meta.expansion([
+            Meta.implementation(Meta.decl(Marker), target, [method])
         ])
     }
 }
@@ -246,7 +264,7 @@ User :: type {
 }
 ```
 
-`Meta::Expansion` 可结构化生成 implementation、function、comptime value、attribute attachment、test、diagnostic 与 module member。函数体通过 `Meta::Expr` builder 构造，pattern branch 通过 `Meta::Pattern` / `Meta::Branch` builder 构造；声明引用使用 `Meta::Decl`，生成器局部引用使用 `Meta::Parameter` / `Meta::Binding` handle，以保持卫生。生成声明进入普通名称解析、类型检查、trait coherence、completion、hover、definition 与 references，并带稳定 `eidos-generated://` origin。
+`Meta.Expansion` 可结构化生成 implementation、function、comptime value、attribute attachment、test、diagnostic 与 module member。函数体通过 `Meta.Expr` builder 构造，pattern branch 通过 `Meta.Pattern` / `Meta.Branch` builder 构造；声明引用使用 `Meta.Decl`，生成器局部引用使用 `Meta.Parameter` / `Meta.Binding` handle，以保持卫生。生成声明进入普通名称解析、类型检查、trait coherence、completion、hover、definition 与 references，并带稳定 `eidos-generated://` origin。
 
 当前边界：不支持字符串源码插入、任意 AST 替换或删除；`@impl` 等语义属性不能通过 attribute attachment 回写，必须生成对应 structured declaration；pure comptime 不能读取文件、环境、进程、网络或 FFI。扩展按依赖与源码顺序执行到固定点，cycle、重复 stable identity、非法协议签名、预算超限和不完整反射都会产生确定 diagnostic。完整示例见 `examples/69_meta_reflection_derive.eidos`。
 
@@ -260,7 +278,7 @@ eidosc meta expand source.eidos --trace-comptime --comptime-budget 200000
 
 #### 能力约束的 Build host 与 BuildGraph（0.5.0-alpha.4）
 
-`Build` 与 `Meta` 一样是无需 import 的编译器内建域，但只能在 `[build].program` 指定的构建程序中取得能力。普通 pure comptime 即使能解析 `Build::context()`，也会被拒绝访问文件、环境、进程与 artifact emit。
+`Build` 与 `Meta` 一样是无需 import 的编译器内建域，但只能在 `[build].program` 指定的构建程序中取得能力。普通 pure comptime 即使能解析 `Build.context()`，也会被拒绝访问文件、环境、进程与 artifact emit。
 
 ```toml
 [build]
@@ -276,14 +294,14 @@ path = "tools/generator.exe"
 
 `fileInputs` 可以声明文件或目录；目录会递归展开并按项目相对路径稳定排序。所有输入内容、登记环境变量的存在性和值、登记工具的可执行文件路径/hash、build program、host triple 与 target triple 都进入 Build host cache key。build program、文件输入与输出必须留在 project root 内，program 和文件输入都不得与 output root 重叠；工具必须用显式路径登记，不依赖偶然的 `PATH` 查找。
 
-构建程序使用分离的 `Build::Fs`、`Build::Env`、`Build::Process` 与 `Build::Emit` 能力，并返回唯一的顶层 `BuildGraph`：
+构建程序使用分离的 `Build.Fs`、`Build.Env`、`Build.Process` 与 `Build.Emit` 能力，并返回唯一的顶层 `BuildGraph`：
 
 ```eidos
-Context :: comptime Build::context();
-Process :: comptime Build::process(Context);
-Emit :: comptime Build::emit(Context);
+Context :: comptime Build.context();
+Process :: comptime Build.process(Context);
+Emit :: comptime Build.emit(Context);
 
-Generate :: comptime Build::command(
+Generate :: comptime Build.command(
     Process,
     "generate",
     "generator",
@@ -293,17 +311,17 @@ Generate :: comptime Build::command(
     []
 );
 
-Generated :: comptime Build::generatedSource(
+Generated :: comptime Build.generatedSource(
     Emit,
     "build/generated/Model.eidos",
     "generate",
     "main"
 );
 
-BuildGraph :: comptime Build::graph(Emit, [Generate], [Generated]);
+BuildGraph :: comptime Build.graph(Emit, [Generate], [Generated]);
 ```
 
-`Build::readText(Fs, path)` 只能读取 `fileInputs` 展开的文件；`Build::environment(Env, name)` 只能读取已登记且存在的变量。`Build::command` 只描述 host 上执行的登记工具、参数、输入、输出和 step dependency，不会在表达式求值时产生隐式副作用。编译器验证 cycle、重复 output、未声明 input、缺失 dependency edge、output root、producer 与 target；随后按稳定拓扑顺序执行，并确认每个声明 output 已实际生成。`generatedSource` 的目录会自动加入当前 target 的 import roots。
+`Build.readText(Fs, path)` 只能读取 `fileInputs` 展开的文件；`Build.environment(Env, name)` 只能读取已登记且存在的变量。`Build.command` 只描述 host 上执行的登记工具、参数、输入、输出和 step dependency，不会在表达式求值时产生隐式副作用。编译器验证 cycle、重复 output、未声明 input、缺失 dependency edge、output root、producer 与 target；随后按稳定拓扑顺序执行，并确认每个声明 output 已实际生成。`generatedSource` 的目录会自动加入当前 target 的 import roots。
 
 ```powershell
 eidosc build --project . --target-name main --trace-build
@@ -350,9 +368,9 @@ asInfix :: 1 |+| 2;
 asFunction :: (|+|)(3, 4);
 ```
 
-自定义符号运算符默认左结合，优先级位于加减/拼接之后、`::`/函数组合之前。内建复杂运算符如 `|>`、`>>=`、`>>>`、`<<<`、`<$>`、`<*>`、`<>` 保持各自固定优先级与标准库 lowering。
+自定义符号运算符默认左结合，优先级位于加减/拼接之后、函数组合之前。`::` 是声明绑定 token，不是表达式运算符。内建复杂运算符如 `|>`、`>>=`、`>>>`、`<<<`、`<$>`、`<*>`、`<>` 保持各自固定优先级与标准库 lowering。
 
-风格约定（2026-05-28）：新的教程与标准库示例应优先展示 Eidos 的函数式读法。线性数据流优先写 `value |> f |> g`；函数组合优先写 `f >>> g` 或 `g <<< f`；`Functor` / `Applicative` / `Monad` 场景优先展示 `f <$> value`、`mf <*> mx`、`mx >>= f`；连续容器变换优先写链式调用，例如 `xs.map(f).filter(p).fold_left(seed)(step)`。当限定路径能显著降低歧义时，仍可保留 `Module::function(value)(arg)` 写法。普通分组调用 `function(value)` / `function(value, arg)` 也是稳定的默认调用风格，不会仅因为可写成链式或中缀而提示。CLI/IDE/LSP 会把可机械转换的连续柯里化前缀调用作为 help/hint 级风格建议给出 Quick Fix：`Seq::append(a)(b)` 可改为链式 `a.append(b)`，也可改为分组调用 `Seq::append(a, b)`。
+风格约定（2026-05-28）：新的教程与标准库示例应优先展示 Eidos 的函数式读法。线性数据流优先写 `value |> f |> g`；函数组合优先写 `f >>> g` 或 `g <<< f`；`Functor` / `Applicative` / `Monad` 场景优先展示 `f <$> value`、`mf <*> mx`、`mx >>= f`；连续容器变换优先写链式调用，例如 `xs.map(f).filter(p).fold_left(seed)(step)`。当限定路径能显著降低歧义时，仍可保留 `Module.function(value)(arg)` 写法。普通分组调用 `function(value)` / `function(value, arg)` 也是稳定的默认调用风格，不会仅因为可写成链式或中缀而提示。CLI/IDE/LSP 会把可机械转换的连续柯里化前缀调用作为 help/hint 级风格建议给出 Quick Fix：`Seq.append(a)(b)` 可改为链式 `a.append(b)`，也可改为分组调用 `Seq.append(a, b)`。
 
 补充（2026-03-27）：函数签名现支持高阶类型参数 kind 注解。
 1. 一元构造器 kind：`F: kind2`
@@ -365,7 +383,7 @@ asFunction :: (|+|)(3, 4);
 8. Effect 行参数必须显式使用 `effects` kind（例如 `E: effects`）；值类型的高阶 kind 继续使用 `kind1`、`kind2` 或 `kind3`。
 9. kind 约束采用累积统一（unification）：同一类型变量的多条 kind 约束共享同一推断状态，因此像同时要求 `kind2` 与 `kind1` 这类不兼容约束会被稳定报错，而不是彼此独立放过。
 10. trait 声明已支持一等 type params 语法（如 `Functor[F: kind2] :: trait { ... }`），且当 trait 类型参数未显式标注时会根据方法签名自动推断 kind（例如 `HK[K] :: trait { run :: K[Box] -> Self }` 推断 `K: kind2 -> kind1`），并在 symbol/HIR 层保留元数据。
-11. 类型参数 trait 约束已支持模块限定与类型实参（如 `T: Core::Functor[Box]`）；Types 阶段会校验 trait 实参数量与 kind。
+11. 类型参数 trait 约束已支持模块限定与类型实参（如 `T: Core.Functor[Box]`）；Types 阶段会校验 trait 实参数量与 kind。
 12. 类型参数 trait 约束位置只接受 trait；effect 授权通过函数 `need` 从句表达（例如 `String -> Unit need Writer`）。
 13. 泛型约束支持轻量 `where` 从句，可把复杂 kind/trait 约束移出参数列表，例如 `lift[A, G] :: A -> G[A] where G: kind2, G: Applicative[G]`。
 示例文件：`examples/31_hkt_parenthesized_kind.eidos`、`examples/32_hkt_adt_inferred_kind.eidos`、`examples/33_hkt_effect_polymorphism.eidos`、`examples/34_hkt_trait_inferred_kind.eidos`、`examples/35_hkt_trait_constraint_type_args.eidos`、`examples/36_hkt_trait_constraint_kind_mismatch.eidos`。
@@ -504,7 +522,7 @@ DirectionLabelDirection[A] :: instance DirectionLabel for Direction[A] {
 }
 ```
 
-bridge fact 输入支持字面量、元组、列表、受限一元/二元表达式、值名或路径引用，以及构造器/普通函数调用表达式。生成的 impl 会把这些表达式复制到对应构造器分支中并继续接受正常类型检查，因此可以表达 `delta = GameMath::up_i` 和 `opposite = South()` 这类构造器事实。bridge 支持 `Self -> R` 和 `Self -> A -> R` 这类额外参数方法；返回类型和额外参数中的 `Self` 会替换为目标类型。
+bridge fact 输入支持字面量、元组、列表、受限一元/二元表达式、值名或路径引用，以及构造器/普通函数调用表达式。生成的 impl 会把这些表达式复制到对应构造器分支中并继续接受正常类型检查，因此可以表达 `delta = GameMath.up_i` 和 `opposite = South()` 这类构造器事实。bridge 支持 `Self -> R` 和 `Self -> A -> R` 这类额外参数方法；返回类型和额外参数中的 `Self` 会替换为目标类型。
 
 当 constructor instance bridge 与 GADT 组合时，生成的泛型 impl 会在每个构造器分支内使用局部类型精化；例如 `North` 分支中只局部知道 `A = Vertical`，该等式不会泄漏到其他分支或分支外。
 
@@ -547,13 +565,13 @@ reset :: state.{ tick: 0 };
 约定式 impl 注册不会推断泛型 Trait 的类型实参；对泛型 Trait 必须使用显式 `@impl(Trait[...])`。
 `@impl` 会先做 alias canonicalization，再比较 impl 头的结构特化关系。若一个头严格比另一个更具体（例如 `Option[Int]` 相对于 `Option[T]`），两者可以共存；但若两个头 canonicalize 后等价，或彼此不可比较，命名阶段仍会以 `E3004`（`overlapping impl registration`）拒绝。仅靠 alias 改写不会产生“更具体”的关系，所以 trait 实参侧或实现类型侧的 alias-only 等价重叠仍会报错。
 作为高阶 trait 实参使用的开放别名，现在也会参与类型推断与 MIR 特化时的反向匹配。例如 `@impl(Applicative[KeepEdges[String, Bool]])` 现在可以在外层期望 `Triple[String, A, Bool]` 时满足 `G[A]`；可参考 `examples/43_open_alias_trait_impl.eidos`。
-同样的反向匹配现在也能穿过预编译标准库的泛型组合子：`Result::traverse(Ok(2))(produce_keep_edges)` 即使回调返回的是底层 `Triple[String, Int, Bool]`，也能反推出 `G = KeepEdges[String, Bool]`；而 `DeepBoxedResult[String]` 这类深别名链在 direct/helper 两条遍历路径上也都能继续正确特化；可参考 `examples/44_std_traversable_alias_applicative.eidos`。
-这一点现在也适用于递归 traversable：`Seq::traverse([1, 2])(produce_keep_edges)` 会在重复特化 `map2_applicative(cons)(...)` 的过程中持续保留用户自定义 open alias / deep alias `Applicative` impl；可参考 `examples/45_std_list_traversable_alias_applicative.eidos`。
-这同样适用于短路/空输入分支：`Option::traverse(None())(...)` 与 `Seq::traverse([])(...)` 现在也会通过用户自定义 alias-backed `Applicative` 的 `pure` 正确完成特化，而不再只在回调被真正调用时才可达；可参考 `examples/46_traversable_alias_applicative_empty_cases.eidos`。
-`Option`、`Seq`、`Result` 现在也分别提供公开的 `sequence` helper，可把 `Option[G[A]]`、`Seq[G[A]]`、`Result[G[A], E]` 稳定翻转成 `G[Option[A]]`、`G[Seq[A]]`、`G[Result[A, E]]`；当前 alias-backed 覆盖已通过 `KeepEdges[String, Bool]` 这类开放别名锁定，而且内建 `ResultWith[E]` 的同构嵌套现在也能稳定通过 `Option::sequence(Some(Ok(...)))`、`Seq::sequence([Ok(...), ...])`、`Result::sequence(Ok(Ok(...)))`；可参考 `examples/47_traversable_sequence_alias_applicative.eidos` 与 `examples/48_sequence_result_applicative.eidos`。
-`Std::Traversable` 现在也公开提供泛型 `Traversable::sequence`，因此调用方不必再先选定外层容器专用 helper。这个泛型入口现在也能在 `Option`、`List`、`Result` 上同时穿过用户自定义 alias-backed applicative 和内建 `ResultWith[E]` 同构嵌套；可参考 `examples/49_generic_traversable_sequence.eidos`。
-限定 trait 方法路径现在也已经成为一等可调用值路径。泛型代码里既可以通过导入模块别名直接写 `Applicative::pure`、`Traversable::traverse`，也可以写导入模块下的嵌套 owner 路径（如 `Trait::Eq::eq`），还可以写完整根路径 `Std::Applicative::pure`、`Std::Traversable::traverse`，以及在当前模块内部直接写同名 trait 的相对路径，例如 `Demo.Show :: module { ... }` 内部直接写 `Show::show`；预编译 `Std::Traversable` helper 现在内部就依赖这类模块内相对路径，而 `examples/50_qualified_trait_method_paths.eidos` 现在同时覆盖 alias/root/nested-import 这几种外部调用形态。
-限定 effect 路径与普通函数路径独立解析。在 `need` 中使用 `Logger::Logger`、`Io::Writer` 或 `Cap.Io::Writer`；普通函数调用写作 `Logger::log(...)`、`Io::write(...)` 或 `Cap.Io::write(...)`。参见 `examples/51_qualified_effect_paths.eidos` 与 `examples/52_nested_qualified_effect_paths.eidos`。
+同样的反向匹配现在也能穿过预编译标准库的泛型组合子：`Result.traverse(Ok(2))(produce_keep_edges)` 即使回调返回的是底层 `Triple[String, Int, Bool]`，也能反推出 `G = KeepEdges[String, Bool]`；而 `DeepBoxedResult[String]` 这类深别名链在 direct/helper 两条遍历路径上也都能继续正确特化；可参考 `examples/44_std_traversable_alias_applicative.eidos`。
+这一点现在也适用于递归 traversable：`Seq.traverse([1, 2])(produce_keep_edges)` 会在重复特化 `map2_applicative(cons)(...)` 的过程中持续保留用户自定义 open alias / deep alias `Applicative` impl；可参考 `examples/45_std_list_traversable_alias_applicative.eidos`。
+这同样适用于短路/空输入分支：`Option.traverse(None())(...)` 与 `Seq.traverse([])(...)` 现在也会通过用户自定义 alias-backed `Applicative` 的 `pure` 正确完成特化，而不再只在回调被真正调用时才可达；可参考 `examples/46_traversable_alias_applicative_empty_cases.eidos`。
+`Option`、`Seq`、`Result` 现在也分别提供公开的 `sequence` helper，可把 `Option[G[A]]`、`Seq[G[A]]`、`Result[G[A], E]` 稳定翻转成 `G[Option[A]]`、`G[Seq[A]]`、`G[Result[A, E]]`；当前 alias-backed 覆盖已通过 `KeepEdges[String, Bool]` 这类开放别名锁定，而且内建 `ResultWith[E]` 的同构嵌套现在也能稳定通过 `Option.sequence(Some(Ok(...)))`、`Seq.sequence([Ok(...), ...])`、`Result.sequence(Ok(Ok(...)))`；可参考 `examples/47_traversable_sequence_alias_applicative.eidos` 与 `examples/48_sequence_result_applicative.eidos`。
+`Std.Traversable` 现在也公开提供泛型 `Traversable.sequence`，因此调用方不必再先选定外层容器专用 helper。这个泛型入口现在也能在 `Option`、`List`、`Result` 上同时穿过用户自定义 alias-backed applicative 和内建 `ResultWith[E]` 同构嵌套；可参考 `examples/49_generic_traversable_sequence.eidos`。
+限定 trait 方法路径现在也已经成为一等可调用值路径。泛型代码里既可以通过导入模块别名直接写 `Applicative.pure`、`Traversable.traverse`，也可以写导入模块下的嵌套 owner 路径（如 `Trait.Eq.eq`），还可以写完整根路径 `Std.Applicative.pure`、`Std.Traversable.traverse`，以及在当前模块内部直接写同名 trait 的相对路径，例如 `Demo.Show :: module { ... }` 内部直接写 `Show.show`；预编译 `Std.Traversable` helper 现在内部就依赖这类模块内相对路径，而 `examples/50_qualified_trait_method_paths.eidos` 现在同时覆盖 alias/root/nested-import 这几种外部调用形态。
+限定 effect 路径与普通函数路径独立解析。在 `need` 中使用 `Logger.Logger`、`Io.Writer` 或 `Cap.Io.Writer`；普通函数调用写作 `Logger.log(...)`、`Io.write(...)` 或 `Cap.Io.write(...)`。参见 `examples/51_qualified_effect_paths.eidos` 与 `examples/52_nested_qualified_effect_paths.eidos`。
 
 说明（2026-06-18）：当前分支不再把 `proof` / lawful 相关内容作为教程基线的一部分；相关实验内容移至单独的 proof 分支维护。
 
@@ -581,10 +599,10 @@ Trait 约束求解当前行为（2026-03-15）：
 5. Trait 实参匹配采用精确语义：无实参 bound（例如 `T: Functor`）不会匹配仅有特化实参的 impl（如 `@impl(Functor[Box])`）。
 6. `@impl` 注册前会先做 alias canonicalization 再检测重叠。严格更具体的头可以与更宽泛的头并存，但等价或不可比较的 canonical 形状仍会报 `E3004`。例如 `@impl(Show)` on `Option[Int]` 可以与 `@impl(Show)` on `Option[T]` 共存；但 `ResultWith[E, T] = Result[T, E]` 与 `AlsoResult[E, T] = Result[T, E]` 若同时用于声明 `@impl(Applicative[...])`，仍会因底层折叠到同一形状而冲突。
 7. 泛型 trait bound 中的部分应用 alias 现在可以从具体底层返回类型反推出开放槽位。例如 `lift[A, G: kind2 : Applicative[G]] :: A -> G[A]` 现在可以通过 `KeepEdges[String, Bool] = Triple[String, _, Bool]` 在调用点特化出 `Triple[String, Int, Bool]`。
-8. 同样的 alias-backed 反推能力现在也能与预编译标准库 helper（如 `Result::traverse`）组合，所以即使回调签名暴露的是底层构造器类型，用户自定义 open alias / deep alias `Applicative` impl 仍然可达。
-9. 对 `Seq::traverse` 这类递归 traversable 也是如此：即使内部会反复经过 `map2_applicative` / `cons` 的特化链，alias-backed `Applicative` impl 仍能保持可用。
-10. 对空/短路 traversable 分支也是如此：`Option::traverse(None())` 与 `Seq::traverse([])` 现在也会稳定走到用户 impl 的 `pure`，而不是只覆盖回调生效的那半条路径。
-11. 现在 `Option::sequence`、`Seq::sequence`、`Result::sequence` 已作为容器专用 helper 对外可用，而 `Traversable::sequence` 也已作为泛型外层容器版本开放；它们在稳定场景下继承同样的特化行为，因此像 `Option[KeepEdges[String, Bool, A]]`、`Seq[KeepEdges[String, Bool, A]]`、`Result[KeepEdges[String, Bool, A], E]`、`Option[Result[A, E]]`、`Seq[Result[A, E]]`、`Result[Result[A, E], E]` 这类嵌套值都能直接通过标准库翻转。
+8. 同样的 alias-backed 反推能力现在也能与预编译标准库 helper（如 `Result.traverse`）组合，所以即使回调签名暴露的是底层构造器类型，用户自定义 open alias / deep alias `Applicative` impl 仍然可达。
+9. 对 `Seq.traverse` 这类递归 traversable 也是如此：即使内部会反复经过 `map2_applicative` / `cons` 的特化链，alias-backed `Applicative` impl 仍能保持可用。
+10. 对空/短路 traversable 分支也是如此：`Option.traverse(None())` 与 `Seq.traverse([])` 现在也会稳定走到用户 impl 的 `pure`，而不是只覆盖回调生效的那半条路径。
+11. 现在 `Option.sequence`、`Seq.sequence`、`Result.sequence` 已作为容器专用 helper 对外可用，而 `Traversable.sequence` 也已作为泛型外层容器版本开放；它们在稳定场景下继承同样的特化行为，因此像 `Option[KeepEdges[String, Bool, A]]`、`Seq[KeepEdges[String, Bool, A]]`、`Result[KeepEdges[String, Bool, A], E]`、`Option[Result[A, E]]`、`Seq[Result[A, E]]`、`Result[Result[A, E], E]` 这类嵌套值都能直接通过标准库翻转。
 
 ### 3.5.1 模块 `export` 与 `re-export`
 示例文件：`examples/53_module_exports_and_reexports.eidos`  
@@ -593,14 +611,14 @@ Trait 约束求解当前行为（2026-03-15）：
 2. 若模块内完全没有 `export`，当前仍保持兼容性的“隐式全部导出”行为。
 3. `export` 现在可前缀普通声明与 `import`：例如 `export let`、`export let mut`、`export func`、`export effect`、`export trait`、`export type`、`export import`。
 4. `export BaseApi :: import Demo.Base;` 会把模块别名 `BaseApi` 放进当前模块的公开导出表；外部随后可以沿着这个 re-export 的模块别名继续访问公开成员。0.4.0-alpha.1 中模块别名导入使用 name-first 绑定形态 `Alias :: import Module.Path;`；旧 keyword 形式 `import Module.Path as Alias` 只在 `legacy` 语法模式中接受。
-5. `export import Demo.Base::{Writer as W}` 会把 selective import 的 alias 一并公开；`export import Demo.Base::*` 则会把 imported module 当前可见的公开绑定整体转发出去。
+5. `export import Demo.Base.{Writer as W}` 会把 selective import 的 alias 一并公开；`export import Demo.Base.*` 则会把 imported module 当前可见的公开绑定整体转发出去。
 6. `export import` 现在走真实模块路径和导出表，而不是旧的字符串启发式，因此 alias re-export、qualified path、IDE completion 与预编译导出表都共享同一套可见性语义。
 
 ```eidos
 Demo.Facade :: module
 {
     export BaseApi :: import Demo.Base;
-    export import Demo.Base::{Writer as W}
+    export import Demo.Base.{Writer as W}
 }
 ```
 
@@ -652,7 +670,7 @@ write :: String -> Unit need Writer
 ```
 
 1. 调用方必须在 `need` 中声明所调用函数需要的全部 effect；缺少授权会报告 `E3003`。
-2. Effect 不拥有函数。`Io::Writer` 等限定 effect 路径只用于 `need`；普通函数按模块路径调用，例如 `Io::write(text)`。
+2. Effect 不拥有函数。`Io.Writer` 等限定 effect 路径只用于 `need`；普通函数按模块路径调用，例如 `Io.write(text)`。
 3. 高阶 API 使用 `E: effects` 行参数：`apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E`。
 4. 固定行与多态行可组合，例如 `need FFI, E`。Effect 变量会参与泛化，并保存在跨模块摘要和编译缓存状态中。
 5. Effect 在运行前擦除；语言不提供 handler、`with`、`resume`、CPS 重写或运行时 effect dispatch。
@@ -879,14 +897,14 @@ head_or_zero :: Int -> Int
 
 | 能力分类 | 模块 | 这类模块能做什么 | 代表接口 |
 | --- | --- | --- | --- |
-| 函数式能力 | `Std::Fn`、`Std::Prelude`、`Std::Functor`、`Std::Applicative`、`Std::Foldable`、`Std::Traversable`、`Std::Monad`、`Std::Option`、`Std::Result`、`Std::Ordering`、`Std::Trait`、`Std::TraitInvoke` | `Std::Fn` 提供函数工具，`Std::Prelude` 提供常用 Text 安全 helper 与基础 File 文本 I/O fallback，再配合 `Option/Result`、trait 与 `Functor/Applicative/Foldable/Traversable/Monad` 抽象；当前 `Option/Result/Seq` 都已具备 `fmap/pure/apply/traverse/bind` 使用面，并共享 `fold_left/fold_right` 折叠入口；`Option/Result/Ordering` 也都已具备 `Eq` / `Ord` / `Show` 这组基础值类型能力；`T?` 可作为 `Std::Option::Option[T]` 类型糖，`??` 可作为 `Option::unwrap_or` fallback 运算符，`let?` 可作为 `Option/Result` 早返回绑定语法；教程风格优先展示 `|>`、`>>>`、`<<<`、`<$>`、`<*>`、`>>=`、`<>`、`??`、`let?` 与链式调用 | `value |> f |> g`、`f >>> g`、`inc <$> Some(1)`、`Some(f) <*> Some(x)`、`Some(x) >>= f`、`maybe_count ?? 0`、`let? value = maybe_value`、`xs.map(f).filter(p)`、`Fn::compose`、`Option::traverse`、`Seq::traverse`、`Result::and_then` |
-| 数学能力 | `Std::Math`、`Std::FloatMath`、`Std::GameMath` | 标量数学、角度/插值辅助，以及 `IVec2/Vec2/IRect/Rect` 这类游戏数学类型与网格/几何 helper | `Math::wrap`、`FloatMath::smoothstep`、`FloatMath::angle_delta_degrees`、`GameMath::ivec2`、`GameMath::grid_cell_rect` |
-| 容器能力 | `Std::Seq`、`Std::SeqBuilder` | 只读序列的查询、变换、过滤、折叠、拼接、拉链组合，以及显式 builder 阶段的 push/set/swap/freeze 工作流 | `Seq::head`、`Seq::tail`、`Seq::find`、`Seq::map`、`Seq::filter`、`Seq::fold_left`、`SeqBuilder::push`、`SeqBuilder::freeze` |
-| 文件 IO 能力 | `Std::File` | 判断文件是否存在、整文件读写、fallback 读取与最后一次 IO 状态 | `File::exists`、`File::read_text_or`、`File::last_error`、`File::write_text` |
-| 控制台 IO 能力 | `Std::Console` | 输出文本/整数/浮点/字符/布尔值，支持前缀+值的单行输出，读取一行输入 | `Console::write_line`、`Console::write_int`、`Console::write_text_int_line`、`Console::read_line_text` |
-| 网络能力 | `Std::Network` | 发起最基础的 HTTP GET 文本请求 | `Network::http_get_text_or_empty` |
-| 序列化能力 | `Std::Binary`、`Std::Json` | 做基础二进制编码/解码，以及 JSON 字符串、数组、对象拼装 | `Binary::encode_u32_le`、`Binary::bytes_to_string`、`Json::array`、`Json::object` |
-| 其他基础能力 | `Std::Text` | 文本长度、判空、基础值转文本、裁剪空白、切片、字符/码点安全读取、子串查询；安全读取/查询现在同时提供 `*_opt` 与 `*_or` 两类入口 | `Text::len`、`Text::from_int`、`Text::from_bool`、`Text::trim`、`Text::slice`、`Text::char_code_at_opt`、`Text::char_code_at_or`、`Text::char_at_opt`、`Text::index_of_or` |
+| 函数式能力 | `Std.Fn`、`Std.Prelude`、`Std.Functor`、`Std.Applicative`、`Std.Foldable`、`Std.Traversable`、`Std.Monad`、`Std.Option`、`Std.Result`、`Std.Ordering`、`Std.Trait`、`Std.TraitInvoke` | `Std.Fn` 提供函数工具，`Std.Prelude` 提供常用 Text 安全 helper 与基础 File 文本 I/O fallback，再配合 `Option/Result`、trait 与 `Functor/Applicative/Foldable/Traversable/Monad` 抽象；当前 `Option/Result/Seq` 都已具备 `fmap/pure/apply/traverse/bind` 使用面，并共享 `fold_left/fold_right` 折叠入口；`Option/Result/Ordering` 也都已具备 `Eq` / `Ord` / `Show` 这组基础值类型能力；`T?` 可作为 `Std.Option.Option[T]` 类型糖，`??` 可作为 `Option.unwrap_or` fallback 运算符，`let?` 可作为 `Option/Result` 早返回绑定语法；教程风格优先展示 `|>`、`>>>`、`<<<`、`<$>`、`<*>`、`>>=`、`<>`、`??`、`let?` 与链式调用 | `value |> f |> g`、`f >>> g`、`inc <$> Some(1)`、`Some(f) <*> Some(x)`、`Some(x) >>= f`、`maybe_count ?? 0`、`let? value = maybe_value`、`xs.map(f).filter(p)`、`Fn.compose`、`Option.traverse`、`Seq.traverse`、`Result.and_then` |
+| 数学能力 | `Std.Math`、`Std.FloatMath`、`Std.GameMath` | 标量数学、角度/插值辅助，以及 `IVec2/Vec2/IRect/Rect` 这类游戏数学类型与网格/几何 helper | `Math.wrap`、`FloatMath.smoothstep`、`FloatMath.angle_delta_degrees`、`GameMath.ivec2`、`GameMath.grid_cell_rect` |
+| 容器能力 | `Std.Seq`、`Std.SeqBuilder` | 只读序列的查询、变换、过滤、折叠、拼接、拉链组合，以及显式 builder 阶段的 push/set/swap/freeze 工作流 | `Seq.head`、`Seq.tail`、`Seq.find`、`Seq.map`、`Seq.filter`、`Seq.fold_left`、`SeqBuilder.push`、`SeqBuilder.freeze` |
+| 文件 IO 能力 | `Std.File` | 判断文件是否存在、整文件读写、fallback 读取与最后一次 IO 状态 | `File.exists`、`File.read_text_or`、`File.last_error`、`File.write_text` |
+| 控制台 IO 能力 | `Std.Console` | 输出文本/整数/浮点/字符/布尔值，支持前缀+值的单行输出，读取一行输入 | `Console.write_line`、`Console.write_int`、`Console.write_text_int_line`、`Console.read_line_text` |
+| 网络能力 | `Std.Network` | 发起最基础的 HTTP GET 文本请求 | `Network.http_get_text_or_empty` |
+| 序列化能力 | `Std.Binary`、`Std.Json` | 做基础二进制编码/解码，以及 JSON 字符串、数组、对象拼装 | `Binary.encode_u32_le`、`Binary.bytes_to_string`、`Json.array`、`Json.object` |
+| 其他基础能力 | `Std.Text` | 文本长度、判空、基础值转文本、裁剪空白、切片、字符/码点安全读取、子串查询；安全读取/查询现在同时提供 `*_opt` 与 `*_or` 两类入口 | `Text.len`、`Text.from_int`、`Text.from_bool`、`Text.trim`、`Text.slice`、`Text.char_code_at_opt`、`Text.char_code_at_or`、`Text.char_at_opt`、`Text.index_of_or` |
 
 如果只想看“现在到底有哪些模块、每个模块导出了什么”，直接用 CLI：
 
@@ -898,11 +916,11 @@ dotnet run --project src/Eidosc/Eidosc.Cli -- info --stdlib
 
 当前验证口径（2026-04-11）：
 1. `examples/29_precompiled_stdlib.eidos` 继续覆盖核心函数式模块，并已通过 LLVM 阶段验证；当前样例已显式使用 `Option/Result/Seq/Text/Ordering` 的组合路径、Prelude wildcard 暴露的 Text/File helper、Text 空白裁剪、safe fallback helper，以及一部分 trait 驱动接口。
-2. `examples/42_stdlib_safe_and_traits.eidos` 提供一个更短的综合入口，现已同时演示 `Option/Result/Seq` 的 `Functor/Applicative/Foldable/Traversable/Monad` 使用面、`Option/Result/Ordering` 的 `Eq/Ord/Show`、以及 `Text` 的 `*_opt` / `*_or` helper；当前基线也已包含 `Result::traverse` 对 `ResultWith[E]` applicative 的自动推断。
-3. `Std::Option`、`Std::Result`、`Std::Ordering`、`Std::Seq`、`Std::Text` 均已有独立导入样例与 LLVM 集成断言；其中 `Option/Result/Seq` 现已覆盖 `fmap/pure/apply/bind`，并补齐 `fold_left/fold_right` 折叠路径；`let?` 的 `Option/Result` 绑定糖另由 `examples/63_let_question_option_result.eidos` 与 `projects/test/src/stdlib/std_let_question_binding.eidos` 覆盖。
-4. `Std::Math`、`Std::FloatMath`、`Std::GameMath`、`Std::Console`、`Std::File`、`Std::Network`、`Std::Binary`、`Std::Json` 已有独立导入样例与定向测试；`Std::Prelude::*` 另有 `projects/test/src/stdlib/std_prelude_core_import.eidos` 覆盖 Text/File 核心 helper 的直接导入；`Std::Functor`、`Std::Applicative`、`Std::Foldable`、`Std::Traversable`、`Std::Monad`、`Std::TraitInvoke` 目前通过导出表与 CLI 分组可见性校验覆盖。
-5. 当前 `Std::Network` 仍是最小实现：底层为 best-effort 文本抓取；失败时返回空字符串，不做完整 HTTP 协议抽象。
-6. 当前 `Std::Json` 偏向“拼 JSON 文本”，还不是完整 JSON 解析器；`Std::Binary` 目前也只覆盖基础布尔、整数和字符串编码工具。
+2. `examples/42_stdlib_safe_and_traits.eidos` 提供一个更短的综合入口，现已同时演示 `Option/Result/Seq` 的 `Functor/Applicative/Foldable/Traversable/Monad` 使用面、`Option/Result/Ordering` 的 `Eq/Ord/Show`、以及 `Text` 的 `*_opt` / `*_or` helper；当前基线也已包含 `Result.traverse` 对 `ResultWith[E]` applicative 的自动推断。
+3. `Std.Option`、`Std.Result`、`Std.Ordering`、`Std.Seq`、`Std.Text` 均已有独立导入样例与 LLVM 集成断言；其中 `Option/Result/Seq` 现已覆盖 `fmap/pure/apply/bind`，并补齐 `fold_left/fold_right` 折叠路径；`let?` 的 `Option/Result` 绑定糖另由 `examples/63_let_question_option_result.eidos` 与 `projects/test/src/stdlib/std_let_question_binding.eidos` 覆盖。
+4. `Std.Math`、`Std.FloatMath`、`Std.GameMath`、`Std.Console`、`Std.File`、`Std.Network`、`Std.Binary`、`Std.Json` 已有独立导入样例与定向测试；`Std.Prelude.*` 另有 `projects/test/src/stdlib/std_prelude_core_import.eidos` 覆盖 Text/File 核心 helper 的直接导入；`Std.Functor`、`Std.Applicative`、`Std.Foldable`、`Std.Traversable`、`Std.Monad`、`Std.TraitInvoke` 目前通过导出表与 CLI 分组可见性校验覆盖。
+5. 当前 `Std.Network` 仍是最小实现：底层为 best-effort 文本抓取；失败时返回空字符串，不做完整 HTTP 协议抽象。
+6. 当前 `Std.Json` 偏向“拼 JSON 文本”，还不是完整 JSON 解析器；`Std.Binary` 目前也只覆盖基础布尔、整数和字符串编码工具。
 
 ### 3.14 FFI：与 C 的互操作（已验证 2026-05-01）
 

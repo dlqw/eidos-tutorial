@@ -10,7 +10,7 @@ Demo.Base :: module {
 
     export write :: String -> Int need Writer
     {
-        _ => Demo.Base::add_two(Demo.Base::answer)
+        _ => Demo.Base.add_two(Demo.Base.answer)
     }
 
     secret :: Int -> Int
@@ -21,19 +21,19 @@ Demo.Base :: module {
 
 Demo.Facade :: module {
     export BaseApi :: import Demo.Base;
-    export import Demo.Base::{Writer as W, write}
+    export import Demo.Base.{Writer as W, write}
 }
 
 Demo.Main :: module {
     import Demo.Facade
-    import Demo.Facade::{W}
+    import Demo.Facade.{W}
 
-    run :: String -> Int need Facade::W
+    run :: String -> Int need Facade.W
     {
-        text => Facade::write(text)
+        text => Facade.write(text)
     }
 
-    main :: Unit -> Int need Facade::W
+    main :: Unit -> Int need Facade.W
     {
         _ => run("hello")
     }

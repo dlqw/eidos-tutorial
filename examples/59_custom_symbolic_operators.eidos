@@ -1,4 +1,4 @@
-import Std::Fn
+import Std.Fn
 
 (|+|) :: Int -> Int -> Int
 {
