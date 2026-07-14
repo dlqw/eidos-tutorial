@@ -202,6 +202,62 @@ use :: Unit -> Int
 
 ADT、type alias、函数、trait、`@impl(...)` 和 named instance trait 引用均使用同一套有序 generic argument 规则。例如 `Sized[comptime N: Int] :: trait { ... }` 的实现必须显式写成 `@impl(Sized[4])`；trait 方法签名中的 `N` 会按该值替换，coherence 也会比较结构化值 key。完整示例见 `examples/68_const_generics.eidos`。
 
+#### 只读类型反射、用户 derive 与结构化生成（0.5.0-alpha.3）
+
+`Meta` 是编译器内建域，不属于 `Std`，也不需要 `import`。反射只返回已经完成且可稳定序列化的编译器事实，不暴露可变 AST 或内部 `SymbolId`：
+
+```eidos
+Info :: comptime Meta::typeInfo(User);
+Kind :: comptime Meta::typeKind(Info);
+HasName :: comptime Meta::hasField(User, "name");
+NameType :: comptime Meta::fieldType(User, "name");
+IntLayout :: comptime Meta::layoutOf(Int, "x86_64-pc-windows-msvc");
+```
+
+`Meta::typeInfo` 覆盖 primitive、tuple、function、reference、ADT 与 trait；构造器、字段、关联声明和属性保持稳定源码顺序。`Meta::layoutOf` 是独立的 target-dependent 查询，必须显式给出受支持的 target triple；尚未完成布局的类型会产生 phase diagnostic，不会退回 host layout。
+
+用户 derive 必须是 `comptime Meta::DeriveInput -> Meta::Expansion`：
+
+```eidos
+Marker :: trait {
+    marker :: Self -> String
+}
+
+deriveMarker :: comptime Meta::DeriveInput -> Meta::Expansion {
+    input => {
+        target := Meta::target(input);
+        parameter := Meta::parameter("value", target);
+        method := Meta::function(
+            "marker",
+            [parameter],
+            String,
+            Meta::exprString(Meta::typeName(target))
+        );
+        Meta::expansion([
+            Meta::implementation(Meta::decl(Marker), target, [method])
+        ])
+    }
+}
+
+@derive(deriveMarker)
+User :: type {
+    name: String,
+    age: Int
+}
+```
+
+`Meta::Expansion` 可结构化生成 implementation、function、comptime value、attribute attachment、test、diagnostic 与 module member。函数体通过 `Meta::Expr` builder 构造，pattern branch 通过 `Meta::Pattern` / `Meta::Branch` builder 构造；声明引用使用 `Meta::Decl`，生成器局部引用使用 `Meta::Parameter` / `Meta::Binding` handle，以保持卫生。生成声明进入普通名称解析、类型检查、trait coherence、completion、hover、definition 与 references，并带稳定 `eidos-generated://` origin。
+
+当前边界：不支持字符串源码插入、任意 AST 替换或删除；`@impl` 等语义属性不能通过 attribute attachment 回写，必须生成对应 structured declaration；pure comptime 不能读取文件、环境、进程、网络或 FFI。扩展按依赖与源码顺序执行到固定点，cycle、重复 stable identity、非法协议签名、预算超限和不完整反射都会产生确定 diagnostic。完整示例见 `examples/69_meta_reflection_derive.eidos`。
+
+可用 CLI：
+
+```powershell
+eidosc meta expand source.eidos --format json
+eidosc meta expand source.eidos --emit-generated generated
+eidosc meta expand source.eidos --trace-comptime --comptime-budget 200000
+```
+
 普通同一作用域函数可以同名，只要参数签名不同。调用点会根据实参类型选择重载，
 覆盖普通调用、限定路径调用、链式方法调用、中缀调用和管道调用。裸重载函数引用
 必须有期望函数类型；否则编译器会报告歧义。

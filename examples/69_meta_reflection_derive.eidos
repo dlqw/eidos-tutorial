@@ -1,0 +1,35 @@
+Marker :: trait {
+    marker :: Self -> String
+}
+
+deriveMarker :: comptime Meta::DeriveInput -> Meta::Expansion {
+    input => {
+        target := Meta::target(input);
+        parameter := Meta::parameter("value", target);
+        method := Meta::function(
+            "marker",
+            [parameter],
+            String,
+            Meta::exprString(Meta::typeName(target))
+        );
+        Meta::expansion([
+            Meta::implementation(Meta::decl(Marker), target, [method])
+        ])
+    }
+}
+
+@derive(deriveMarker)
+User :: type {
+    name: String,
+    age: Int
+}
+
+UserInfo :: comptime Meta::typeInfo(User);
+UserKind :: comptime Meta::typeKind(UserInfo);
+HasName :: comptime Meta::hasField(User, "name");
+NameType :: comptime Meta::fieldType(User, "name");
+IntLayout :: comptime Meta::layoutOf(Int, "x86_64-pc-windows-msvc");
+
+main :: Unit -> String {
+    _ => marker(User { name: "Ada", age: 36 })
+}
