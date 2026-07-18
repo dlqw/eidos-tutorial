@@ -442,6 +442,22 @@ chain3 :: 3.inc.double;
 ### 3.4 ADT 与类型别名
 示例文件：`examples/04_adt_type_alias.eidos`
 
+Eidos 0.7 开发线同时支持词法封闭的 closed-case hierarchy。每个嵌套的 `Case :: type` 都是一等 exact nominal subtype，也是带同名构造器的类型：
+
+```eidos
+Message :: type {
+    Text :: type {
+        value :: String,
+    },
+
+    Control :: type {
+        code :: Int,
+    },
+}
+```
+
+完整 hierarchy 使用原子可见性。导出 `Message` 会同时导出穷尽匹配所需的所有 descendant case type、constructor 与 case field；root 未导出或由编译器标记为 internal 时，整棵 hierarchy 都保持私有。public root 不能包含 toolchain-internal descendant，编译器会报告 `E3061`，不会静默形成 hidden case。Eidos 0.7 不会根据 descendant visibility 隐式推导 non-exhaustive 或 opaque-case 模式。
+
 ```eidos
 type Option[T] { Some(T), None }
 type UserId = Int;

@@ -446,6 +446,22 @@ chain3 :: 3.inc.double;
 ### 3.4 ADT and Type Alias
 Example file: `examples/04_adt_type_alias.eidos`
 
+The Eidos 0.7 development line also supports lexically sealed closed-case hierarchies. Each nested `Case :: type` is both an exact nominal subtype and a constructor-bearing type:
+
+```eidos
+Message :: type {
+    Text :: type {
+        value :: String,
+    },
+
+    Control :: type {
+        code :: Int,
+    },
+}
+```
+
+Visibility is atomic for the complete hierarchy. Exporting `Message` exports every descendant case type, constructor, and case field needed for exhaustive matching. If the root is not exported or is compiler-internal, the complete hierarchy stays private. A public root cannot contain a toolchain-internal descendant; the compiler reports `E3061` instead of silently creating a hidden case. Eidos 0.7 does not infer a non-exhaustive or opaque-case mode from descendant visibility.
+
 ```eidos
 type Option[T] { Some(T), None }
 type UserId = Int;
