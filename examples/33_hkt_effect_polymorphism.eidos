@@ -1,20 +1,20 @@
 Box[A] :: type {
-    Wrap(A)
+    Wrap:: type(A)
 }
 
-Audit :: effect;
+audit :: effect;
 
 apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E
 {
     f => value => f(value)
 }
 
-record :: Box[Int] -> Box[Int] need Audit
+record :: Box[Int] -> Box[Int] need audit
 {
     value => value
 }
 
-main :: Unit -> Box[Int] need Audit
+main :: Unit -> Box[Int] need audit
 {
     _ => apply(record)(Wrap(1))
 }

@@ -1,6 +1,6 @@
-import Std.Seq
-import Std.Option
-import Std.Result
+import std.Seq
+import std.Option
+import std.Result
 
 collapse_option_result :: Result[Option[Int], String] -> Int
 {
@@ -23,22 +23,22 @@ collapse_result_result :: Result[Result[Int, String], String] -> Int
 main :: Unit -> Int
 {
     _ => {
-        optionDirect := collapse_option_result(sequence(Some(Ok(1))));
-        optionErr := match sequence(Some(Err("bad")))
+        option_direct := collapse_option_result(sequence(Some(Ok(1))));
+        option_err := match sequence(Some(Err("bad")))
         {
             Ok(Some(value)) => value,
             Err(_) => 1
         };
 
-        listDirect := collapse_seq_result(sequence([Ok(2), Ok(3)]));
-        listErr := match sequence([Ok(2), Err("bad")])
+        list_direct := collapse_seq_result(sequence([Ok(2), Ok(3)]));
+        list_err := match sequence([Ok(2), Err("bad")])
         {
             Ok(values) => Seq.len(values),
             Err(_) => 1
         };
 
-        resultDirect := collapse_result_result(sequence(Ok(Ok(4))));
-        resultInnerErr := match sequence(Ok(Err("inner")))
+        result_direct := collapse_result_result(sequence(Ok(Ok(4))));
+        result_inner_err := match sequence(Ok(Err("inner")))
         {
             Ok(inner) => match inner
             {
@@ -48,12 +48,12 @@ main :: Unit -> Int
             Err(_) => 0
         };
 
-        resultOuterErr := match sequence(Err("outer"))
+        result_outer_err := match sequence(Err("outer"))
         {
             Ok(_) => 0,
             Err(_) => 1
         };
 
-        optionDirect + optionErr + listDirect + listErr + resultDirect + resultInnerErr + resultOuterErr
+        option_direct + option_err + list_direct + list_err + result_direct + result_inner_err + result_outer_err
     }
 }

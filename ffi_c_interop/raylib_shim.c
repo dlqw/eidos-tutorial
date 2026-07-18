@@ -1113,4 +1113,3 @@ void eidos_shim_SetAudioStreamCallback(void *stream_ptr, AudioCallback callback)
 void eidos_shim_AttachAudioStreamProcessor(void *stream_ptr, AudioCallback processor) { return AttachAudioStreamProcessor(*(AudioStream*)stream_ptr, processor); }
 
 void eidos_shim_DetachAudioStreamProcessor(void *stream_ptr, AudioCallback processor) { return DetachAudioStreamProcessor(*(AudioStream*)stream_ptr, processor); }
-

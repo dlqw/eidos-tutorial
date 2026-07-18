@@ -1,9 +1,9 @@
 Box[A] :: type {
-    Wrap(A)
+    Wrap:: type(A)
 }
 
 ApplyToInt[F: kind2] :: type {
-    ApplyToInt(F[Int])
+    ApplyToInt:: type(F[Int])
 }
 
 ho[F: kind2 -> kind1, G: kind2] :: F[G] -> F[G]

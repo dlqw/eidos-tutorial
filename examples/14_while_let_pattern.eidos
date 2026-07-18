@@ -1,4 +1,4 @@
-Option[T] :: type { Some(T), None }
+Option[T] :: type { Some:: type(T), None :: type {} }
 
 accumulate_if_some :: Option[Int] -> Int
 {

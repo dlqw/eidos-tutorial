@@ -1,30 +1,30 @@
-OptionString :: type { SomeString(String), NoneString }
-OptionInt :: type { SomeInt(Int), NoneInt }
+OptionString :: type { SomeString:: type(String), NoneString :: type {} }
+OptionInt :: type { SomeInt:: type(Int), NoneInt :: type {} }
 
-optionStringMapTuple :: OptionString -> (String -> String) -> OptionString
+option_string_map_tuple :: OptionString -> (String -> String) -> OptionString
 {
     (SomeString(value), mapper) => SomeString(mapper(value)),
     (NoneString(), _) => NoneString()
 }
 
-optionStringMapCurried :: OptionString -> (String -> String) -> OptionString
+option_string_map_curried :: OptionString -> (String -> String) -> OptionString
 {
     SomeString(value) => mapper => SomeString(mapper(value)),
     NoneString() => _ => NoneString()
 }
 
-pickPositive :: Int -> Int -> Int
+pick_positive :: Int -> Int -> Int
 {
     n => i when i > 0 => i,
     _ => _ => 0
 }
 
-zipLeft :: OptionInt -> OptionInt -> OptionInt
+zip_left :: OptionInt -> OptionInt -> OptionInt
 {
     SomeInt(left) => SomeInt(right) => SomeInt(left),
     SomeInt(_) => NoneInt() => NoneInt(),
     NoneInt() => _ => NoneInt()
 }
 
-picked :: pickPositive(1, 7);
-zipped :: zipLeft(SomeInt(1), SomeInt(2));
+picked :: pick_positive(1, 7);
+zipped :: zip_left(SomeInt(1), SomeInt(2));

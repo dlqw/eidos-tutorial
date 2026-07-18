@@ -4,54 +4,69 @@ link "raylib"
 link "snake_shim"
 
 // Memory management
-@ffi("malloc")
-malloc :: Int -> RawPtr
 
-@ffi("free")
-free :: RawPtr -> Unit
+malloc :: Int -> RawPtr need ffi extern c link_name "malloc";
+
+
+
+free :: RawPtr -> Unit need ffi extern c link_name "free";
+
 
 // Window management
-@ffi("InitWindow")
-init_window :: Int32 -> Int32 -> RawPtr -> Unit
 
-@ffi("CloseWindow")
-close_window :: Unit -> Unit
+init_window :: Int32 -> Int32 -> RawPtr -> Unit need ffi extern c link_name "InitWindow";
 
-@ffi("WindowShouldClose")
-window_should_close :: Unit -> Bool
 
-@ffi("SetTargetFPS")
-set_target_fps :: Int32 -> Unit
+
+close_window :: Unit -> Unit need ffi extern c link_name "CloseWindow";
+
+
+
+window_should_close :: Unit -> Bool need ffi extern c link_name "WindowShouldClose";
+
+
+
+set_target_fps :: Int32 -> Unit need ffi extern c link_name "SetTargetFPS";
+
 
 // Drawing
-@ffi("BeginDrawing")
-begin_drawing :: Unit -> Unit
 
-@ffi("EndDrawing")
-end_drawing :: Unit -> Unit
+begin_drawing :: Unit -> Unit need ffi extern c link_name "BeginDrawing";
 
-@ffi("shim_clear_background")
-clear_background :: Int32 -> Int32 -> Int32 -> Int32 -> Unit
 
-@ffi("shim_draw_rectangle")
-draw_rectangle :: Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit
 
-@ffi("shim_draw_text")
-draw_text :: RawPtr -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit
+end_drawing :: Unit -> Unit need ffi extern c link_name "EndDrawing";
+
+
+
+clear_background :: Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi extern c link_name "shim_clear_background";
+
+
+
+draw_rectangle :: Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi extern c link_name "shim_draw_rectangle";
+
+
+
+draw_text :: RawPtr -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi extern c link_name "shim_draw_text";
+
 
 // Input
-@ffi("IsKeyPressed")
-is_key_pressed :: Int32 -> Bool
 
-@ffi("IsKeyDown")
-is_key_down :: Int32 -> Bool
+is_key_pressed :: Int32 -> Bool need ffi extern c link_name "IsKeyPressed";
+
+
+
+is_key_down :: Int32 -> Bool need ffi extern c link_name "IsKeyDown";
+
 
 // Utilities
-@ffi("shim_get_random_value")
-get_random_value :: Int32 -> Int32 -> Int32
 
-@ffi("GetFrameTime")
-get_frame_time :: Unit -> Float32
+get_random_value :: Int32 -> Int32 -> Int32 need ffi extern c link_name "shim_get_random_value";
+
+
+
+get_frame_time :: Unit -> Float32 need ffi extern c link_name "GetFrameTime";
+
 
 // String interop
 string_to_cstr :: String -> RawPtr

@@ -1,14 +1,14 @@
-@borrow(read, write)
-LegacyBorrowTag :: effect;
 
-keep :: Int -> Int need LegacyBorrowTag
+legacy_borrow_tag :: effect;
+
+keep :: Int -> Int need legacy_borrow_tag
 {
     x => x
 }
 
 // Effect tags are authorization metadata only. Borrow permissions are inferred
-// from references and ownership; @borrow on an effect does not grant them.
-main :: Unit -> Int need LegacyBorrowTag
+// from references and ownership; an effect label does not grant them.
+main :: Unit -> Int need legacy_borrow_tag
 {
     _ => keep(1)
 }

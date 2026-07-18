@@ -1,5 +1,5 @@
 Box[T] :: type {
-    reader: Ref[T], writer: MRef[T], tag: Int
+    reader:: Ref[T], writer:: MRef[T], tag:: Int
 }
 
 read :: Ref[Int] -> Int

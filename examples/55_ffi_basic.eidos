@@ -2,14 +2,16 @@
 
 // @ffi 声明外部 C 函数，无函数体
 // 编译器自动使用函数名作为 C 符号名
-@ffi
-puts :: RawPtr -> Int
+
+puts :: RawPtr -> Int need ffi extern c;
+
 
 // 显式指定 C 符号名（当 Eidos 名 != C 名时使用）
-@ffi("malloc")
-alloc :: Int -> RawPtr
 
-main :: Int -> Int need FFI
+alloc :: Int -> RawPtr need ffi extern c link_name "malloc";
+
+
+main :: Int -> Int need ffi
 {
     _ => {
         // 将 Eidos String 转为 C 字符串 (char*)

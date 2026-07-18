@@ -83,7 +83,7 @@ try
             $runArgs += "--no-build"
         }
 
-        $runArgs += @("--", "analyze", $case.File, "--phase", $case.Phase, "--no-color")
+        $runArgs += @("--", "analyze", $case.File, "--phase", $case.Phase, "--deny", "style", "--no-color")
         $output = & dotnet @runArgs 2>&1
         $commandExitCode = $LASTEXITCODE
         $joined = ($output | Out-String)
@@ -132,7 +132,7 @@ try
                 $runArgs += "--no-build"
             }
 
-            $runArgs += @("--", "build", "--project", $buildHostProject, "--target", "typed", "--no-cache", "--emit-build-graph", $graphOutput, "--no-color")
+            $runArgs += @("--", "build", "--project", $buildHostProject, "--target", "typed", "--no-cache", "--deny", "style", "--emit-build-graph", $graphOutput, "--no-color")
             $output = & dotnet @runArgs 2>&1
             if ($LASTEXITCODE -ne 0 -or -not (Test-Path $graphOutput))
             {

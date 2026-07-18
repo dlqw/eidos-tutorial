@@ -4,7 +4,7 @@ normalize :: Int -> Int
 }
 
 OptionI :: type {
-    Some(Int), None
+    Some:: type(Int), None :: type {}
 }
 
 classify :: OptionI -> Int

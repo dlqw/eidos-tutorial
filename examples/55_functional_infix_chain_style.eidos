@@ -1,8 +1,8 @@
-import Std.Prelude.*
-import Std.Fn
-import Std.Seq
-import Std.Option
-import Std.Result
+import std.Prelude.*
+import std.Functions
+import std.Seq
+import std.Option
+import std.Result
 
 inc :: Int -> Int
 {
@@ -29,7 +29,7 @@ positive_opt :: Int -> Option[Int]
     x => if x > 0 then { Some(x + 1) } else { None() }
 }
 
-positive_result :: Int -> Result.ResultWith[String, Int]
+positive_result :: Int -> Result.With[String, Int]
 {
     x => if x > 0 then { Ok(x + 1) } else { Err("bad") }
 }
@@ -40,13 +40,13 @@ main :: Unit -> Int
         piped := 3 |> inc |> double;
         composed := 3 |> (inc >>> double);
         chained := 3.inc().double();
-        listPipeline := Seq.fold_left(Seq.filter(Seq.map([1, 2, 3])(inc))(gt_two))(0)(add);
-        appendedLen := Seq.len([1, 2] <> [3, 4]);
-        mappedOption := Option.unwrap_or(inc <$> Some(4))(0);
-        appliedOption := Option.unwrap_or(Some(add(10)) <*> Some(5))(0);
-        boundOption := Option.unwrap_or(Some(2) >>= positive_opt)(0);
-        boundResult := Result.unwrap_or(Ok(2) >>= positive_result)(0);
+        list_pipeline := Seq.fold_left(Seq.filter(Seq.map([1, 2, 3])(inc))(gt_two))(0)(add);
+        appended_len := Seq.len([1, 2] <> [3, 4]);
+        mapped_option := Option.unwrap_or(inc <$> Some(4))(0);
+        applied_option := Option.unwrap_or(Some(add(10)) <*> Some(5))(0);
+        bound_option := Option.unwrap_or(Some(2) >>= positive_opt)(0);
+        bound_result := Result.unwrap_or(Ok(2) >>= positive_result)(0);
 
-        piped + composed + chained + listPipeline + appendedLen + mappedOption + appliedOption + boundOption + boundResult
+        piped + composed + chained + list_pipeline + appended_len + mapped_option + applied_option + bound_option + bound_result
     }
 }

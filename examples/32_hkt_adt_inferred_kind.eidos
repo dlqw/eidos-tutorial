@@ -1,25 +1,25 @@
 Box[A] :: type {
-    Wrap(A)
+    Wrap:: type(A)
 }
 
 Lift[F] :: type {
-    Lift(F[Int])
+    Lift:: type(F[Int])
 }
 
 ApplyToInt[F: kind2] :: type {
-    ApplyToInt(F[Int])
+    ApplyToInt:: type(F[Int])
 }
 
 UseK[K] :: type {
-    UseK(K[Box])
+    UseK:: type(K[Box])
 }
 
-useLift :: Lift[Box] -> Lift[Box]
+use_lift :: Lift[Box] -> Lift[Box]
 {
     x => x
 }
 
-useUseK :: UseK[ApplyToInt] -> UseK[ApplyToInt]
+use_use_k :: UseK[ApplyToInt] -> UseK[ApplyToInt]
 {
     x => x
 }

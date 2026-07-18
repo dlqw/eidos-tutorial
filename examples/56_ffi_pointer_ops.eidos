@@ -1,9 +1,10 @@
 // 56_ffi_pointer_ops.eidos — 指针操作：空指针、算术、读写
 
-@ffi("malloc")
-malloc :: Int -> RawPtr
 
-main :: Int -> Int need FFI, IO
+malloc :: Int -> RawPtr need ffi extern c link_name "malloc";
+
+
+main :: Int -> Int need ffi, io
 {
     _ => {
         // 空指针

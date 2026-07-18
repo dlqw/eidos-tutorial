@@ -1,7 +1,7 @@
-import Std.Applicative
-import Std.Option
-import Std.Trait
-import Std.Traversable
+import std.Applicative
+import std.Option
+import std.Traits
+import std.Traversable
 
 local_identity_applicative[A, G: kind2 : Applicative.Applicative[G]] :: G[A] -> G[A]
 {
@@ -15,7 +15,7 @@ lift_alias[A, G: kind2 : Applicative.Applicative[G]] :: A -> G[A]
 
 lift_root[A, G: kind2 : Applicative.Applicative[G]] :: A -> G[A]
 {
-    value => Std.Applicative.pure(value)
+    value => std.Applicative.pure(value)
 }
 
 sequence_alias[A, T: kind2 : Traversable.Traversable[T], G: kind2 : Applicative.Applicative[G]] :: T[G[A]] -> G[T[A]]
@@ -25,12 +25,12 @@ sequence_alias[A, T: kind2 : Traversable.Traversable[T], G: kind2 : Applicative.
 
 sequence_root[A, T: kind2 : Traversable.Traversable[T], G: kind2 : Applicative.Applicative[G]] :: T[G[A]] -> G[T[A]]
 {
-    values => Std.Traversable.traverse(values)(local_identity_applicative)
+    values => std.Traversable.traverse(values)(local_identity_applicative)
 }
 
-eq_via_module_trait[T: Trait.Eq] :: T -> T -> Bool
+eq_via_module_trait[T: Traits.Eq] :: T -> T -> Bool
 {
-    left => right => Trait.Eq.eq(left)(right)
+    left => right => Traits.Eq.eq(left)(right)
 }
 
 collapse_option :: Option[Option[Int]] -> Int
@@ -42,12 +42,12 @@ collapse_option :: Option[Option[Int]] -> Int
 main :: Unit -> Int
 {
     _ => {
-        aliasLift := Option.unwrap_or(lift_alias(3))(0);
-        rootLift := Option.unwrap_or(lift_root(4))(0);
-        aliasSequence := collapse_option(sequence_alias(Some(Some(5))));
-        rootSequence := collapse_option(sequence_root(Some(Some(6))));
-        sameLift := eq_via_module_trait(aliasLift)(aliasLift);
+        alias_lift := Option.unwrap_or(lift_alias(3))(0);
+        root_lift := Option.unwrap_or(lift_root(4))(0);
+        alias_sequence := collapse_option(sequence_alias(Some(Some(5))));
+        root_sequence := collapse_option(sequence_root(Some(Some(6))));
+        same_lift := eq_via_module_trait(alias_lift)(alias_lift);
 
-        aliasLift + rootLift + aliasSequence + rootSequence
+        alias_lift + root_lift + alias_sequence + root_sequence
     }
 }

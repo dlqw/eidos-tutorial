@@ -4,55 +4,68 @@
 link "raylib"
 link "snake_shim"
 
-@ffi("malloc")
-malloc :: Int -> RawPtr
 
-@ffi("free")
-free :: RawPtr -> Unit
+malloc :: Int -> RawPtr need ffi extern c link_name "malloc";
 
-@ffi("InitWindow")
-init_window :: Int -> Int -> RawPtr -> Unit
 
-@ffi("CloseWindow")
-close_window :: Unit -> Unit
 
-@ffi("WindowShouldClose")
-window_should_close :: Unit -> Bool
+free :: RawPtr -> Unit need ffi extern c link_name "free";
 
-@ffi("SetTargetFPS")
-set_target_fps :: Int -> Unit
 
-@ffi("BeginDrawing")
-begin_drawing :: Unit -> Unit
 
-@ffi("EndDrawing")
-end_drawing :: Unit -> Unit
+init_window :: Int -> Int -> RawPtr -> Unit need ffi extern c link_name "InitWindow";
 
-@ffi("shim_clear_background")
-clear_background :: Int -> Int -> Int -> Int -> Unit
 
-@ffi("shim_draw_rectangle")
-draw_rectangle :: Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit
 
-@ffi("shim_draw_text")
-draw_text :: RawPtr -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit
+close_window :: Unit -> Unit need ffi extern c link_name "CloseWindow";
 
-@ffi("IsKeyPressed")
-is_key_pressed :: Int -> Bool
 
-@ffi("shim_get_random_value")
-get_random_value :: Int -> Int -> Int
+
+window_should_close :: Unit -> Bool need ffi extern c link_name "WindowShouldClose";
+
+
+
+set_target_fps :: Int -> Unit need ffi extern c link_name "SetTargetFPS";
+
+
+
+begin_drawing :: Unit -> Unit need ffi extern c link_name "BeginDrawing";
+
+
+
+end_drawing :: Unit -> Unit need ffi extern c link_name "EndDrawing";
+
+
+
+clear_background :: Int -> Int -> Int -> Int -> Unit need ffi extern c link_name "shim_clear_background";
+
+
+
+draw_rectangle :: Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi extern c link_name "shim_draw_rectangle";
+
+
+
+draw_text :: RawPtr -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi extern c link_name "shim_draw_text";
+
+
+
+is_key_pressed :: Int -> Bool need ffi extern c link_name "IsKeyPressed";
+
+
+
+get_random_value :: Int -> Int -> Int need ffi extern c link_name "shim_get_random_value";
+
 
 
 // Array helpers — index into Int64 array
-arr_set :: RawPtr -> Int -> Int -> Unit need FFI
+arr_set :: RawPtr -> Int -> Int -> Unit need ffi
 {
     (arr, i, v) => {
         ptr_store_int(ptr_add(arr, i * 8), v)
     }
 }
 
-arr_get :: RawPtr -> Int -> Int need FFI
+arr_get :: RawPtr -> Int -> Int need ffi
 {
     (arr, i) => {
         ptr_load_int(ptr_add(arr, i * 8))
@@ -84,7 +97,7 @@ new_dir :: Int -> Int -> Int
 }
 
 // Check all 4 arrow keys and return updated direction
-check_input :: Int -> Int need FFI
+check_input :: Int -> Int need ffi
 {
     (dir) => {
         d1 := new_dir(dir, 262);
@@ -126,7 +139,7 @@ dy :: Int -> Int
 }
 
 // Main entry point
-main :: Int -> Int need FFI, IO
+main :: Int -> Int need ffi, io
 {
     _ => {
         // Allocate game state in raw memory

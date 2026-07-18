@@ -1,8 +1,8 @@
-import Std.Applicative
-import Std.Result
+import std.Applicative
+import std.Result
 
 Triple[A, B, C] :: type {
-    Triple(A, B, C)
+    Triple:: type(A, B, C)
 }
 
 KeepEdges[L, R, X] :: type = Triple[L, X, R];
@@ -21,7 +21,7 @@ ApplicativeKeepEdgesStringBool :: instance Applicative.Applicative[KeepEdges[Str
     }
     apply[A, B, E: effects] :: KeepEdges[String, Bool, A -> B need E] -> KeepEdges[String, Bool, A] -> KeepEdges[String, Bool, B] need E
     {
-        Triple(leftCtx, f, leftOk) => Triple(rightCtx, value, rightOk) => Triple(join_ctx(leftCtx)(rightCtx), f(value), leftOk && rightOk)
+        Triple(left_ctx, f, left_ok) => Triple(right_ctx, value, right_ok) => Triple(join_ctx(left_ctx)(right_ctx), f(value), left_ok && right_ok)
     }
 }
 
@@ -32,7 +32,7 @@ ApplicativeDeepBoxedResultString :: instance Applicative.Applicative[DeepBoxedRe
     }
     apply[A, B, E: effects] :: DeepBoxedResult[String, A -> B need E] -> DeepBoxedResult[String, A] -> DeepBoxedResult[String, B] need E
     {
-        fResult => valueResult => match (fResult, valueResult)
+        f_result => value_result => match (f_result, value_result)
         {
             (Ok(f), Ok(value)) => Ok(f(value)),
             (Err(error), _) => Err(error),
@@ -83,11 +83,11 @@ collapse_deep_result :: Result[Result[Int, String], String] -> Int
 main :: Unit -> Int
 {
     _ => {
-        openDirect := collapse_open_result(Result.traverse(Ok(2))(produce_keep_edges));
-        openViaHelper := collapse_open_result(traverse_with_alias_applicative(Ok(2))(produce_keep_edges));
-        deepDirect := collapse_deep_result(Result.traverse(Ok(2))(produce_deep_boxed_result));
-        deepViaHelper := collapse_deep_result(traverse_with_alias_applicative(Ok(2))(produce_deep_boxed_result));
+        open_direct := collapse_open_result(Result.traverse(Ok(2))(produce_keep_edges));
+        open_via_helper := collapse_open_result(traverse_with_alias_applicative(Ok(2))(produce_keep_edges));
+        deep_direct := collapse_deep_result(Result.traverse(Ok(2))(produce_deep_boxed_result));
+        deep_via_helper := collapse_deep_result(traverse_with_alias_applicative(Ok(2))(produce_deep_boxed_result));
 
-        openDirect + openViaHelper + deepDirect + deepViaHelper
+        open_direct + open_via_helper + deep_direct + deep_via_helper
     }
 }

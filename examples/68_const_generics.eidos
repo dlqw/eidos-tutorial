@@ -1,5 +1,5 @@
 Buffer[comptime N: Int, comptime T: Type] :: type {
-    Buffer(T)
+    Buffer:: type(T)
 }
 
 FixedBuffer[comptime N: Int, comptime T: Type] :: type = Buffer[N, T];
@@ -19,11 +19,12 @@ Sized[comptime N: Int] :: trait {
 }
 
 Holder :: type {
-    Holder(Int)
+    Holder:: type(Int)
 }
 
-@impl(Sized[4])
+
 make :: Holder -> Buffer[4, Int]
+ impl Sized[4]
 {
     _ => Buffer[4, Int](4)
 }

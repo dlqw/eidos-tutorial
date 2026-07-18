@@ -1,20 +1,18 @@
-Option[T] :: type { Some(T), None }
+Option[T] :: type { Some:: type(T), None :: type {} }
 UserId :: type = Int;
 GameState :: type {
-    GameState {
-        score: Int,
-        tick: Int
+        score:: Int,
+        tick:: Int
     }
-}
 Shape :: type {
-    Circle {
-        radius: Int,
-        color: Int
+    Circle :: type{
+        radius:: Int,
+        color:: Int
     }
-    , Rect {
-        width: Int,
-        height: Int,
-        color: Int
+    , Rect :: type{
+        width:: Int,
+        height:: Int,
+        color:: Int
     }
 }
 

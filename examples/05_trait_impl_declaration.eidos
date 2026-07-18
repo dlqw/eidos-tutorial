@@ -3,7 +3,7 @@ Show :: trait {
 }
 
 Point :: type {
-    Point(Int, Int)
+    Point:: type(Int, Int)
 }
 
 ShowPoint :: instance Show {

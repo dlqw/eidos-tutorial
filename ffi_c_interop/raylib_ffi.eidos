@@ -358,23 +358,26 @@ npatch_three_patch_horizontal :: Int32 = 2
 // === Structs ===
 
 // Vector2 (size: 8, alignment: 4)
-@cstruct
-Vector2 :: type = struct {
+
+Vector2 :: type  repr c
+= struct {
     x: Float32,  // offset: 0, size: 4
     y: Float32,  // offset: 4, size: 4
 }
 
 // Vector3 (size: 12, alignment: 4)
-@cstruct
-Vector3 :: type = struct {
+
+Vector3 :: type  repr c
+= struct {
     x: Float32,  // offset: 0, size: 4
     y: Float32,  // offset: 4, size: 4
     z: Float32,  // offset: 8, size: 4
 }
 
 // Vector4 (size: 16, alignment: 4)
-@cstruct
-Vector4 :: type = struct {
+
+Vector4 :: type  repr c
+= struct {
     x: Float32,  // offset: 0, size: 4
     y: Float32,  // offset: 4, size: 4
     z: Float32,  // offset: 8, size: 4
@@ -382,8 +385,9 @@ Vector4 :: type = struct {
 }
 
 // Matrix (size: 64, alignment: 4)
-@cstruct
-Matrix :: type = struct {
+
+Matrix :: type  repr c
+= struct {
     m0: Float32,  // offset: 0, size: 4
     m4: Float32,  // offset: 4, size: 4
     m8: Float32,  // offset: 8, size: 4
@@ -403,8 +407,9 @@ Matrix :: type = struct {
 }
 
 // Color (size: 4, alignment: 1)
-@cstruct
-Color :: type = struct {
+
+Color :: type  repr c
+= struct {
     r: Int8,  // offset: 0, size: 1
     g: Int8,  // offset: 1, size: 1
     b: Int8,  // offset: 2, size: 1
@@ -412,8 +417,9 @@ Color :: type = struct {
 }
 
 // Rectangle (size: 16, alignment: 4)
-@cstruct
-Rectangle :: type = struct {
+
+Rectangle :: type  repr c
+= struct {
     x: Float32,  // offset: 0, size: 4
     y: Float32,  // offset: 4, size: 4
     width: Float32,  // offset: 8, size: 4
@@ -421,8 +427,9 @@ Rectangle :: type = struct {
 }
 
 // Image (size: 24, alignment: 8)
-@cstruct
-Image :: type = struct {
+
+Image :: type  repr c
+= struct {
     data: RawPtr,  // offset: 0, size: 8
     width: Int32,  // offset: 8, size: 4
     height: Int32,  // offset: 12, size: 4
@@ -431,8 +438,9 @@ Image :: type = struct {
 }
 
 // Texture (size: 20, alignment: 4)
-@cstruct
-Texture :: type = struct {
+
+Texture :: type  repr c
+= struct {
     id: Int32,  // offset: 0, size: 4
     width: Int32,  // offset: 4, size: 4
     height: Int32,  // offset: 8, size: 4
@@ -441,16 +449,18 @@ Texture :: type = struct {
 }
 
 // RenderTexture (size: 44, alignment: 4)
-@cstruct
-RenderTexture :: type = struct {
+
+RenderTexture :: type  repr c
+= struct {
     id: Int32,  // offset: 0, size: 4
     texture: RawPtr,  // offset: 4, size: 20
     depth: RawPtr,  // offset: 24, size: 20
 }
 
 // NPatchInfo (size: 36, alignment: 4)
-@cstruct
-NPatchInfo :: type = struct {
+
+NPatchInfo :: type  repr c
+= struct {
     source: RawPtr,  // offset: 0, size: 16
     left: Int32,  // offset: 16, size: 4
     top: Int32,  // offset: 20, size: 4
@@ -460,8 +470,9 @@ NPatchInfo :: type = struct {
 }
 
 // GlyphInfo (size: 40, alignment: 8)
-@cstruct
-GlyphInfo :: type = struct {
+
+GlyphInfo :: type  repr c
+= struct {
     value: Int32,  // offset: 0, size: 4
     offset_x: Int32,  // offset: 4, size: 4
     offset_y: Int32,  // offset: 8, size: 4
@@ -470,8 +481,9 @@ GlyphInfo :: type = struct {
 }
 
 // Font (size: 48, alignment: 8)
-@cstruct
-Font :: type = struct {
+
+Font :: type  repr c
+= struct {
     base_size: Int32,  // offset: 0, size: 4
     glyph_count: Int32,  // offset: 4, size: 4
     glyph_padding: Int32,  // offset: 8, size: 4
@@ -481,8 +493,9 @@ Font :: type = struct {
 }
 
 // Camera3D (size: 44, alignment: 4)
-@cstruct
-Camera3D :: type = struct {
+
+Camera3D :: type  repr c
+= struct {
     position: RawPtr,  // offset: 0, size: 12
     target: RawPtr,  // offset: 12, size: 12
     up: RawPtr,  // offset: 24, size: 12
@@ -491,8 +504,9 @@ Camera3D :: type = struct {
 }
 
 // Camera2D (size: 24, alignment: 4)
-@cstruct
-Camera2D :: type = struct {
+
+Camera2D :: type  repr c
+= struct {
     offset: RawPtr,  // offset: 0, size: 8
     target: RawPtr,  // offset: 8, size: 8
     rotation: Float32,  // offset: 16, size: 4
@@ -500,8 +514,9 @@ Camera2D :: type = struct {
 }
 
 // Mesh (size: 120, alignment: 8)
-@cstruct
-Mesh :: type = struct {
+
+Mesh :: type  repr c
+= struct {
     vertex_count: Int32,  // offset: 0, size: 4
     triangle_count: Int32,  // offset: 4, size: 4
     vertices: RawPtr,  // offset: 8, size: 8
@@ -521,54 +536,61 @@ Mesh :: type = struct {
 }
 
 // Shader (size: 16, alignment: 8)
-@cstruct
-Shader :: type = struct {
+
+Shader :: type  repr c
+= struct {
     id: Int32,  // offset: 0, size: 4
     locs: RawPtr,  // offset: 8, size: 8
 }
 
 // MaterialMap (size: 28, alignment: 4)
-@cstruct
-MaterialMap :: type = struct {
+
+MaterialMap :: type  repr c
+= struct {
     texture: RawPtr,  // offset: 0, size: 20
     color: RawPtr,  // offset: 20, size: 4
     value: Float32,  // offset: 24, size: 4
 }
 
 // Material (size: 40, alignment: 8)
-@cstruct
-Material :: type = struct {
+
+Material :: type  repr c
+= struct {
     shader: RawPtr,  // offset: 0, size: 16
     maps: RawPtr,  // offset: 16, size: 8
     params: RawPtr,  // offset: 24, size: 16
 }
 
 // Transform (size: 40, alignment: 4)
-@cstruct
-Transform :: type = struct {
+
+Transform :: type  repr c
+= struct {
     translation: RawPtr,  // offset: 0, size: 12
     rotation: RawPtr,  // offset: 12, size: 16
     scale: RawPtr,  // offset: 28, size: 12
 }
 
 // BoneInfo (size: 36, alignment: 4)
-@cstruct
-BoneInfo :: type = struct {
+
+BoneInfo :: type  repr c
+= struct {
     name: RawPtr,  // offset: 0, size: 32
     parent: Int32,  // offset: 32, size: 4
 }
 
 // ModelSkeleton (size: 24, alignment: 8)
-@cstruct
-ModelSkeleton :: type = struct {
+
+ModelSkeleton :: type  repr c
+= struct {
     bone_count: Int32,  // offset: 0, size: 4
     bones: RawPtr,  // offset: 8, size: 8
     bind_pose: RawPtr,  // offset: 16, size: 8
 }
 
 // Model (size: 136, alignment: 8)
-@cstruct
-Model :: type = struct {
+
+Model :: type  repr c
+= struct {
     transform: RawPtr,  // offset: 0, size: 64
     mesh_count: Int32,  // offset: 64, size: 4
     material_count: Int32,  // offset: 68, size: 4
@@ -581,8 +603,9 @@ Model :: type = struct {
 }
 
 // ModelAnimation (size: 48, alignment: 8)
-@cstruct
-ModelAnimation :: type = struct {
+
+ModelAnimation :: type  repr c
+= struct {
     name: RawPtr,  // offset: 0, size: 32
     bone_count: Int32,  // offset: 32, size: 4
     keyframe_count: Int32,  // offset: 36, size: 4
@@ -590,15 +613,17 @@ ModelAnimation :: type = struct {
 }
 
 // Ray (size: 24, alignment: 4)
-@cstruct
-Ray :: type = struct {
+
+Ray :: type  repr c
+= struct {
     position: RawPtr,  // offset: 0, size: 12
     direction: RawPtr,  // offset: 12, size: 12
 }
 
 // RayCollision (size: 32, alignment: 4)
-@cstruct
-RayCollision :: type = struct {
+
+RayCollision :: type  repr c
+= struct {
     hit: Bool,  // offset: 0, size: 1
     distance: Float32,  // offset: 4, size: 4
     point: RawPtr,  // offset: 8, size: 12
@@ -606,15 +631,17 @@ RayCollision :: type = struct {
 }
 
 // BoundingBox (size: 24, alignment: 4)
-@cstruct
-BoundingBox :: type = struct {
+
+BoundingBox :: type  repr c
+= struct {
     min: RawPtr,  // offset: 0, size: 12
     max: RawPtr,  // offset: 12, size: 12
 }
 
 // Wave (size: 24, alignment: 8)
-@cstruct
-Wave :: type = struct {
+
+Wave :: type  repr c
+= struct {
     frame_count: Int32,  // offset: 0, size: 4
     sample_rate: Int32,  // offset: 4, size: 4
     sample_size: Int32,  // offset: 8, size: 4
@@ -623,18 +650,21 @@ Wave :: type = struct {
 }
 
 // rAudioBuffer (size: -2, alignment: -2)
-@cstruct
-rAudioBuffer :: type = struct {
+
+r_audio_buffer :: type  repr c
+= struct {
 }
 
 // rAudioProcessor (size: -2, alignment: -2)
-@cstruct
-rAudioProcessor :: type = struct {
+
+r_audio_processor :: type  repr c
+= struct {
 }
 
 // AudioStream (size: 32, alignment: 8)
-@cstruct
-AudioStream :: type = struct {
+
+AudioStream :: type  repr c
+= struct {
     buffer: RawPtr,  // offset: 0, size: 8
     processor: RawPtr,  // offset: 8, size: 8
     sample_rate: Int32,  // offset: 16, size: 4
@@ -643,15 +673,17 @@ AudioStream :: type = struct {
 }
 
 // Sound (size: 40, alignment: 8)
-@cstruct
-Sound :: type = struct {
+
+Sound :: type  repr c
+= struct {
     stream: RawPtr,  // offset: 0, size: 32
     frame_count: Int32,  // offset: 32, size: 4
 }
 
 // Music (size: 56, alignment: 8)
-@cstruct
-Music :: type = struct {
+
+Music :: type  repr c
+= struct {
     stream: RawPtr,  // offset: 0, size: 32
     frame_count: Int32,  // offset: 32, size: 4
     looping: Bool,  // offset: 36, size: 1
@@ -660,8 +692,9 @@ Music :: type = struct {
 }
 
 // VrDeviceInfo (size: 60, alignment: 4)
-@cstruct
-VrDeviceInfo :: type = struct {
+
+VrDeviceInfo :: type  repr c
+= struct {
     h_resolution: Int32,  // offset: 0, size: 4
     v_resolution: Int32,  // offset: 4, size: 4
     h_screen_size: Float32,  // offset: 8, size: 4
@@ -674,8 +707,9 @@ VrDeviceInfo :: type = struct {
 }
 
 // VrStereoConfig (size: 304, alignment: 4)
-@cstruct
-VrStereoConfig :: type = struct {
+
+VrStereoConfig :: type  repr c
+= struct {
     projection: RawPtr,  // offset: 0, size: 128
     view_offset: RawPtr,  // offset: 128, size: 128
     left_lens_center: RawPtr,  // offset: 256, size: 8
@@ -687,23 +721,26 @@ VrStereoConfig :: type = struct {
 }
 
 // FilePathSeq (size: 16, alignment: 8)
-@cstruct
-FilePathSeq :: type = struct {
+
+FilePathSeq :: type  repr c
+= struct {
     count: Int32,  // offset: 0, size: 4
     paths: RawPtr,  // offset: 8, size: 8
 }
 
 // AutomationEvent (size: 24, alignment: 4)
-@cstruct
-AutomationEvent :: type = struct {
+
+AutomationEvent :: type  repr c
+= struct {
     frame: Int32,  // offset: 0, size: 4
     type: Int32,  // offset: 4, size: 4
     params: RawPtr,  // offset: 8, size: 16
 }
 
 // AutomationEventSeq (size: 16, alignment: 8)
-@cstruct
-AutomationEventSeq :: type = struct {
+
+AutomationEventSeq :: type  repr c
+= struct {
     capacity: Int32,  // offset: 0, size: 4
     count: Int32,  // offset: 4, size: 4
     events: RawPtr,  // offset: 8, size: 8
@@ -712,88 +749,149 @@ AutomationEventSeq :: type = struct {
 // === Functions ===
 
 @ffi("__va_start") __va_start :: RawPtr -> Unit
-@ffi("InitWindow") init_window :: Int32 -> Int32 -> RawPtr -> Unit
-@ffi("CloseWindow") close_window :: Unit -> Unit
-@ffi("WindowShouldClose") window_should_close :: Unit -> Bool
-@ffi("IsWindowReady") is_window_ready :: Unit -> Bool
-@ffi("IsWindowFullscreen") is_window_fullscreen :: Unit -> Bool
-@ffi("IsWindowHidden") is_window_hidden :: Unit -> Bool
-@ffi("IsWindowMinimized") is_window_minimized :: Unit -> Bool
-@ffi("IsWindowMaximized") is_window_maximized :: Unit -> Bool
-@ffi("IsWindowFocused") is_window_focused :: Unit -> Bool
-@ffi("IsWindowResized") is_window_resized :: Unit -> Bool
-@ffi("IsWindowState") is_window_state :: Int32 -> Bool
-@ffi("SetWindowState") set_window_state :: Int32 -> Unit
-@ffi("ClearWindowState") clear_window_state :: Int32 -> Unit
-@ffi("ToggleFullscreen") toggle_fullscreen :: Unit -> Unit
-@ffi("ToggleBorderlessWindowed") toggle_borderless_windowed :: Unit -> Unit
-@ffi("MaximizeWindow") maximize_window :: Unit -> Unit
-@ffi("MinimizeWindow") minimize_window :: Unit -> Unit
-@ffi("RestoreWindow") restore_window :: Unit -> Unit
+ init_window :: Int32 -> Int32 -> RawPtr -> Unit need ffi extern c link_name "InitWindow";
+
+ close_window :: Unit -> Unit need ffi extern c link_name "CloseWindow";
+
+ window_should_close :: Unit -> Bool need ffi extern c link_name "WindowShouldClose";
+
+ is_window_ready :: Unit -> Bool need ffi extern c link_name "IsWindowReady";
+
+ is_window_fullscreen :: Unit -> Bool need ffi extern c link_name "IsWindowFullscreen";
+
+ is_window_hidden :: Unit -> Bool need ffi extern c link_name "IsWindowHidden";
+
+ is_window_minimized :: Unit -> Bool need ffi extern c link_name "IsWindowMinimized";
+
+ is_window_maximized :: Unit -> Bool need ffi extern c link_name "IsWindowMaximized";
+
+ is_window_focused :: Unit -> Bool need ffi extern c link_name "IsWindowFocused";
+
+ is_window_resized :: Unit -> Bool need ffi extern c link_name "IsWindowResized";
+
+ is_window_state :: Int32 -> Bool need ffi extern c link_name "IsWindowState";
+
+ set_window_state :: Int32 -> Unit need ffi extern c link_name "SetWindowState";
+
+ clear_window_state :: Int32 -> Unit need ffi extern c link_name "ClearWindowState";
+
+ toggle_fullscreen :: Unit -> Unit need ffi extern c link_name "ToggleFullscreen";
+
+ toggle_borderless_windowed :: Unit -> Unit need ffi extern c link_name "ToggleBorderlessWindowed";
+
+ maximize_window :: Unit -> Unit need ffi extern c link_name "MaximizeWindow";
+
+ minimize_window :: Unit -> Unit need ffi extern c link_name "MinimizeWindow";
+
+ restore_window :: Unit -> Unit need ffi extern c link_name "RestoreWindow";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_SetWindowIcon") func set_window_icon: RawPtr -> Unit
-@ffi("SetWindowIcons") set_window_icons :: RawPtr -> Int32 -> Unit
-@ffi("SetWindowTitle") set_window_title :: RawPtr -> Unit
-@ffi("SetWindowPosition") set_window_position :: Int32 -> Int32 -> Unit
-@ffi("SetWindowMonitor") set_window_monitor :: Int32 -> Unit
-@ffi("SetWindowMinSize") set_window_min_size :: Int32 -> Int32 -> Unit
-@ffi("SetWindowMaxSize") set_window_max_size :: Int32 -> Int32 -> Unit
-@ffi("SetWindowSize") set_window_size :: Int32 -> Int32 -> Unit
-@ffi("SetWindowOpacity") set_window_opacity :: Float32 -> Unit
-@ffi("SetWindowFocused") set_window_focused :: Unit -> Unit
-@ffi("GetWindowHandle") get_window_handle :: Unit -> RawPtr
-@ffi("GetScreenWidth") get_screen_width :: Unit -> Int32
-@ffi("GetScreenHeight") get_screen_height :: Unit -> Int32
-@ffi("GetRenderWidth") get_render_width :: Unit -> Int32
-@ffi("GetRenderHeight") get_render_height :: Unit -> Int32
-@ffi("GetMonitorCount") get_monitor_count :: Unit -> Int32
-@ffi("GetCurrentMonitor") get_current_monitor :: Unit -> Int32
+ set_window_icons :: RawPtr -> Int32 -> Unit need ffi extern c link_name "SetWindowIcons";
+
+ set_window_title :: RawPtr -> Unit need ffi extern c link_name "SetWindowTitle";
+
+ set_window_position :: Int32 -> Int32 -> Unit need ffi extern c link_name "SetWindowPosition";
+
+ set_window_monitor :: Int32 -> Unit need ffi extern c link_name "SetWindowMonitor";
+
+ set_window_min_size :: Int32 -> Int32 -> Unit need ffi extern c link_name "SetWindowMinSize";
+
+ set_window_max_size :: Int32 -> Int32 -> Unit need ffi extern c link_name "SetWindowMaxSize";
+
+ set_window_size :: Int32 -> Int32 -> Unit need ffi extern c link_name "SetWindowSize";
+
+ set_window_opacity :: Float32 -> Unit need ffi extern c link_name "SetWindowOpacity";
+
+ set_window_focused :: Unit -> Unit need ffi extern c link_name "SetWindowFocused";
+
+ get_window_handle :: Unit -> RawPtr need ffi extern c link_name "GetWindowHandle";
+
+ get_screen_width :: Unit -> Int32 need ffi extern c link_name "GetScreenWidth";
+
+ get_screen_height :: Unit -> Int32 need ffi extern c link_name "GetScreenHeight";
+
+ get_render_width :: Unit -> Int32 need ffi extern c link_name "GetRenderWidth";
+
+ get_render_height :: Unit -> Int32 need ffi extern c link_name "GetRenderHeight";
+
+ get_monitor_count :: Unit -> Int32 need ffi extern c link_name "GetMonitorCount";
+
+ get_current_monitor :: Unit -> Int32 need ffi extern c link_name "GetCurrentMonitor";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetMonitorPosition") func get_monitor_position: Int32 -> RawPtr
-@ffi("GetMonitorWidth") get_monitor_width :: Int32 -> Int32
-@ffi("GetMonitorHeight") get_monitor_height :: Int32 -> Int32
-@ffi("GetMonitorPhysicalWidth") get_monitor_physical_width :: Int32 -> Int32
-@ffi("GetMonitorPhysicalHeight") get_monitor_physical_height :: Int32 -> Int32
-@ffi("GetMonitorRefreshRate") get_monitor_refresh_rate :: Int32 -> Int32
+ get_monitor_width :: Int32 -> Int32 need ffi extern c link_name "GetMonitorWidth";
+
+ get_monitor_height :: Int32 -> Int32 need ffi extern c link_name "GetMonitorHeight";
+
+ get_monitor_physical_width :: Int32 -> Int32 need ffi extern c link_name "GetMonitorPhysicalWidth";
+
+ get_monitor_physical_height :: Int32 -> Int32 need ffi extern c link_name "GetMonitorPhysicalHeight";
+
+ get_monitor_refresh_rate :: Int32 -> Int32 need ffi extern c link_name "GetMonitorRefreshRate";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetWindowPosition") func get_window_position: Unit -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetWindowScaleDPI") func get_window_scale_dpi: Unit -> RawPtr
-@ffi("GetMonitorName") get_monitor_name :: Int32 -> RawPtr
-@ffi("SetClipboardText") set_clipboard_text :: RawPtr -> Unit
-@ffi("GetClipboardText") get_clipboard_text :: Unit -> RawPtr
+ get_monitor_name :: Int32 -> RawPtr need ffi extern c link_name "GetMonitorName";
+
+ set_clipboard_text :: RawPtr -> Unit need ffi extern c link_name "SetClipboardText";
+
+ get_clipboard_text :: Unit -> RawPtr need ffi extern c link_name "GetClipboardText";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetClipboardImage") func get_clipboard_image: Unit -> RawPtr
-@ffi("EnableEventWaiting") enable_event_waiting :: Unit -> Unit
-@ffi("DisableEventWaiting") disable_event_waiting :: Unit -> Unit
-@ffi("ShowCursor") show_cursor :: Unit -> Unit
-@ffi("HideCursor") hide_cursor :: Unit -> Unit
-@ffi("IsCursorHidden") is_cursor_hidden :: Unit -> Bool
-@ffi("EnableCursor") enable_cursor :: Unit -> Unit
-@ffi("DisableCursor") disable_cursor :: Unit -> Unit
-@ffi("IsCursorOnScreen") is_cursor_on_screen :: Unit -> Bool
+ enable_event_waiting :: Unit -> Unit need ffi extern c link_name "EnableEventWaiting";
+
+ disable_event_waiting :: Unit -> Unit need ffi extern c link_name "DisableEventWaiting";
+
+ show_cursor :: Unit -> Unit need ffi extern c link_name "ShowCursor";
+
+ hide_cursor :: Unit -> Unit need ffi extern c link_name "HideCursor";
+
+ is_cursor_hidden :: Unit -> Bool need ffi extern c link_name "IsCursorHidden";
+
+ enable_cursor :: Unit -> Unit need ffi extern c link_name "EnableCursor";
+
+ disable_cursor :: Unit -> Unit need ffi extern c link_name "DisableCursor";
+
+ is_cursor_on_screen :: Unit -> Bool need ffi extern c link_name "IsCursorOnScreen";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ClearBackground") func clear_background: RawPtr -> Unit
-@ffi("BeginDrawing") begin_drawing :: Unit -> Unit
-@ffi("EndDrawing") end_drawing :: Unit -> Unit
+ begin_drawing :: Unit -> Unit need ffi extern c link_name "BeginDrawing";
+
+ end_drawing :: Unit -> Unit need ffi extern c link_name "EndDrawing";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_BeginMode2D") func begin_mode2d: RawPtr -> Unit
-@ffi("EndMode2D") end_mode2d :: Unit -> Unit
+ end_mode2d :: Unit -> Unit need ffi extern c link_name "EndMode2D";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_BeginMode3D") func begin_mode3d: RawPtr -> Unit
-@ffi("EndMode3D") end_mode3d :: Unit -> Unit
+ end_mode3d :: Unit -> Unit need ffi extern c link_name "EndMode3D";
+
 // SKIP: BeginTextureMode — unsupported param type: RenderTexture2D
-@ffi("EndTextureMode") end_texture_mode :: Unit -> Unit
+ end_texture_mode :: Unit -> Unit need ffi extern c link_name "EndTextureMode";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_BeginShaderMode") func begin_shader_mode: RawPtr -> Unit
-@ffi("EndShaderMode") end_shader_mode :: Unit -> Unit
-@ffi("BeginBlendMode") begin_blend_mode :: Int32 -> Unit
-@ffi("EndBlendMode") end_blend_mode :: Unit -> Unit
-@ffi("BeginScissorMode") begin_scissor_mode :: Int32 -> Int32 -> Int32 -> Int32 -> Unit
-@ffi("EndScissorMode") end_scissor_mode :: Unit -> Unit
+ end_shader_mode :: Unit -> Unit need ffi extern c link_name "EndShaderMode";
+
+ begin_blend_mode :: Int32 -> Unit need ffi extern c link_name "BeginBlendMode";
+
+ end_blend_mode :: Unit -> Unit need ffi extern c link_name "EndBlendMode";
+
+ begin_scissor_mode :: Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi extern c link_name "BeginScissorMode";
+
+ end_scissor_mode :: Unit -> Unit need ffi extern c link_name "EndScissorMode";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_BeginVrStereoMode") func begin_vr_stereo_mode: RawPtr -> Unit
-@ffi("EndVrStereoMode") end_vr_stereo_mode :: Unit -> Unit
+ end_vr_stereo_mode :: Unit -> Unit need ffi extern c link_name "EndVrStereoMode";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadVrStereoConfig") func load_vr_stereo_config: RawPtr -> RawPtr
 // Needs C shim (struct-by-value params)
@@ -828,146 +926,256 @@ AutomationEventSeq :: type = struct {
 // SKIP: GetCameraMatrix — unsupported param type: Camera
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetCameraMatrix2D") func get_camera_matrix2d: RawPtr -> RawPtr
-@ffi("SetTargetFPS") set_target_fps :: Int32 -> Unit
-@ffi("GetFrameTime") get_frame_time :: Unit -> Float32
-@ffi("GetTime") get_time :: Unit -> Float64
-@ffi("GetFPS") get_fps :: Unit -> Int32
-@ffi("SwapScreenBuffer") swap_screen_buffer :: Unit -> Unit
-@ffi("PollInputEvents") poll_input_events :: Unit -> Unit
-@ffi("WaitTime") wait_time :: Float64 -> Unit
-@ffi("SetRandomSeed") set_random_seed :: Int32 -> Unit
-@ffi("GetRandomValue") get_random_value :: Int32 -> Int32 -> Int32
-@ffi("LoadRandomSequence") load_random_sequence :: Int32 -> Int32 -> Int32 -> RawPtr
-@ffi("UnloadRandomSequence") unload_random_sequence :: RawPtr -> Unit
-@ffi("TakeScreenshot") take_screenshot :: RawPtr -> Unit
-@ffi("SetConfigFlags") set_config_flags :: Int32 -> Unit
-@ffi("OpenURL") open_url :: RawPtr -> Unit
-@ffi("SetTraceLogLevel") set_trace_log_level :: Int32 -> Unit
-@ffi("TraceLog") trace_log :: Int32 -> RawPtr -> Unit
-@ffi("SetTraceLogCallback") set_trace_log_callback :: RawPtr -> Unit
-@ffi("MemAlloc") mem_alloc :: Int32 -> RawPtr
-@ffi("MemRealloc") mem_realloc :: RawPtr -> Int32 -> RawPtr
-@ffi("MemFree") mem_free :: RawPtr -> Unit
-@ffi("LoadFileData") load_file_data :: RawPtr -> RawPtr -> RawPtr
-@ffi("UnloadFileData") unload_file_data :: RawPtr -> Unit
-@ffi("SaveFileData") save_file_data :: RawPtr -> RawPtr -> Int32 -> Bool
-@ffi("ExportDataAsCode") export_data_as_code :: RawPtr -> Int32 -> RawPtr -> Bool
-@ffi("LoadFileText") load_file_text :: RawPtr -> RawPtr
-@ffi("UnloadFileText") unload_file_text :: RawPtr -> Unit
-@ffi("SaveFileText") save_file_text :: RawPtr -> RawPtr -> Bool
-@ffi("SetLoadFileDataCallback") set_load_file_data_callback :: RawPtr -> Unit
-@ffi("SetSaveFileDataCallback") set_save_file_data_callback :: RawPtr -> Unit
-@ffi("SetLoadFileTextCallback") set_load_file_text_callback :: RawPtr -> Unit
-@ffi("SetSaveFileTextCallback") set_save_file_text_callback :: RawPtr -> Unit
-@ffi("FileRename") file_rename :: RawPtr -> RawPtr -> Int32
-@ffi("FileRemove") file_remove :: RawPtr -> Int32
-@ffi("FileCopy") file_copy :: RawPtr -> RawPtr -> Int32
-@ffi("FileMove") file_move :: RawPtr -> RawPtr -> Int32
-@ffi("FileTextReplace") file_text_replace :: RawPtr -> RawPtr -> RawPtr -> Int32
-@ffi("FileTextFindIndex") file_text_find_index :: RawPtr -> RawPtr -> Int32
-@ffi("FileExists") file_exists :: RawPtr -> Bool
-@ffi("DirectoryExists") directory_exists :: RawPtr -> Bool
-@ffi("IsFileExtension") is_file_extension :: RawPtr -> RawPtr -> Bool
-@ffi("GetFileLength") get_file_length :: RawPtr -> Int32
-@ffi("GetFileModTime") get_file_mod_time :: RawPtr -> Int64
-@ffi("GetFileExtension") get_file_extension :: RawPtr -> RawPtr
-@ffi("GetFileName") get_file_name :: RawPtr -> RawPtr
-@ffi("GetFileNameWithoutExt") get_file_name_without_ext :: RawPtr -> RawPtr
-@ffi("GetDirectoryPath") get_directory_path :: RawPtr -> RawPtr
-@ffi("GetPrevDirectoryPath") get_prev_directory_path :: RawPtr -> RawPtr
-@ffi("GetWorkingDirectory") get_working_directory :: Unit -> RawPtr
-@ffi("GetApplicationDirectory") get_application_directory :: Unit -> RawPtr
-@ffi("MakeDirectory") make_directory :: RawPtr -> Int32
-@ffi("ChangeDirectory") change_directory :: RawPtr -> Bool
-@ffi("IsPathFile") is_path_file :: RawPtr -> Bool
-@ffi("IsFileNameValid") is_file_name_valid :: RawPtr -> Bool
+ set_target_fps :: Int32 -> Unit need ffi extern c link_name "SetTargetFPS";
+
+ get_frame_time :: Unit -> Float32 need ffi extern c link_name "GetFrameTime";
+
+ get_time :: Unit -> Float64 need ffi extern c link_name "GetTime";
+
+ get_fps :: Unit -> Int32 need ffi extern c link_name "GetFPS";
+
+ swap_screen_buffer :: Unit -> Unit need ffi extern c link_name "SwapScreenBuffer";
+
+ poll_input_events :: Unit -> Unit need ffi extern c link_name "PollInputEvents";
+
+ wait_time :: Float64 -> Unit need ffi extern c link_name "WaitTime";
+
+ set_random_seed :: Int32 -> Unit need ffi extern c link_name "SetRandomSeed";
+
+ get_random_value :: Int32 -> Int32 -> Int32 need ffi extern c link_name "GetRandomValue";
+
+ load_random_sequence :: Int32 -> Int32 -> Int32 -> RawPtr need ffi extern c link_name "LoadRandomSequence";
+
+ unload_random_sequence :: RawPtr -> Unit need ffi extern c link_name "UnloadRandomSequence";
+
+ take_screenshot :: RawPtr -> Unit need ffi extern c link_name "TakeScreenshot";
+
+ set_config_flags :: Int32 -> Unit need ffi extern c link_name "SetConfigFlags";
+
+ open_url :: RawPtr -> Unit need ffi extern c link_name "OpenURL";
+
+ set_trace_log_level :: Int32 -> Unit need ffi extern c link_name "SetTraceLogLevel";
+
+ trace_log :: Int32 -> RawPtr -> Unit need ffi extern c link_name "TraceLog";
+
+ set_trace_log_callback :: RawPtr -> Unit need ffi extern c link_name "SetTraceLogCallback";
+
+ mem_alloc :: Int32 -> RawPtr need ffi extern c link_name "MemAlloc";
+
+ mem_realloc :: RawPtr -> Int32 -> RawPtr need ffi extern c link_name "MemRealloc";
+
+ mem_free :: RawPtr -> Unit need ffi extern c link_name "MemFree";
+
+ load_file_data :: RawPtr -> RawPtr -> RawPtr need ffi extern c link_name "LoadFileData";
+
+ unload_file_data :: RawPtr -> Unit need ffi extern c link_name "UnloadFileData";
+
+ save_file_data :: RawPtr -> RawPtr -> Int32 -> Bool need ffi extern c link_name "SaveFileData";
+
+ export_data_as_code :: RawPtr -> Int32 -> RawPtr -> Bool need ffi extern c link_name "ExportDataAsCode";
+
+ load_file_text :: RawPtr -> RawPtr need ffi extern c link_name "LoadFileText";
+
+ unload_file_text :: RawPtr -> Unit need ffi extern c link_name "UnloadFileText";
+
+ save_file_text :: RawPtr -> RawPtr -> Bool need ffi extern c link_name "SaveFileText";
+
+ set_load_file_data_callback :: RawPtr -> Unit need ffi extern c link_name "SetLoadFileDataCallback";
+
+ set_save_file_data_callback :: RawPtr -> Unit need ffi extern c link_name "SetSaveFileDataCallback";
+
+ set_load_file_text_callback :: RawPtr -> Unit need ffi extern c link_name "SetLoadFileTextCallback";
+
+ set_save_file_text_callback :: RawPtr -> Unit need ffi extern c link_name "SetSaveFileTextCallback";
+
+ file_rename :: RawPtr -> RawPtr -> Int32 need ffi extern c link_name "FileRename";
+
+ file_remove :: RawPtr -> Int32 need ffi extern c link_name "FileRemove";
+
+ file_copy :: RawPtr -> RawPtr -> Int32 need ffi extern c link_name "FileCopy";
+
+ file_move :: RawPtr -> RawPtr -> Int32 need ffi extern c link_name "FileMove";
+
+ file_text_replace :: RawPtr -> RawPtr -> RawPtr -> Int32 need ffi extern c link_name "FileTextReplace";
+
+ file_text_find_index :: RawPtr -> RawPtr -> Int32 need ffi extern c link_name "FileTextFindIndex";
+
+ file_exists :: RawPtr -> Bool need ffi extern c link_name "FileExists";
+
+ directory_exists :: RawPtr -> Bool need ffi extern c link_name "DirectoryExists";
+
+ is_file_extension :: RawPtr -> RawPtr -> Bool need ffi extern c link_name "IsFileExtension";
+
+ get_file_length :: RawPtr -> Int32 need ffi extern c link_name "GetFileLength";
+
+ get_file_mod_time :: RawPtr -> Int64 need ffi extern c link_name "GetFileModTime";
+
+ get_file_extension :: RawPtr -> RawPtr need ffi extern c link_name "GetFileExtension";
+
+ get_file_name :: RawPtr -> RawPtr need ffi extern c link_name "GetFileName";
+
+ get_file_name_without_ext :: RawPtr -> RawPtr need ffi extern c link_name "GetFileNameWithoutExt";
+
+ get_directory_path :: RawPtr -> RawPtr need ffi extern c link_name "GetDirectoryPath";
+
+ get_prev_directory_path :: RawPtr -> RawPtr need ffi extern c link_name "GetPrevDirectoryPath";
+
+ get_working_directory :: Unit -> RawPtr need ffi extern c link_name "GetWorkingDirectory";
+
+ get_application_directory :: Unit -> RawPtr need ffi extern c link_name "GetApplicationDirectory";
+
+ make_directory :: RawPtr -> Int32 need ffi extern c link_name "MakeDirectory";
+
+ change_directory :: RawPtr -> Bool need ffi extern c link_name "ChangeDirectory";
+
+ is_path_file :: RawPtr -> Bool need ffi extern c link_name "IsPathFile";
+
+ is_file_name_valid :: RawPtr -> Bool need ffi extern c link_name "IsFileNameValid";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadDirectoryFiles") func load_directory_files: RawPtr -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadDirectoryFilesEx") func load_directory_files_ex: RawPtr -> RawPtr -> Bool -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_UnloadDirectoryFiles") func unload_directory_files: RawPtr -> Unit
-@ffi("IsFileDropped") is_file_dropped :: Unit -> Bool
+ is_file_dropped :: Unit -> Bool need ffi extern c link_name "IsFileDropped";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadDroppedFiles") func load_dropped_files: Unit -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_UnloadDroppedFiles") func unload_dropped_files: RawPtr -> Unit
-@ffi("GetDirectoryFileCount") get_directory_file_count :: RawPtr -> Int32
-@ffi("GetDirectoryFileCountEx") get_directory_file_count_ex :: RawPtr -> RawPtr -> Bool -> Int32
-@ffi("CompressData") compress_data :: RawPtr -> Int32 -> RawPtr -> RawPtr
-@ffi("DecompressData") decompress_data :: RawPtr -> Int32 -> RawPtr -> RawPtr
-@ffi("EncodeDataBase64") encode_data_base64 :: RawPtr -> Int32 -> RawPtr -> RawPtr
-@ffi("DecodeDataBase64") decode_data_base64 :: RawPtr -> RawPtr -> RawPtr
-@ffi("ComputeCRC32") compute_crc32 :: RawPtr -> Int32 -> Int32
-@ffi("ComputeMD5") compute_md5 :: RawPtr -> Int32 -> RawPtr
-@ffi("ComputeSHA1") compute_sha1 :: RawPtr -> Int32 -> RawPtr
-@ffi("ComputeSHA256") compute_sha256 :: RawPtr -> Int32 -> RawPtr
+ get_directory_file_count :: RawPtr -> Int32 need ffi extern c link_name "GetDirectoryFileCount";
+
+ get_directory_file_count_ex :: RawPtr -> RawPtr -> Bool -> Int32 need ffi extern c link_name "GetDirectoryFileCountEx";
+
+ compress_data :: RawPtr -> Int32 -> RawPtr -> RawPtr need ffi extern c link_name "CompressData";
+
+ decompress_data :: RawPtr -> Int32 -> RawPtr -> RawPtr need ffi extern c link_name "DecompressData";
+
+ encode_data_base64 :: RawPtr -> Int32 -> RawPtr -> RawPtr need ffi extern c link_name "EncodeDataBase64";
+
+ decode_data_base64 :: RawPtr -> RawPtr -> RawPtr need ffi extern c link_name "DecodeDataBase64";
+
+ compute_crc32 :: RawPtr -> Int32 -> Int32 need ffi extern c link_name "ComputeCRC32";
+
+ compute_md5 :: RawPtr -> Int32 -> RawPtr need ffi extern c link_name "ComputeMD5";
+
+ compute_sha1 :: RawPtr -> Int32 -> RawPtr need ffi extern c link_name "ComputeSHA1";
+
+ compute_sha256 :: RawPtr -> Int32 -> RawPtr need ffi extern c link_name "ComputeSHA256";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadAutomationEventSeq") func load_automation_event_Seq: RawPtr -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_UnloadAutomationEventSeq") func unload_automation_event_Seq: RawPtr -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ExportAutomationEventSeq") func export_automation_event_Seq: RawPtr -> RawPtr -> Bool
-@ffi("SetAutomationEventSeq") set_automation_event_Seq :: RawPtr -> Unit
-@ffi("SetAutomationEventBaseFrame") set_automation_event_base_frame :: Int32 -> Unit
-@ffi("StartAutomationEventRecording") start_automation_event_recording :: Unit -> Unit
-@ffi("StopAutomationEventRecording") stop_automation_event_recording :: Unit -> Unit
+ set_automation_event_seq :: RawPtr -> Unit need ffi extern c link_name "SetAutomationEventSeq";
+
+ set_automation_event_base_frame :: Int32 -> Unit need ffi extern c link_name "SetAutomationEventBaseFrame";
+
+ start_automation_event_recording :: Unit -> Unit need ffi extern c link_name "StartAutomationEventRecording";
+
+ stop_automation_event_recording :: Unit -> Unit need ffi extern c link_name "StopAutomationEventRecording";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_PlayAutomationEvent") func play_automation_event: RawPtr -> Unit
-@ffi("IsKeyPressed") is_key_pressed :: Int32 -> Bool
-@ffi("IsKeyPressedRepeat") is_key_pressed_repeat :: Int32 -> Bool
-@ffi("IsKeyDown") is_key_down :: Int32 -> Bool
-@ffi("IsKeyReleased") is_key_released :: Int32 -> Bool
-@ffi("IsKeyUp") is_key_up :: Int32 -> Bool
-@ffi("GetKeyPressed") get_key_pressed :: Unit -> Int32
-@ffi("GetCharPressed") get_char_pressed :: Unit -> Int32
-@ffi("GetKeyName") get_key_name :: Int32 -> RawPtr
-@ffi("SetExitKey") set_exit_key :: Int32 -> Unit
-@ffi("IsGamepadAvailable") is_gamepad_available :: Int32 -> Bool
-@ffi("GetGamepadName") get_gamepad_name :: Int32 -> RawPtr
-@ffi("IsGamepadButtonPressed") is_gamepad_button_pressed :: Int32 -> Int32 -> Bool
-@ffi("IsGamepadButtonDown") is_gamepad_button_down :: Int32 -> Int32 -> Bool
-@ffi("IsGamepadButtonReleased") is_gamepad_button_released :: Int32 -> Int32 -> Bool
-@ffi("IsGamepadButtonUp") is_gamepad_button_up :: Int32 -> Int32 -> Bool
-@ffi("GetGamepadButtonPressed") get_gamepad_button_pressed :: Unit -> Int32
-@ffi("GetGamepadAxisCount") get_gamepad_axis_count :: Int32 -> Int32
-@ffi("GetGamepadAxisMovement") get_gamepad_axis_movement :: Int32 -> Int32 -> Float32
-@ffi("SetGamepadMappings") set_gamepad_mappings :: RawPtr -> Int32
-@ffi("SetGamepadVibration") set_gamepad_vibration :: Int32 -> Float32 -> Float32 -> Float32 -> Unit
-@ffi("IsMouseButtonPressed") is_mouse_button_pressed :: Int32 -> Bool
-@ffi("IsMouseButtonDown") is_mouse_button_down :: Int32 -> Bool
-@ffi("IsMouseButtonReleased") is_mouse_button_released :: Int32 -> Bool
-@ffi("IsMouseButtonUp") is_mouse_button_up :: Int32 -> Bool
-@ffi("GetMouseX") get_mouse_x :: Unit -> Int32
-@ffi("GetMouseY") get_mouse_y :: Unit -> Int32
+ is_key_pressed :: Int32 -> Bool need ffi extern c link_name "IsKeyPressed";
+
+ is_key_pressed_repeat :: Int32 -> Bool need ffi extern c link_name "IsKeyPressedRepeat";
+
+ is_key_down :: Int32 -> Bool need ffi extern c link_name "IsKeyDown";
+
+ is_key_released :: Int32 -> Bool need ffi extern c link_name "IsKeyReleased";
+
+ is_key_up :: Int32 -> Bool need ffi extern c link_name "IsKeyUp";
+
+ get_key_pressed :: Unit -> Int32 need ffi extern c link_name "GetKeyPressed";
+
+ get_char_pressed :: Unit -> Int32 need ffi extern c link_name "GetCharPressed";
+
+ get_key_name :: Int32 -> RawPtr need ffi extern c link_name "GetKeyName";
+
+ set_exit_key :: Int32 -> Unit need ffi extern c link_name "SetExitKey";
+
+ is_gamepad_available :: Int32 -> Bool need ffi extern c link_name "IsGamepadAvailable";
+
+ get_gamepad_name :: Int32 -> RawPtr need ffi extern c link_name "GetGamepadName";
+
+ is_gamepad_button_pressed :: Int32 -> Int32 -> Bool need ffi extern c link_name "IsGamepadButtonPressed";
+
+ is_gamepad_button_down :: Int32 -> Int32 -> Bool need ffi extern c link_name "IsGamepadButtonDown";
+
+ is_gamepad_button_released :: Int32 -> Int32 -> Bool need ffi extern c link_name "IsGamepadButtonReleased";
+
+ is_gamepad_button_up :: Int32 -> Int32 -> Bool need ffi extern c link_name "IsGamepadButtonUp";
+
+ get_gamepad_button_pressed :: Unit -> Int32 need ffi extern c link_name "GetGamepadButtonPressed";
+
+ get_gamepad_axis_count :: Int32 -> Int32 need ffi extern c link_name "GetGamepadAxisCount";
+
+ get_gamepad_axis_movement :: Int32 -> Int32 -> Float32 need ffi extern c link_name "GetGamepadAxisMovement";
+
+ set_gamepad_mappings :: RawPtr -> Int32 need ffi extern c link_name "SetGamepadMappings";
+
+ set_gamepad_vibration :: Int32 -> Float32 -> Float32 -> Float32 -> Unit need ffi extern c link_name "SetGamepadVibration";
+
+ is_mouse_button_pressed :: Int32 -> Bool need ffi extern c link_name "IsMouseButtonPressed";
+
+ is_mouse_button_down :: Int32 -> Bool need ffi extern c link_name "IsMouseButtonDown";
+
+ is_mouse_button_released :: Int32 -> Bool need ffi extern c link_name "IsMouseButtonReleased";
+
+ is_mouse_button_up :: Int32 -> Bool need ffi extern c link_name "IsMouseButtonUp";
+
+ get_mouse_x :: Unit -> Int32 need ffi extern c link_name "GetMouseX";
+
+ get_mouse_y :: Unit -> Int32 need ffi extern c link_name "GetMouseY";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetMousePosition") func get_mouse_position: Unit -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetMouseDelta") func get_mouse_delta: Unit -> RawPtr
-@ffi("SetMousePosition") set_mouse_position :: Int32 -> Int32 -> Unit
-@ffi("SetMouseOffset") set_mouse_offset :: Int32 -> Int32 -> Unit
-@ffi("SetMouseScale") set_mouse_scale :: Float32 -> Float32 -> Unit
-@ffi("GetMouseWheelMove") get_mouse_wheel_move :: Unit -> Float32
+ set_mouse_position :: Int32 -> Int32 -> Unit need ffi extern c link_name "SetMousePosition";
+
+ set_mouse_offset :: Int32 -> Int32 -> Unit need ffi extern c link_name "SetMouseOffset";
+
+ set_mouse_scale :: Float32 -> Float32 -> Unit need ffi extern c link_name "SetMouseScale";
+
+ get_mouse_wheel_move :: Unit -> Float32 need ffi extern c link_name "GetMouseWheelMove";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetMouseWheelMoveV") func get_mouse_wheel_move_v: Unit -> RawPtr
-@ffi("SetMouseCursor") set_mouse_cursor :: Int32 -> Unit
-@ffi("GetTouchX") get_touch_x :: Unit -> Int32
-@ffi("GetTouchY") get_touch_y :: Unit -> Int32
+ set_mouse_cursor :: Int32 -> Unit need ffi extern c link_name "SetMouseCursor";
+
+ get_touch_x :: Unit -> Int32 need ffi extern c link_name "GetTouchX";
+
+ get_touch_y :: Unit -> Int32 need ffi extern c link_name "GetTouchY";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetTouchPosition") func get_touch_position: Int32 -> RawPtr
-@ffi("GetTouchPointId") get_touch_point_id :: Int32 -> Int32
-@ffi("GetTouchPointCount") get_touch_point_count :: Unit -> Int32
-@ffi("SetGesturesEnabled") set_gestures_enabled :: Int32 -> Unit
-@ffi("IsGestureDetected") is_gesture_detected :: Int32 -> Bool
-@ffi("GetGestureDetected") get_gesture_detected :: Unit -> Int32
-@ffi("GetGestureHoldDuration") get_gesture_hold_duration :: Unit -> Float32
+ get_touch_point_id :: Int32 -> Int32 need ffi extern c link_name "GetTouchPointId";
+
+ get_touch_point_count :: Unit -> Int32 need ffi extern c link_name "GetTouchPointCount";
+
+ set_gestures_enabled :: Int32 -> Unit need ffi extern c link_name "SetGesturesEnabled";
+
+ is_gesture_detected :: Int32 -> Bool need ffi extern c link_name "IsGestureDetected";
+
+ get_gesture_detected :: Unit -> Int32 need ffi extern c link_name "GetGestureDetected";
+
+ get_gesture_hold_duration :: Unit -> Float32 need ffi extern c link_name "GetGestureHoldDuration";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetGestureDragVector") func get_gesture_drag_vector: Unit -> RawPtr
-@ffi("GetGestureDragAngle") get_gesture_drag_angle :: Unit -> Float32
+ get_gesture_drag_angle :: Unit -> Float32 need ffi extern c link_name "GetGestureDragAngle";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetGesturePinchVector") func get_gesture_pinch_vector: Unit -> RawPtr
-@ffi("GetGesturePinchAngle") get_gesture_pinch_angle :: Unit -> Float32
-@ffi("UpdateCamera") update_camera :: RawPtr -> Int32 -> Unit
+ get_gesture_pinch_angle :: Unit -> Float32 need ffi extern c link_name "GetGesturePinchAngle";
+
+ update_camera :: RawPtr -> Int32 -> Unit need ffi extern c link_name "UpdateCamera";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_UpdateCameraPro") func update_camera_pro: RawPtr -> RawPtr -> RawPtr -> Float32 -> Unit
 // SKIP: SetShapesTexture — unsupported param type: Texture2D
@@ -1159,44 +1367,64 @@ AutomationEventSeq :: type = struct {
 // @ffi("eidos_shim_ImageText") func image_text: RawPtr -> Int32 -> RawPtr -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ImageTextEx") func image_text_ex: RawPtr -> RawPtr -> Float32 -> Float32 -> RawPtr -> RawPtr
-@ffi("ImageFormat") image_format :: RawPtr -> Int32 -> Unit
+ image_format :: RawPtr -> Int32 -> Unit need ffi extern c link_name "ImageFormat";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ImageToPOT") func image_to_pot: RawPtr -> RawPtr -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ImageCrop") func image_crop: RawPtr -> RawPtr -> Unit
-@ffi("ImageAlphaCrop") image_alpha_crop :: RawPtr -> Float32 -> Unit
+ image_alpha_crop :: RawPtr -> Float32 -> Unit need ffi extern c link_name "ImageAlphaCrop";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ImageAlphaClear") func image_alpha_clear: RawPtr -> RawPtr -> Float32 -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ImageAlphaMask") func image_alpha_mask: RawPtr -> RawPtr -> Unit
-@ffi("ImageAlphaPremultiply") image_alpha_premultiply :: RawPtr -> Unit
-@ffi("ImageBlurGaussian") image_blur_gaussian :: RawPtr -> Int32 -> Unit
-@ffi("ImageKernelConvolution") image_kernel_convolution :: RawPtr -> RawPtr -> Int32 -> Unit
-@ffi("ImageResize") image_resize :: RawPtr -> Int32 -> Int32 -> Unit
-@ffi("ImageResizeNN") image_resize_nn :: RawPtr -> Int32 -> Int32 -> Unit
+ image_alpha_premultiply :: RawPtr -> Unit need ffi extern c link_name "ImageAlphaPremultiply";
+
+ image_blur_gaussian :: RawPtr -> Int32 -> Unit need ffi extern c link_name "ImageBlurGaussian";
+
+ image_kernel_convolution :: RawPtr -> RawPtr -> Int32 -> Unit need ffi extern c link_name "ImageKernelConvolution";
+
+ image_resize :: RawPtr -> Int32 -> Int32 -> Unit need ffi extern c link_name "ImageResize";
+
+ image_resize_nn :: RawPtr -> Int32 -> Int32 -> Unit need ffi extern c link_name "ImageResizeNN";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ImageResizeCanvas") func image_resize_canvas: RawPtr -> Int32 -> Int32 -> Int32 -> Int32 -> RawPtr -> Unit
-@ffi("ImageMipmaps") image_mipmaps :: RawPtr -> Unit
-@ffi("ImageDither") image_dither :: RawPtr -> Int32 -> Int32 -> Int32 -> Int32 -> Unit
-@ffi("ImageFlipVertical") image_flip_vertical :: RawPtr -> Unit
-@ffi("ImageFlipHorizontal") image_flip_horizontal :: RawPtr -> Unit
-@ffi("ImageRotate") image_rotate :: RawPtr -> Int32 -> Unit
-@ffi("ImageRotateCW") image_rotate_cw :: RawPtr -> Unit
-@ffi("ImageRotateCCW") image_rotate_ccw :: RawPtr -> Unit
+ image_mipmaps :: RawPtr -> Unit need ffi extern c link_name "ImageMipmaps";
+
+ image_dither :: RawPtr -> Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi extern c link_name "ImageDither";
+
+ image_flip_vertical :: RawPtr -> Unit need ffi extern c link_name "ImageFlipVertical";
+
+ image_flip_horizontal :: RawPtr -> Unit need ffi extern c link_name "ImageFlipHorizontal";
+
+ image_rotate :: RawPtr -> Int32 -> Unit need ffi extern c link_name "ImageRotate";
+
+ image_rotate_cw :: RawPtr -> Unit need ffi extern c link_name "ImageRotateCW";
+
+ image_rotate_ccw :: RawPtr -> Unit need ffi extern c link_name "ImageRotateCCW";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ImageColorTint") func image_color_tint: RawPtr -> RawPtr -> Unit
-@ffi("ImageColorInvert") image_color_invert :: RawPtr -> Unit
-@ffi("ImageColorGrayscale") image_color_grayscale :: RawPtr -> Unit
-@ffi("ImageColorContrast") image_color_contrast :: RawPtr -> Int32 -> Unit
-@ffi("ImageColorBrightness") image_color_brightness :: RawPtr -> Int32 -> Unit
+ image_color_invert :: RawPtr -> Unit need ffi extern c link_name "ImageColorInvert";
+
+ image_color_grayscale :: RawPtr -> Unit need ffi extern c link_name "ImageColorGrayscale";
+
+ image_color_contrast :: RawPtr -> Int32 -> Unit need ffi extern c link_name "ImageColorContrast";
+
+ image_color_brightness :: RawPtr -> Int32 -> Unit need ffi extern c link_name "ImageColorBrightness";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ImageColorReplace") func image_color_replace: RawPtr -> RawPtr -> RawPtr -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadImageColors") func load_image_colors: RawPtr -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadImagePalette") func load_image_palette: RawPtr -> Int32 -> RawPtr -> RawPtr
-@ffi("UnloadImageColors") unload_image_colors :: RawPtr -> Unit
-@ffi("UnloadImagePalette") unload_image_palette :: RawPtr -> Unit
+ unload_image_colors :: RawPtr -> Unit need ffi extern c link_name "UnloadImageColors";
+
+ unload_image_palette :: RawPtr -> Unit need ffi extern c link_name "UnloadImagePalette";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetImageAlphaBorder") func get_image_alpha_border: RawPtr -> Float32 -> RawPtr
 // Needs C shim (struct-by-value params)
@@ -1257,7 +1485,8 @@ AutomationEventSeq :: type = struct {
 // SKIP: UnloadRenderTexture — unsupported param type: RenderTexture2D
 // SKIP: UpdateTexture — unsupported param type: Texture2D
 // SKIP: UpdateTextureRec — unsupported param type: Texture2D
-@ffi("GenTextureMipmaps") gen_texture_mipmaps :: RawPtr -> Unit
+ gen_texture_mipmaps :: RawPtr -> Unit need ffi extern c link_name "GenTextureMipmaps";
+
 // SKIP: SetTextureFilter — unsupported param type: Texture2D
 // SKIP: SetTextureWrap — unsupported param type: Texture2D
 // SKIP: DrawTexture — unsupported param type: Texture2D
@@ -1298,7 +1527,8 @@ AutomationEventSeq :: type = struct {
 // @ffi("eidos_shim_GetPixelColor") func get_pixel_color: RawPtr -> Int32 -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_SetPixelColor") func set_pixel_color: RawPtr -> RawPtr -> Int32 -> Unit
-@ffi("GetPixelDataSize") get_pixel_data_size :: Int32 -> Int32 -> Int32 -> Int32
+ get_pixel_data_size :: Int32 -> Int32 -> Int32 -> Int32 need ffi extern c link_name "GetPixelDataSize";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetFontDefault") func get_font_default: Unit -> RawPtr
 // Needs C shim (struct-by-value params)
@@ -1311,15 +1541,18 @@ AutomationEventSeq :: type = struct {
 // @ffi("eidos_shim_LoadFontFromMemory") func load_font_from_memory: RawPtr -> RawPtr -> Int32 -> Int32 -> RawPtr -> Int32 -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_IsFontValid") func is_font_valid: RawPtr -> Bool
-@ffi("LoadFontData") load_font_data :: RawPtr -> Int32 -> Int32 -> RawPtr -> Int32 -> Int32 -> RawPtr -> RawPtr
+ load_font_data :: RawPtr -> Int32 -> Int32 -> RawPtr -> Int32 -> Int32 -> RawPtr -> RawPtr need ffi extern c link_name "LoadFontData";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GenImageFontAtlas") func gen_image_font_atlas: RawPtr -> RawPtr -> Int32 -> Int32 -> Int32 -> Int32 -> RawPtr
-@ffi("UnloadFontData") unload_font_data :: RawPtr -> Int32 -> Unit
+ unload_font_data :: RawPtr -> Int32 -> Unit need ffi extern c link_name "UnloadFontData";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_UnloadFont") func unload_font: RawPtr -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ExportFontAsCode") func export_font_as_code: RawPtr -> RawPtr -> Bool
-@ffi("DrawFPS") draw_fps :: Int32 -> Int32 -> Unit
+ draw_fps :: Int32 -> Int32 -> Unit need ffi extern c link_name "DrawFPS";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_DrawText") func draw_text: RawPtr -> Int32 -> Int32 -> Int32 -> RawPtr -> Unit
 // Needs C shim (struct-by-value params)
@@ -1330,8 +1563,10 @@ AutomationEventSeq :: type = struct {
 // @ffi("eidos_shim_DrawTextCodepoint") func draw_text_codepoint: RawPtr -> Int32 -> RawPtr -> Float32 -> RawPtr -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_DrawTextCodepoints") func draw_text_codepoints: RawPtr -> RawPtr -> Int32 -> RawPtr -> Float32 -> Float32 -> RawPtr -> Unit
-@ffi("SetTextLineSpacing") set_text_line_spacing :: Int32 -> Unit
-@ffi("MeasureText") measure_text :: RawPtr -> Int32 -> Int32
+ set_text_line_spacing :: Int32 -> Unit need ffi extern c link_name "SetTextLineSpacing";
+
+ measure_text :: RawPtr -> Int32 -> Int32 need ffi extern c link_name "MeasureText";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_MeasureTextEx") func measure_text_ex: RawPtr -> RawPtr -> Float32 -> Float32 -> RawPtr
 // Needs C shim (struct-by-value params)
@@ -1342,41 +1577,76 @@ AutomationEventSeq :: type = struct {
 // @ffi("eidos_shim_GetGlyphInfo") func get_glyph_info: RawPtr -> Int32 -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetGlyphAtlasRec") func get_glyph_atlas_rec: RawPtr -> Int32 -> RawPtr
-@ffi("LoadUTF8") load_utf8 :: RawPtr -> Int32 -> RawPtr
-@ffi("UnloadUTF8") unload_utf8 :: RawPtr -> Unit
-@ffi("LoadCodepoints") load_codepoints :: RawPtr -> RawPtr -> RawPtr
-@ffi("UnloadCodepoints") unload_codepoints :: RawPtr -> Unit
-@ffi("GetCodepointCount") get_codepoint_count :: RawPtr -> Int32
-@ffi("GetCodepoint") get_codepoint :: RawPtr -> RawPtr -> Int32
-@ffi("GetCodepointNext") get_codepoint_next :: RawPtr -> RawPtr -> Int32
-@ffi("GetCodepointPrevious") get_codepoint_previous :: RawPtr -> RawPtr -> Int32
-@ffi("CodepointToUTF8") codepoint_to_utf8 :: Int32 -> RawPtr -> RawPtr
-@ffi("LoadTextLines") load_text_lines :: RawPtr -> RawPtr -> RawPtr
-@ffi("UnloadTextLines") unload_text_lines :: RawPtr -> Int32 -> Unit
-@ffi("TextCopy") text_copy :: RawPtr -> RawPtr -> Int32
-@ffi("TextIsEqual") text_is_equal :: RawPtr -> RawPtr -> Bool
-@ffi("TextLength") text_length :: RawPtr -> Int32
-@ffi("TextFormat") text_format :: RawPtr -> RawPtr
-@ffi("TextSubtext") text_subtext :: RawPtr -> Int32 -> Int32 -> RawPtr
-@ffi("TextRemoveSpaces") text_remove_spaces :: RawPtr -> RawPtr
-@ffi("GetTextBetween") get_text_between :: RawPtr -> RawPtr -> RawPtr -> RawPtr
-@ffi("TextReplace") text_replace :: RawPtr -> RawPtr -> RawPtr -> RawPtr
-@ffi("TextReplaceAlloc") text_replace_alloc :: RawPtr -> RawPtr -> RawPtr -> RawPtr
-@ffi("TextReplaceBetween") text_replace_between :: RawPtr -> RawPtr -> RawPtr -> RawPtr -> RawPtr
-@ffi("TextReplaceBetweenAlloc") text_replace_between_alloc :: RawPtr -> RawPtr -> RawPtr -> RawPtr -> RawPtr
-@ffi("TextInsert") text_insert :: RawPtr -> RawPtr -> Int32 -> RawPtr
-@ffi("TextInsertAlloc") text_insert_alloc :: RawPtr -> RawPtr -> Int32 -> RawPtr
-@ffi("TextJoin") text_join :: RawPtr -> Int32 -> RawPtr -> RawPtr
-@ffi("TextSplit") text_split :: RawPtr -> Int8 -> RawPtr -> RawPtr
-@ffi("TextAppend") text_append :: RawPtr -> RawPtr -> RawPtr -> Unit
-@ffi("TextFindIndex") text_find_index :: RawPtr -> RawPtr -> Int32
-@ffi("TextToUpper") text_to_upper :: RawPtr -> RawPtr
-@ffi("TextToLower") text_to_lower :: RawPtr -> RawPtr
-@ffi("TextToPascal") text_to_pascal :: RawPtr -> RawPtr
-@ffi("TextToSnake") text_to_snake :: RawPtr -> RawPtr
-@ffi("TextToCamel") text_to_camel :: RawPtr -> RawPtr
-@ffi("TextToInteger") text_to_integer :: RawPtr -> Int32
-@ffi("TextToFloat") text_to_float :: RawPtr -> Float32
+ load_utf8 :: RawPtr -> Int32 -> RawPtr need ffi extern c link_name "LoadUTF8";
+
+ unload_utf8 :: RawPtr -> Unit need ffi extern c link_name "UnloadUTF8";
+
+ load_codepoints :: RawPtr -> RawPtr -> RawPtr need ffi extern c link_name "LoadCodepoints";
+
+ unload_codepoints :: RawPtr -> Unit need ffi extern c link_name "UnloadCodepoints";
+
+ get_codepoint_count :: RawPtr -> Int32 need ffi extern c link_name "GetCodepointCount";
+
+ get_codepoint :: RawPtr -> RawPtr -> Int32 need ffi extern c link_name "GetCodepoint";
+
+ get_codepoint_next :: RawPtr -> RawPtr -> Int32 need ffi extern c link_name "GetCodepointNext";
+
+ get_codepoint_previous :: RawPtr -> RawPtr -> Int32 need ffi extern c link_name "GetCodepointPrevious";
+
+ codepoint_to_utf8 :: Int32 -> RawPtr -> RawPtr need ffi extern c link_name "CodepointToUTF8";
+
+ load_text_lines :: RawPtr -> RawPtr -> RawPtr need ffi extern c link_name "LoadTextLines";
+
+ unload_text_lines :: RawPtr -> Int32 -> Unit need ffi extern c link_name "UnloadTextLines";
+
+ text_copy :: RawPtr -> RawPtr -> Int32 need ffi extern c link_name "TextCopy";
+
+ text_is_equal :: RawPtr -> RawPtr -> Bool need ffi extern c link_name "TextIsEqual";
+
+ text_length :: RawPtr -> Int32 need ffi extern c link_name "TextLength";
+
+ text_format :: RawPtr -> RawPtr need ffi extern c link_name "TextFormat";
+
+ text_subtext :: RawPtr -> Int32 -> Int32 -> RawPtr need ffi extern c link_name "TextSubtext";
+
+ text_remove_spaces :: RawPtr -> RawPtr need ffi extern c link_name "TextRemoveSpaces";
+
+ get_text_between :: RawPtr -> RawPtr -> RawPtr -> RawPtr need ffi extern c link_name "GetTextBetween";
+
+ text_replace :: RawPtr -> RawPtr -> RawPtr -> RawPtr need ffi extern c link_name "TextReplace";
+
+ text_replace_alloc :: RawPtr -> RawPtr -> RawPtr -> RawPtr need ffi extern c link_name "TextReplaceAlloc";
+
+ text_replace_between :: RawPtr -> RawPtr -> RawPtr -> RawPtr -> RawPtr need ffi extern c link_name "TextReplaceBetween";
+
+ text_replace_between_alloc :: RawPtr -> RawPtr -> RawPtr -> RawPtr -> RawPtr need ffi extern c link_name "TextReplaceBetweenAlloc";
+
+ text_insert :: RawPtr -> RawPtr -> Int32 -> RawPtr need ffi extern c link_name "TextInsert";
+
+ text_insert_alloc :: RawPtr -> RawPtr -> Int32 -> RawPtr need ffi extern c link_name "TextInsertAlloc";
+
+ text_join :: RawPtr -> Int32 -> RawPtr -> RawPtr need ffi extern c link_name "TextJoin";
+
+ text_split :: RawPtr -> Int8 -> RawPtr -> RawPtr need ffi extern c link_name "TextSplit";
+
+ text_append :: RawPtr -> RawPtr -> RawPtr -> Unit need ffi extern c link_name "TextAppend";
+
+ text_find_index :: RawPtr -> RawPtr -> Int32 need ffi extern c link_name "TextFindIndex";
+
+ text_to_upper :: RawPtr -> RawPtr need ffi extern c link_name "TextToUpper";
+
+ text_to_lower :: RawPtr -> RawPtr need ffi extern c link_name "TextToLower";
+
+ text_to_pascal :: RawPtr -> RawPtr need ffi extern c link_name "TextToPascal";
+
+ text_to_snake :: RawPtr -> RawPtr need ffi extern c link_name "TextToSnake";
+
+ text_to_camel :: RawPtr -> RawPtr need ffi extern c link_name "TextToCamel";
+
+ text_to_integer :: RawPtr -> Int32 need ffi extern c link_name "TextToInteger";
+
+ text_to_float :: RawPtr -> Float32 need ffi extern c link_name "TextToFloat";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_DrawLine3D") func draw_line3d: RawPtr -> RawPtr -> RawPtr -> Unit
 // Needs C shim (struct-by-value params)
@@ -1417,7 +1687,8 @@ AutomationEventSeq :: type = struct {
 // @ffi("eidos_shim_DrawPlane") func draw_plane: RawPtr -> RawPtr -> RawPtr -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_DrawRay") func draw_ray: RawPtr -> RawPtr -> Unit
-@ffi("DrawGrid") draw_grid :: Int32 -> Float32 -> Unit
+ draw_grid :: Int32 -> Float32 -> Unit need ffi extern c link_name "DrawGrid";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadModel") func load_model: RawPtr -> RawPtr
 // Needs C shim (struct-by-value params)
@@ -1441,7 +1712,8 @@ AutomationEventSeq :: type = struct {
 // SKIP: DrawBillboard — unsupported param type: Camera
 // SKIP: DrawBillboardRec — unsupported param type: Camera
 // SKIP: DrawBillboardPro — unsupported param type: Camera
-@ffi("UploadMesh") upload_mesh :: RawPtr -> Bool -> Unit
+ upload_mesh :: RawPtr -> Bool -> Unit need ffi extern c link_name "UploadMesh";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_UpdateMeshBuffer") func update_mesh_buffer: RawPtr -> Int32 -> RawPtr -> Int32 -> Int32 -> Unit
 // Needs C shim (struct-by-value params)
@@ -1452,7 +1724,8 @@ AutomationEventSeq :: type = struct {
 // @ffi("eidos_shim_DrawMeshInstanced") func draw_mesh_instanced: RawPtr -> RawPtr -> RawPtr -> Int32 -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetMeshBoundingBox") func get_mesh_bounding_box: RawPtr -> RawPtr
-@ffi("GenMeshTangents") gen_mesh_tangents :: RawPtr -> Unit
+ gen_mesh_tangents :: RawPtr -> Unit need ffi extern c link_name "GenMeshTangents";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_ExportMesh") func export_mesh: RawPtr -> RawPtr -> Bool
 // Needs C shim (struct-by-value params)
@@ -1479,7 +1752,8 @@ AutomationEventSeq :: type = struct {
 // @ffi("eidos_shim_GenMeshHeightmap") func gen_mesh_heightmap: RawPtr -> RawPtr -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GenMeshCubicmap") func gen_mesh_cubicmap: RawPtr -> RawPtr -> RawPtr
-@ffi("LoadMaterials") load_materials :: RawPtr -> RawPtr -> RawPtr
+ load_materials :: RawPtr -> RawPtr -> RawPtr need ffi extern c link_name "LoadMaterials";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadMaterialDefault") func load_material_default: Unit -> RawPtr
 // Needs C shim (struct-by-value params)
@@ -1487,13 +1761,16 @@ AutomationEventSeq :: type = struct {
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_UnloadMaterial") func unload_material: RawPtr -> Unit
 // SKIP: SetMaterialTexture — unsupported param type: Texture2D
-@ffi("SetModelMeshMaterial") set_model_mesh_material :: RawPtr -> Int32 -> Int32 -> Unit
-@ffi("LoadModelAnimations") load_model_animations :: RawPtr -> RawPtr -> RawPtr
+ set_model_mesh_material :: RawPtr -> Int32 -> Int32 -> Unit need ffi extern c link_name "SetModelMeshMaterial";
+
+ load_model_animations :: RawPtr -> RawPtr -> RawPtr need ffi extern c link_name "LoadModelAnimations";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_UpdateModelAnimation") func update_model_animation: RawPtr -> RawPtr -> Float32 -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_UpdateModelAnimationEx") func update_model_animation_ex: RawPtr -> RawPtr -> Float32 -> RawPtr -> Float32 -> Float32 -> Unit
-@ffi("UnloadModelAnimations") unload_model_animations :: RawPtr -> Int32 -> Unit
+ unload_model_animations :: RawPtr -> Int32 -> Unit need ffi extern c link_name "UnloadModelAnimations";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_IsModelAnimationValid") func is_model_animation_valid: RawPtr -> RawPtr -> Bool
 // Needs C shim (struct-by-value params)
@@ -1512,11 +1789,16 @@ AutomationEventSeq :: type = struct {
 // @ffi("eidos_shim_GetRayCollisionTriangle") func get_ray_collision_triangle: RawPtr -> RawPtr -> RawPtr -> RawPtr -> RawPtr
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_GetRayCollisionQuad") func get_ray_collision_quad: RawPtr -> RawPtr -> RawPtr -> RawPtr -> RawPtr -> RawPtr
-@ffi("InitAudioDevice") init_audio_device :: Unit -> Unit
-@ffi("CloseAudioDevice") close_audio_device :: Unit -> Unit
-@ffi("IsAudioDeviceReady") is_audio_device_ready :: Unit -> Bool
-@ffi("SetMasterVolume") set_master_volume :: Float32 -> Unit
-@ffi("GetMasterVolume") get_master_volume :: Unit -> Float32
+ init_audio_device :: Unit -> Unit need ffi extern c link_name "InitAudioDevice";
+
+ close_audio_device :: Unit -> Unit need ffi extern c link_name "CloseAudioDevice";
+
+ is_audio_device_ready :: Unit -> Bool need ffi extern c link_name "IsAudioDeviceReady";
+
+ set_master_volume :: Float32 -> Unit need ffi extern c link_name "SetMasterVolume";
+
+ get_master_volume :: Unit -> Float32 need ffi extern c link_name "GetMasterVolume";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadWave") func load_wave: RawPtr -> RawPtr
 // Needs C shim (struct-by-value params)
@@ -1561,11 +1843,14 @@ AutomationEventSeq :: type = struct {
 // @ffi("eidos_shim_SetSoundPan") func set_sound_pan: RawPtr -> Float32 -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_WaveCopy") func wave_copy: RawPtr -> RawPtr
-@ffi("WaveCrop") wave_crop :: RawPtr -> Int32 -> Int32 -> Unit
-@ffi("WaveFormat") wave_format :: RawPtr -> Int32 -> Int32 -> Int32 -> Unit
+ wave_crop :: RawPtr -> Int32 -> Int32 -> Unit need ffi extern c link_name "WaveCrop";
+
+ wave_format :: RawPtr -> Int32 -> Int32 -> Int32 -> Unit need ffi extern c link_name "WaveFormat";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadWaveSamples") func load_wave_samples: RawPtr -> RawPtr
-@ffi("UnloadWaveSamples") unload_wave_samples :: RawPtr -> Unit
+ unload_wave_samples :: RawPtr -> Unit need ffi extern c link_name "UnloadWaveSamples";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_LoadMusicStream") func load_music_stream: RawPtr -> RawPtr
 // Needs C shim (struct-by-value params)
@@ -1624,13 +1909,16 @@ AutomationEventSeq :: type = struct {
 // @ffi("eidos_shim_SetAudioStreamPitch") func set_audio_stream_pitch: RawPtr -> Float32 -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_SetAudioStreamPan") func set_audio_stream_pan: RawPtr -> Float32 -> Unit
-@ffi("SetAudioStreamBufferSizeDefault") set_audio_stream_buffer_size_default :: Int32 -> Unit
+ set_audio_stream_buffer_size_default :: Int32 -> Unit need ffi extern c link_name "SetAudioStreamBufferSizeDefault";
+
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_SetAudioStreamCallback") func set_audio_stream_callback: RawPtr -> RawPtr -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_AttachAudioStreamProcessor") func attach_audio_stream_processor: RawPtr -> RawPtr -> Unit
 // Needs C shim (struct-by-value params)
 // @ffi("eidos_shim_DetachAudioStreamProcessor") func detach_audio_stream_processor: RawPtr -> RawPtr -> Unit
-@ffi("AttachAudioMixedProcessor") attach_audio_mixed_processor :: RawPtr -> Unit
-@ffi("DetachAudioMixedProcessor") detach_audio_mixed_processor :: RawPtr -> Unit
+ attach_audio_mixed_processor :: RawPtr -> Unit need ffi extern c link_name "AttachAudioMixedProcessor";
+
+ detach_audio_mixed_processor :: RawPtr -> Unit need ffi extern c link_name "DetachAudioMixedProcessor";
+
 // Summary: 252 direct, 319 shim, 32 skipped
