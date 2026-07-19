@@ -26,11 +26,11 @@ positive_result :: Int -> Result.With[String, Int] { x => if x > 0 then { Ok(x +
 main :: Unit -> Int need io
 {
     _ => {
-        src_for_empty := Text.clone("ab");
-        src_for_opt := Text.clone("ab");
-        src_for_char := Text.clone("ab");
-        src_for_char_fallback := Text.clone("ab");
-        src_for_len := Text.clone("ab");
+        src_for_empty := "ab";
+        src_for_opt := "ab";
+        src_for_char := "ab";
+        src_for_char_fallback := "ab";
+        src_for_len := "ab";
 
         via_fn := Functions.apply(inc)(41);
         via_result := unwrap_or(and_then(map(Ok(1))(inc))(lift_result))(0);
@@ -70,16 +70,16 @@ main :: Unit -> Int need io
             None() => 0
         };
         via_text_fallback := if char_at_or(src_for_char_fallback)(9)('z') == 'z' then { 1 } else { 0 };
-        via_text_index := index_of_or(Text.clone("hello"))("ell")(-1);
-        via_text_last_index := last_index_of_or(Text.clone("banana"))("ana")(-1);
-        via_text_trim := trim(Text.clone("  ok  "));
+        via_text_index := index_of_or("hello")("ell")(-1);
+        via_text_last_index := last_index_of_or("banana")("ana")(-1);
+        via_text_trim := trim("  ok  ");
         via_file_fallback := read_text_or("eidos_tutorial_missing.txt")("fallback");
         via_file_status := File.last_success(());
         via_file_error := File.last_error(());
         via_text := char_code_at_or(src_for_opt)(1)(0) + via_text_char + via_text_fallback + via_text_index + via_text_last_index + Text.len(src_for_len);
         via_ordering := then_compare_int(compare_int(via_head)(1))(0)(1);
         trait_ordering := Ordering.show(compare_int(1)(2));
-        trait_text := show(Text.clone("ok"));
+        trait_text := show("ok");
         if !Text.empty(src_for_empty) &&
            is_ok(Ok(1)) &&
            is_err(Err("oops")) &&
@@ -94,9 +94,9 @@ main :: Unit -> Int need io
            via_file_fallback == "fallback" &&
            !via_file_status &&
            !(via_file_error == "") &&
-           trim_start(Text.clone("  left")) == "left" &&
-           trim_end(Text.clone("right  ")) == "right" &&
-           is_blank(Text.clone("   ")) then {
+           trim_start("  left") == "left" &&
+           trim_end("right  ") == "right" &&
+           is_blank("   ") then {
             via_fn + via_result + via_result_recover + via_result_flatten + via_seq + via_list_zip + via_head + via_tail + via_fold_right + via_option_zip + via_option_zip_with + via_option_flatten + via_option_traverse + via_result_traverse + via_list_traverse + via_text
         }
         else { 0 }

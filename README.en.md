@@ -676,6 +676,14 @@ Current status (2026-03-15):
 11. Capability-insufficient diagnostics are now separated from borrow-conflict roots with dedicated codes: `E1011` (missing read), `E1012` (missing write), and `E1013` (missing move).
 12. Borrow authorization is independent from effect rows. Effect declarations, including effects annotated with `@borrow(...)`, do not grant `read/write/move` permissions.
 13. Borrow permissions are derived and enforced by the borrow/ownership pipeline rather than by `need`.
+14. Eidos 0.7 derives a versioned `OwnershipContract` from each typed callable signature: plain `T` is `ByValue`, `Ref[T]` is `SharedBorrow`, and `MRef[T]` is `MutableBorrow`. A function body cannot downgrade a public parameter to a borrow or patch the signature through a compiler tag.
+15. `Copy` is not a fourth parameter mode. For a `ByValue` parameter, the compiler uses the structured `Copy` verifier and current place state to choose Copy or Move; `Ref[T]` is always Copy and `MRef[T]` is always non-Copy.
+16. `Clone` is an ordinary explicit trait call with a `Ref[Self]` receiver. The compiler never inserts `clone` for calls, assignments, or migration, and never treats `Clone` as a `Copy` fallback.
+17. Non-Copy aggregates support field/index partial moves followed by explicit reinitialization; control-flow joins conservatively merge moved paths. Dropping a moved or already dropped value reports `E1001`, so each path releases ownership exactly once.
+18. Reborrows preserve their place and provenance: `MRef[T] -> Ref[T]` creates a shared reborrow and does not copy the pointee. Returned references must retain provable input provenance and lifetime.
+19. Body analysis produces a separate loan summary (provenance, lifetime/outlives, reborrow, escape, and verification facts) and never rewrites the `OwnershipContract`. Both payloads are versioned independently across HIR/MIR, module caches, and incremental invalidation.
+20. Meta reflection, IDE semantic snapshots, and LSP hover can only read structured ownership slots; they cannot authorize or override ownership semantics.
+21. Legacy `@borrow(read/write/move)` is migration input only and cannot uniquely determine `Ref` versus `MRef`. The 0.7 migrator stops atomically before writing, requires the definition and typed call sites to be updated together, and never inserts `clone`.
 
 ### 3.8 Effect Tags, Authorization, and Polymorphism
 Effect declarations are nominal compile-time markers with no operations or runtime representation:
@@ -694,7 +702,7 @@ write :: String -> Unit need Writer
 3. Higher-order APIs use row parameters such as `E: effects`: `apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E`.
 4. Fixed and polymorphic rows can be combined, for example `need FFI, E`. Effect variables are generalized and preserved across module summaries and cached compilation state.
 5. Effects are erased before runtime. There are no handlers, `with`, `resume`, CPS rewriting, or runtime effect dispatch.
-6. Borrow checking is independent from effect authorization; annotating an effect with `@borrow(...)` does not grant read, write, or move permission.
+6. Borrow checking is independent from effect authorization; even when legacy `@borrow(...)` is recognized as migration input, it does not grant read, write, or move permission.
 
 ### 3.10 `match when` Branch Guards (Lowered Through MIR)
 Example files: `examples/10_match_guard.eidos`, `examples/27_pattern_guard_binding.eidos`  

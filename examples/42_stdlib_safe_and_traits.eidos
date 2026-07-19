@@ -69,10 +69,10 @@ main :: Unit -> Int
         applicative_list_head := unwrap_or(head(Seq.apply([add(10), add(20)])([1, 2])))(0);
         monad_list_len := len(bind([1, 2])(duplicate));
 
-        text_index := index_of_or(Text.clone("eidos"))("id")(-1);
-        text_last_index := last_index_of_or(Text.clone("banana"))("ana")(-1);
-        text_code_ok := if char_code_at_or(Text.clone("ab"))(1)(0) > 0 then { 1 } else { 0 };
-        fallback_char := char_at_or(Text.clone("ab"))(9)('z');
+        text_index := index_of_or("eidos")("id")(-1);
+        text_last_index := last_index_of_or("banana")("ana")(-1);
+        text_code_ok := if char_code_at_or("ab")(1)(0) > 0 then { 1 } else { 0 };
+        fallback_char := char_at_or("ab")(9)('z');
 
         option_functor := unwrap_or(fmap(Some(2))(inc))(0);
         option_pure := unwrap_or(Option.pure(6))(0);

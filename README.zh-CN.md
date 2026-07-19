@@ -672,6 +672,14 @@ doubled :: [x * 2 | x <- [1, 2, 3]];
 11. 能力不足诊断与借用冲突诊断已分离，新增错误码：`E1011`（read 能力不足）、`E1012`（write 能力不足）、`E1013`（move 能力不足）。
 12. Borrow 授权与 effect 行独立；effect 声明即使带有 `@borrow(...)` 也不会授予 `read/write/move`。
 13. Borrow 权限由 borrow/ownership 流水线推导和约束，而不是由 `need` 提供。
+14. Eidos 0.7 由 typed callable signature 生成版本化 `OwnershipContract`：普通 `T` 是 `ByValue`，`Ref[T]` 是 `SharedBorrow`，`MRef[T]` 是 `MutableBorrow`。函数体不能把公开参数模式改成 borrow，也不能用 compiler tag 修补签名。
+15. `Copy` 不是第四种参数模式。传入 `ByValue` 参数时，compiler 根据结构化 `Copy` verifier 与当前 place 状态选择 Copy 或 Move；`Ref[T]` 固定为 Copy，`MRef[T]` 固定为 non-Copy。
+16. `Clone` 是普通显式 trait 调用，receiver 为 `Ref[Self]`；compiler 不会在调用、赋值或迁移过程中自动插入 `clone`，也不会把 `Clone` 当作 `Copy` fallback。
+17. non-Copy aggregate 支持字段/索引级 partial move 与显式重新初始化；控制流合流会保守合并已移动路径。对已 move/drop 的值再次 drop 报 `E1001`，每条路径只释放一次。
+18. reborrow 保留 place 与来源：`MRef[T] -> Ref[T]` 只产生共享 reborrow，不复制 pointee；返回 reference 必须保持可证明的输入 provenance 与 lifetime。
+19. body analysis 只生成独立 loan summary（provenance、lifetime/outlives、reborrow、escape 与验证事实），不会改写 `OwnershipContract`。两者分别版本化并参与 HIR/MIR、跨模块 cache 与增量失效。
+20. Meta reflection、IDE semantic snapshot 与 LSP hover 只能读取结构化 ownership slots，不能授权或覆盖所有权语义。
+21. 旧 `@borrow(read/write/move)` 只作为迁移输入看待；它无法唯一决定 `Ref`/`MRef`。0.7 migrator 遇到这类歧义会在写文件前原子停止，要求同时修改定义与 typed call sites，并且绝不自动插入 `clone`。
 
 ### 3.8 Effect Tag、授权与多态
 Effect 声明是 nominal 编译期标记，不包含 operation，也没有运行时表示：
@@ -690,7 +698,7 @@ write :: String -> Unit need Writer
 3. 高阶 API 使用 `E: effects` 行参数：`apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E`。
 4. 固定行与多态行可组合，例如 `need FFI, E`。Effect 变量会参与泛化，并保存在跨模块摘要和编译缓存状态中。
 5. Effect 在运行前擦除；语言不提供 handler、`with`、`resume`、CPS 重写或运行时 effect dispatch。
-6. Borrow 检查与 effect 授权独立；在 effect 上标注 `@borrow(...)` 不会授予 read、write 或 move 权限。
+6. Borrow 检查与 effect 授权独立；旧 `@borrow(...)` 即使仍作为迁移输入被识别，也不会授予 read、write 或 move 权限。
 
 ### 3.10 `match when` 分支守卫（已打通到 MIR）
 示例文件：`examples/10_match_guard.eidos`、`examples/27_pattern_guard_binding.eidos`  

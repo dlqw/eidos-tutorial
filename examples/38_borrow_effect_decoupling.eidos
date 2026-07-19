@@ -6,8 +6,13 @@ keep :: Int -> Int need legacy_borrow_tag
     x => x
 }
 
-// Effect tags are authorization metadata only. Borrow permissions are inferred
-// from references and ownership; an effect label does not grant them.
+keep_ref :: Ref[Int] -> Ref[Int]
+{
+    value => value
+}
+
+// Ownership is fixed by typed signatures: Int is ByValue and Ref[Int] is a
+// SharedBorrow. Effect labels and legacy @borrow metadata cannot change either.
 main :: Unit -> Int need legacy_borrow_tag
 {
     _ => keep(1)
