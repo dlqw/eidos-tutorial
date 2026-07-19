@@ -60,7 +60,7 @@ Eidos 0.6 统一使用一套成员选择表面：
 ```eidos
 import Std.Option
 
-Info :: comptime Meta.typeInfo(User);
+Info :: comptime meta.shape_of(User);
 fallback := Std.Option.unwrap_or(input)(0);
 name := user.profile.display_name;
 ```
@@ -225,48 +225,45 @@ ADT、type alias、函数、trait、`@impl(...)` 和 named instance trait 引用
 `Meta` 是编译器内建域，不属于 `Std`，也不需要 `import`。反射只返回已经完成且可稳定序列化的编译器事实，不暴露可变 AST 或内部 `SymbolId`：
 
 ```eidos
-Info :: comptime Meta.typeInfo(User);
-Kind :: comptime Meta.typeKind(Info);
-HasName :: comptime Meta.hasField(User, "name");
-NameType :: comptime Meta.fieldType(User, "name");
-IntLayout :: comptime Meta.layoutOf(Int, "x86_64-pc-windows-msvc");
+Info :: comptime meta.shape_of(User);
+Kind :: comptime meta.kind_of(Info);
+HasName :: comptime meta.has_field(User, "name");
+NameType :: comptime meta.type_of(User, "name");
+IntLayout :: comptime meta.layout_of(Int, "x86_64-pc-windows-msvc");
 ```
 
-`Meta.typeInfo` 覆盖 primitive、tuple、function、reference、ADT 与 trait；构造器、字段、关联声明和属性保持稳定源码顺序。`Meta.layoutOf` 是独立的 target-dependent 查询，必须显式给出受支持的 target triple；尚未完成布局的类型会产生 phase diagnostic，不会退回 host layout。
+`meta.shape_of` 覆盖 primitive、tuple、function、reference、ADT 与 trait；构造器、字段、关联声明和属性保持稳定源码顺序。`meta.layout_of` 是独立的 target-dependent 查询，必须显式给出受支持的 target triple；尚未完成布局的类型会产生 phase diagnostic，不会退回 host layout。
 
-用户 derive 必须是 `comptime Meta.DeriveInput -> Meta.Expansion`：
+自定义生成器使用编译器管理的 `comptime meta.Type -> meta.Items` 协议，并通过 typed `@[expand(...)]` 标签附着：
 
 ```eidos
 Marker :: trait {
     marker :: Self -> String
 }
 
-deriveMarker :: comptime Meta.DeriveInput -> Meta.Expansion {
-    input => {
-        target := Meta.target(input);
-        parameter := Meta.parameter("value", target);
-        method := Meta.function(
+derive_marker :: comptime meta.Type -> meta.Items {
+    target => {
+        parameter := meta.parameter("value", target);
+        method := meta.function(
             "marker",
             [parameter],
             String,
-            Meta.exprString(Meta.typeName(target))
+            meta.expr_string(meta.name_of(target))
         );
-        Meta.expansion([
-            Meta.implementation(Meta.decl(Marker), target, [method])
-        ])
+        [meta.implementation(meta.declaration_of(Marker), target, [method])]
     }
 }
 
-@derive(deriveMarker)
+@[expand(derive_marker)]
 User :: type {
     name: String,
     age: Int
 }
 ```
 
-`Meta.Expansion` 可结构化生成 implementation、function、comptime value、attribute attachment、test、diagnostic 与 module member。函数体通过 `Meta.Expr` builder 构造，pattern branch 通过 `Meta.Pattern` / `Meta.Branch` builder 构造；声明引用使用 `Meta.Decl`，生成器局部引用使用 `Meta.Parameter` / `Meta.Binding` handle，以保持卫生。生成声明进入普通名称解析、类型检查、trait coherence、completion、hover、definition 与 references，并带稳定 `eidos-generated://` origin。
+`meta.Items` 包含结构化生成声明。`meta.Function -> meta.Function` 用于函数体变换，`meta.Syntax[K] -> meta.Syntax[K]` 用于 syntax-site expansion。生成声明进入普通名称解析、类型检查、trait coherence、completion、hover、definition 与 references，并带稳定 `eidos-generated://` origin。
 
-当前边界：不支持字符串源码插入、任意 AST 替换或删除；`@impl` 等语义属性不能通过 attribute attachment 回写，必须生成对应 structured declaration；pure comptime 不能读取文件、环境、进程、网络或 FFI。扩展按依赖与源码顺序执行到固定点，cycle、重复 stable identity、非法协议签名、预算超限和不完整反射都会产生确定 diagnostic。完整示例见 `examples/69_meta_reflection_derive.eidos`。
+当前边界：不支持字符串源码插入、任意 AST 替换、公开调度 clause 或公开 ownership attribute；pure comptime 不能读取文件、环境、进程、网络或 FFI。编译器根据 typed protocol 与 declaration tag 自动推导依赖顺序、fixed point、identity、cache、diagnostic 和 provenance。完整示例见 `examples/69_meta_reflection_derive.eidos`。
 
 可用 CLI：
 
@@ -951,7 +948,7 @@ dotnet run --project src/Eidosc/Eidosc.Cli -- info --stdlib
 详细教程见 [`FFI.zh-CN.md`](FFI.zh-CN.md)。
 
 已验证能力：
-1. `@ffi` 声明外部 C 函数（支持自定义符号名）。  
+1. `@[extern(c, ...)]` 声明外部 C 函数（支持自定义符号名）。
    样例：`examples/55_ffi_basic.eidos`。
 2. 指针操作：`ptr_null`、`ptr_is_null`、`ptr_add`、`ptr_load_int`、`ptr_store_int`。  
    样例：`examples/56_ffi_pointer_ops.eidos`。
@@ -961,7 +958,7 @@ dotnet run --project src/Eidosc/Eidosc.Cli -- info --stdlib
    样例：`examples/58_ffi_qsort.eidos`。
 
 FFI 安全类型集合：`Int`、`Int32`、`Float`、`Bool`、`Unit`、`RawPtr`、`Ptr[T]`、`Cfn`；函数类型参数可作为 Eidos closure 对象指针传给理解该 ABI 的 native 函数。
-错误码：E3050（@ffi 带函数体）、E3051（非安全类型）、W3050（无用 link 指令）。
+错误码：E3050（@[extern(...)] 带函数体）、E3051（非安全类型）、W3050（无用 link 指令）。
 
 ## 4. BNF 入口
 核心 BNF 摘要请看 [`BNF.zh-CN.md`](BNF.zh-CN.md)。

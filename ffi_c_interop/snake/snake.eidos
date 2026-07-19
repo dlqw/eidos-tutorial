@@ -5,55 +5,68 @@ link "raylib"
 link "snake_shim"
 
 
-malloc :: Int -> RawPtr need ffi extern c link_name "malloc";
+@[extern(c, name: "malloc")]
+malloc :: Int -> RawPtr need ffi need ffi;
 
 
 
-free :: RawPtr -> Unit need ffi extern c link_name "free";
+@[extern(c, name: "free")]
+free :: RawPtr -> Unit need ffi need ffi;
 
 
 
-init_window :: Int -> Int -> RawPtr -> Unit need ffi extern c link_name "InitWindow";
+@[extern(c, name: "InitWindow")]
+init_window :: Int -> Int -> RawPtr -> Unit need ffi need ffi;
 
 
 
-close_window :: Unit -> Unit need ffi extern c link_name "CloseWindow";
+@[extern(c, name: "CloseWindow")]
+close_window :: Unit -> Unit need ffi need ffi;
 
 
 
-window_should_close :: Unit -> Bool need ffi extern c link_name "WindowShouldClose";
+@[extern(c, name: "WindowShouldClose")]
+window_should_close :: Unit -> Bool need ffi need ffi;
 
 
 
-set_target_fps :: Int -> Unit need ffi extern c link_name "SetTargetFPS";
+@[extern(c, name: "SetTargetFPS")]
+set_target_fps :: Int -> Unit need ffi need ffi;
 
 
 
-begin_drawing :: Unit -> Unit need ffi extern c link_name "BeginDrawing";
+@[extern(c, name: "BeginDrawing")]
+begin_drawing :: Unit -> Unit need ffi need ffi;
 
 
 
-end_drawing :: Unit -> Unit need ffi extern c link_name "EndDrawing";
+@[extern(c, name: "EndDrawing")]
+end_drawing :: Unit -> Unit need ffi need ffi;
 
 
 
-clear_background :: Int -> Int -> Int -> Int -> Unit need ffi extern c link_name "shim_clear_background";
+@[extern(c, name: "shim_clear_background")]
+clear_background :: Int -> Int -> Int -> Int -> Unit need ffi need ffi;
 
 
 
-draw_rectangle :: Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi extern c link_name "shim_draw_rectangle";
+@[extern(c, name: "shim_draw_rectangle")]
+draw_rectangle :: Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi need ffi;
 
 
 
-draw_text :: RawPtr -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi extern c link_name "shim_draw_text";
+@[extern(c, name: "shim_draw_text")]
+draw_text :: RawPtr -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi need ffi;
 
 
 
-is_key_pressed :: Int -> Bool need ffi extern c link_name "IsKeyPressed";
+@[extern(c, name: "IsKeyPressed")]
+is_key_pressed :: Int -> Bool need ffi need ffi;
 
 
 
-get_random_value :: Int -> Int -> Int need ffi extern c link_name "shim_get_random_value";
+@[extern(c, name: "shim_get_random_value")]
+get_random_value :: Int -> Int -> Int need ffi need ffi;
 
 
 

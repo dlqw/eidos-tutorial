@@ -8,7 +8,8 @@ derive_marker :: comptime meta.Type -> meta.Items {
 }
 
 
-User :: type  expand derive_marker
+@[expand(derive_marker)]
+User :: type
 {
     name:: String,
     age:: Int

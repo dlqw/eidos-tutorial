@@ -60,7 +60,7 @@ Eidos 0.6 uses one member-selection surface:
 ```eidos
 import Std.Option
 
-Info :: comptime Meta.typeInfo(User);
+Info :: comptime meta.shape_of(User);
 fallback := Std.Option.unwrap_or(input)(0);
 name := user.profile.display_name;
 ```
@@ -225,48 +225,45 @@ ADTs, type aliases, functions, traits, `@impl(...)`, and named-instance trait re
 `Meta` is a compiler-built-in domain. It is not part of `Std` and does not require an `import`. Reflection exposes only completed, stably serializable compiler facts; it does not expose mutable AST objects or internal `SymbolId` values:
 
 ```eidos
-Info :: comptime Meta.typeInfo(User);
-Kind :: comptime Meta.typeKind(Info);
-HasName :: comptime Meta.hasField(User, "name");
-NameType :: comptime Meta.fieldType(User, "name");
-IntLayout :: comptime Meta.layoutOf(Int, "x86_64-pc-windows-msvc");
+Info :: comptime meta.shape_of(User);
+Kind :: comptime meta.kind_of(Info);
+HasName :: comptime meta.has_field(User, "name");
+NameType :: comptime meta.type_of(User, "name");
+IntLayout :: comptime meta.layout_of(Int, "x86_64-pc-windows-msvc");
 ```
 
-`Meta.typeInfo` covers primitives, tuples, functions, references, ADTs, and traits. Constructors, fields, associated declarations, and attributes retain stable source order. `Meta.layoutOf` is a separate target-dependent query and requires an explicit supported target triple. A type whose layout is not complete produces a phase diagnostic instead of falling back to host layout.
+`meta.shape_of` covers primitives, tuples, functions, references, ADTs, and traits. Constructors, fields, associated declarations, and attributes retain stable source order. `meta.layout_of` is a separate target-dependent query and requires an explicit supported target triple. A type whose layout is not complete produces a phase diagnostic instead of falling back to host layout.
 
-A user derive must have the type `comptime Meta.DeriveInput -> Meta.Expansion`:
+A custom generator uses the compiler-managed type `comptime meta.Type -> meta.Items` and is attached with the typed `@[expand(...)]` tag:
 
 ```eidos
 Marker :: trait {
     marker :: Self -> String
 }
 
-deriveMarker :: comptime Meta.DeriveInput -> Meta.Expansion {
-    input => {
-        target := Meta.target(input);
-        parameter := Meta.parameter("value", target);
-        method := Meta.function(
+derive_marker :: comptime meta.Type -> meta.Items {
+    target => {
+        parameter := meta.parameter("value", target);
+        method := meta.function(
             "marker",
             [parameter],
             String,
-            Meta.exprString(Meta.typeName(target))
+            meta.expr_string(meta.name_of(target))
         );
-        Meta.expansion([
-            Meta.implementation(Meta.decl(Marker), target, [method])
-        ])
+        [meta.implementation(meta.declaration_of(Marker), target, [method])]
     }
 }
 
-@derive(deriveMarker)
+@[expand(derive_marker)]
 User :: type {
     name: String,
     age: Int
 }
 ```
 
-`Meta.Expansion` can structurally generate implementations, functions, comptime values, attribute attachments, tests, diagnostics, and module members. Function bodies use `Meta.Expr` builders, while pattern branches use `Meta.Pattern` / `Meta.Branch` builders. Declaration references use `Meta.Decl`; generator-local references use `Meta.Parameter` / `Meta.Binding` handles for hygiene. Generated declarations participate in ordinary name resolution, type checking, trait coherence, completion, hover, definition, and references, with stable `eidos-generated://` origins.
+`meta.Items` contains structured generated declarations. `meta.Function -> meta.Function` is the body transformation protocol, while `meta.Syntax[K] -> meta.Syntax[K]` is used for syntax-site expansion. Generated declarations participate in ordinary name resolution, type checking, trait coherence, completion, hover, definition, and references, with stable `eidos-generated://` origins.
 
-Current boundaries: there is no string source insertion and no arbitrary AST replacement or deletion. Semantic attributes such as `@impl` cannot be written back through an attribute attachment; generate the corresponding structured declaration instead. Pure comptime cannot access files, environment variables, processes, networks, or FFI. Expansions execute to a fixed point in dependency and source order; cycles, duplicate stable identities, invalid protocol signatures, budget exhaustion, and incomplete reflection produce deterministic diagnostics. See `examples/69_meta_reflection_derive.eidos` for the complete example.
+Current boundaries: there is no string source insertion, arbitrary AST replacement, public scheduling clause, or public ownership attribute. Pure comptime cannot access files, environment variables, processes, networks, or FFI. The compiler derives dependency order, fixed-point execution, identity, cache, diagnostics, and provenance from the typed protocol and declaration tags. See `examples/69_meta_reflection_derive.eidos` for the complete example.
 
 CLI surfaces:
 

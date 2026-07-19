@@ -5,67 +5,82 @@ link "snake_shim"
 
 // Memory management
 
-malloc :: Int -> RawPtr need ffi extern c link_name "malloc";
+@[extern(c, name: "malloc")]
+malloc :: Int -> RawPtr need ffi need ffi;
 
 
 
-free :: RawPtr -> Unit need ffi extern c link_name "free";
+@[extern(c, name: "free")]
+free :: RawPtr -> Unit need ffi need ffi;
 
 
 // Window management
 
-init_window :: Int32 -> Int32 -> RawPtr -> Unit need ffi extern c link_name "InitWindow";
+@[extern(c, name: "InitWindow")]
+init_window :: Int32 -> Int32 -> RawPtr -> Unit need ffi need ffi;
 
 
 
-close_window :: Unit -> Unit need ffi extern c link_name "CloseWindow";
+@[extern(c, name: "CloseWindow")]
+close_window :: Unit -> Unit need ffi need ffi;
 
 
 
-window_should_close :: Unit -> Bool need ffi extern c link_name "WindowShouldClose";
+@[extern(c, name: "WindowShouldClose")]
+window_should_close :: Unit -> Bool need ffi need ffi;
 
 
 
-set_target_fps :: Int32 -> Unit need ffi extern c link_name "SetTargetFPS";
+@[extern(c, name: "SetTargetFPS")]
+set_target_fps :: Int32 -> Unit need ffi need ffi;
 
 
 // Drawing
 
-begin_drawing :: Unit -> Unit need ffi extern c link_name "BeginDrawing";
+@[extern(c, name: "BeginDrawing")]
+begin_drawing :: Unit -> Unit need ffi need ffi;
 
 
 
-end_drawing :: Unit -> Unit need ffi extern c link_name "EndDrawing";
+@[extern(c, name: "EndDrawing")]
+end_drawing :: Unit -> Unit need ffi need ffi;
 
 
 
-clear_background :: Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi extern c link_name "shim_clear_background";
+@[extern(c, name: "shim_clear_background")]
+clear_background :: Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi need ffi;
 
 
 
-draw_rectangle :: Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi extern c link_name "shim_draw_rectangle";
+@[extern(c, name: "shim_draw_rectangle")]
+draw_rectangle :: Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi need ffi;
 
 
 
-draw_text :: RawPtr -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi extern c link_name "shim_draw_text";
+@[extern(c, name: "shim_draw_text")]
+draw_text :: RawPtr -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi need ffi;
 
 
 // Input
 
-is_key_pressed :: Int32 -> Bool need ffi extern c link_name "IsKeyPressed";
+@[extern(c, name: "IsKeyPressed")]
+is_key_pressed :: Int32 -> Bool need ffi need ffi;
 
 
 
-is_key_down :: Int32 -> Bool need ffi extern c link_name "IsKeyDown";
+@[extern(c, name: "IsKeyDown")]
+is_key_down :: Int32 -> Bool need ffi need ffi;
 
 
 // Utilities
 
-get_random_value :: Int32 -> Int32 -> Int32 need ffi extern c link_name "shim_get_random_value";
+@[extern(c, name: "shim_get_random_value")]
+get_random_value :: Int32 -> Int32 -> Int32 need ffi need ffi;
 
 
 
-get_frame_time :: Unit -> Float32 need ffi extern c link_name "GetFrameTime";
+@[extern(c, name: "GetFrameTime")]
+get_frame_time :: Unit -> Float32 need ffi need ffi;
 
 
 // String interop

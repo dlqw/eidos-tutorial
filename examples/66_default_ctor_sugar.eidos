@@ -9,7 +9,8 @@ Point :: type {
 
 
 
-Record :: type  derive Eq derive Show
+@[derive(Eq), derive(Show)]
+Record :: type
 {
     name:: Int,
     age:: Int

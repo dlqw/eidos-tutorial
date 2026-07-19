@@ -1,14 +1,16 @@
 // 55_ffi_basic.eidos — FFI 基础：声明和调用 C 函数
 
-// @ffi 声明外部 C 函数，无函数体
+// @[extern(c, ...)] 声明外部 C 函数，无函数体
 // 编译器自动使用函数名作为 C 符号名
 
-puts :: RawPtr -> Int need ffi extern(c, name: "puts");
+@[extern(c, name: "puts")]
+puts :: RawPtr -> Int need ffi need ffi;;
 
 
 // 显式指定 C 符号名（当 Eidos 名 != C 名时使用）
 
-alloc :: Int -> RawPtr need ffi extern(c, name: "malloc");
+@[extern(c, name: "malloc")]
+alloc :: Int -> RawPtr need ffi need ffi;;
 
 
 main :: Int -> Int need ffi
