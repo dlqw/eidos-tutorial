@@ -3,12 +3,12 @@
 // @ffi 声明外部 C 函数，无函数体
 // 编译器自动使用函数名作为 C 符号名
 
-puts :: RawPtr -> Int need ffi extern c;
+puts :: RawPtr -> Int need ffi extern(c, name: "puts");
 
 
 // 显式指定 C 符号名（当 Eidos 名 != C 名时使用）
 
-alloc :: Int -> RawPtr need ffi extern c link_name "malloc";
+alloc :: Int -> RawPtr need ffi extern(c, name: "malloc");
 
 
 main :: Int -> Int need ffi

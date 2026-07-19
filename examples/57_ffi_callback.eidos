@@ -1,7 +1,7 @@
 // 57_ffi_callback.eidos — C 回调：Eidos 函数作为 C 函数指针
 
 
-puts :: RawPtr -> Int need ffi extern c;
+puts :: RawPtr -> Int need ffi extern(c, name: "puts");
 
 
 // cfn_from 将 Eidos 函数转为 C 函数指针 (RawPtr)

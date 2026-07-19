@@ -1,15 +1,15 @@
 // 58_ffi_qsort.eidos — 完整回调集成：Eidos 比较函数 + C qsort
 
 
-qsort :: RawPtr -> Int -> Int -> Cfn[Int, Int, Int] -> Unit need ffi extern c link_name "qsort";
+qsort :: RawPtr -> Int -> Int -> Cfn[Int, Int, Int] -> Unit need ffi extern(c, name: "qsort");
 
 
 
-malloc :: Int -> RawPtr need ffi extern c link_name "malloc";
+malloc :: Int -> RawPtr need ffi extern(c, name: "malloc");
 
 
 
-puts :: RawPtr -> Int need ffi extern c;
+puts :: RawPtr -> Int need ffi extern(c, name: "puts");
 
 
 // 升序比较函数：使用嵌套 lambda 语法
