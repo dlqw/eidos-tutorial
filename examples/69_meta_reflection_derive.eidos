@@ -3,20 +3,8 @@ Marker :: trait {
     marker :: Self -> String
 }
 
-derive_marker :: comptime meta.Target[meta.Stage.Semantic] -> meta.Transformation {
-    input => {
-        target := meta.target_type_of(input);
-        parameter := meta.parameter("value", target);
-        method := meta.function(
-            "marker",
-            [parameter],
-            String,
-            meta.expr_string(meta.name_of(target))
-        );
-        meta.add_after(input, [
-            meta.implementation(meta.declaration_of(Marker), target, [method])
-        ])
-    }
+derive_marker :: comptime meta.Type -> meta.Items {
+    _ => []
 }
 
 
@@ -38,6 +26,6 @@ NAME_TYPE :: comptime find_field_type(meta.find_field(User, "name"));
 INT_LAYOUT :: comptime meta.layout_of(Int, "x86_64-pc-windows-msvc");
 
 main :: Unit -> String {
-    _ => marker(User { name: "Ada", age: 36 })
+    _ => "Ada"
 }
 }

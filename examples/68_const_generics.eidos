@@ -23,10 +23,11 @@ Holder :: type {
 }
 
 
-make :: Holder -> Buffer[4, Int]
- impl Sized[4]
-{
-    _ => Buffer[4, Int](4)
+SizedHolder :: instance Sized[4] {
+    make :: Holder -> Buffer[4, Int]
+    {
+        _ => Buffer[4, Int](4)
+    }
 }
 
 identity :: FixedBuffer[4, Int] -> Buffer[4, Int]
