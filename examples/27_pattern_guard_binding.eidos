@@ -1,5 +1,5 @@
 OptionI :: type {
-    Some(Int), None
+    Some:: type(Int), None :: type {}
 }
 
 unwrap_or_zero :: OptionI -> Int

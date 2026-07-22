@@ -49,13 +49,13 @@ operator_identifier ::= 一个或多个符号运算符字符，排除保留 toke
 说明：模块内一旦出现任意 `export` 声明，外部可见性即切换到显式导出模式；`export import ...` 会把导入绑定作为真实模块公开成员继续转发。
 说明：模块导入别名是编译期模块名，必须使用大写开头。Selective import 的成员 alias 按目标符号分层：运行时 value alias 小写，类型、构造器、trait、effect 等编译期符号 alias 大写。
 说明：依赖包中的模块使用 `packageAlias.Module.Path` 导入，其中 `packageAlias` 是当前项目 `eidos.toml` 中的依赖键。标准库内置 package alias 为 `Std`，因此标准库序列模块写作 `Std.Seq`，其中 `Std` 是包名，`Seq` 是模块名；标准库序列类型全名写作 `Std.Seq.Seq[Int]`。类型、函数、trait、effect、构造器等最终符号可写成 `packageAlias.Module.Path.Item`；当前包或已导入模块仍可使用 `Module.Path.Item` 或模块别名形式。未写 package 的模块路径会同时从当前 package、`Std` 和依赖 package 中收集候选；唯一候选通过，多个候选报错并要求写 package-qualified 路径。显式 package-qualified 路径不会回退到其他 package。
-说明：Eidos 0.6 只有一套 Namespace 表面。package、module、type、trait、effect、constructor、编译期值及其成员统一使用 `.` 选择，例如 `Std.Option.Option[Int]`、`Meta.typeInfo(User)` 和 `Parser :: import Compiler.Parser;`。`::` 只保留为声明绑定符。显式的 Eidos 0.5 migration 会把已移除的 `::` 限定符与 slash module path 改为点号。
+说明：Eidos 0.7 保持一套 Namespace 表面。package、module、type、trait、effect、constructor、编译期值及其成员统一使用 `.` 选择，例如 `Std.Option.Option[Int]`、`meta.shape_of(User)` 和 `Parser :: import Compiler.Parser;`。`::` 只保留为声明绑定符。显式的 Eidos 0.5 migration 会把已移除的 `::` 限定符与 slash module path 改为点号。
 说明：标准库 `Std.Prelude.*` 现在会通过上述 re-export 语义直接暴露常用 Text 安全 helper（如 `trim`、`char_code_at_or`、`last_index_of_or`）与基础 File 文本 I/O fallback（如 `read_text_or`、`write_text_result`）；完整模块仍可通过 `Std.Text`、`Std.File` 显式导入。
 说明：无别名的模块导入会同时引入模块别名和该模块公开 value / constructor 的裸名；例如 `import Std.Seq` 后可写 `Seq.append(xs)(ys)` 或 `append(xs)(ys)`。name-first 模块别名绑定 `M :: import A;` 仍只引入别名，effect 也不会通过模块导入变成裸名可见。旧 `import A as M` keyword 形式只在 `legacy` 语法模式中接受；在 `0.4.0-alpha.1` 中会被拒绝并给出迁移诊断。
 说明：自定义符号运算符可使用 `! $ % & * + / < = > ? ^ | - ~ :` 这组字符；`->`、`=>`、`:`、`::`、`=`、`<-`、`<$>`、`<*>`、`|>`、`?`、`??` 等保留 token 仍保持内建语法含义。
 说明：用户声明或绑定名不得以 `__` 开头，也不得包含 `__spec_`；这些形式属于编译器保留内部命名空间，违反时报告 `E3055`。
 说明：Eidos 采用命名分层：运行时值使用小写开头标识符；编译期值使用大写开头标识符。类型是一等编译期值，因此类型、trait、effect、构造器、模块路径和表示类型的泛型参数属于大写命名空间。构造器调用会产生运行时值，但构造器符号本身仍是编译期值。
-说明：name-first 声明包括 `Name :: module`、`name :: Type -> Type { ... }`、`name :: Type -> Type;`、`name :: comptime Type -> Type { ... }`、`name :: value;`、`name :: Type = value;`、`Name :: comptime expr;`、`Name :: type`、`Name :: trait`、`Name :: effect;`、`Name :: instance Trait[...] { ... }` 与 `Alias :: import Module.Path;`。keyword-first 形式只作为 migration 输入，不属于 Eidos 0.6 源码语法。
+说明：name-first 声明包括 `Name :: module`、`name :: Type -> Type { ... }`、`name :: Type -> Type;`、`name :: comptime Type -> Type { ... }`、`name :: value;`、`name :: Type = value;`、`Name :: comptime expr;`、`Name :: type`、`Name :: trait`、`Name :: effect;`、`Name :: instance Trait[...] { ... }` 与 `Alias :: import Module.Path;`。keyword-first 形式只作为 migration 输入，不属于 Eidos 0.7 源码语法。
 
 ## 2. 绑定与语句
 ```bnf
@@ -113,7 +113,7 @@ type         ::= function_type_head ("->" type)?
 function_type_head ::= tuple_type | postfix_type
 postfix_type ::= primary_type ("?" | "??" | "." upper_identifier)*
 ```
-说明：在 `0.4.0-alpha.1` 中，`@ffi("malloc") malloc :: Int -> RawPtr;` 这样的顶层 name-first 函数声明表示无函数体声明，主要用于 external/FFI 声明。name-first 入口函数不再获得 legacy 隐式根 `FFI`/`IO` 能力；从 `main` 或其他入口函数调用 FFI/native 声明时，必须由显式 `need FFI` 或等价 effect tag 覆盖。
+说明：结构化 foreign declaration 使用 `@[extern(c, name: "malloc")] malloc :: Int -> RawPtr need ffi;`，且不能包含 Eidos 函数体。name-first 入口函数不再获得 legacy 隐式根 `FFI`/`IO` 能力；从 `main` 或其他入口函数调用 FFI/native 声明时，必须由显式 `need FFI` 或等价 effect tag 覆盖。
 说明：类型后缀 `?` 是 `Std.Option.Option[...]` 的语法糖，例如 `Int?` 等价于 `Std.Option.Option[Int]`；连续后缀可嵌套，`Int??` 等价于 `Option[Option[Int]]`。
 说明：在 0.4.0-alpha.1 模式中，`Iterator[I].Item` 这类类型后缀投影表示目标 trait 声明的 associated type，并可在存在具体 named instance 时归约到对应实现类型。
 
@@ -147,24 +147,26 @@ constructor  ::= upper_identifier type_params? ctor_args? ("->" type)?
 ctor_args    ::= "(" type ("," type)* ")"
                | "{" field ("," field)* "}"
 
-attribute    ::= "@" lower_identifier ("(" arg_list? ")")?
+attribute    ::= "@[" typed_tag ("," typed_tag)* "]"
+typed_tag    ::= lower_identifier ("(" arg_list? ")")?
 ```
 说明：`by` 是 proof 语境关键词；在普通函数、模式和表达式语境中仍可作为 `lower_identifier` 使用。
-说明：属性、derive trait、自定义 operator 与 unsupported value 的语义支持状态见 `docs/reference/semantic-capability-support-matrix.md`。`@derive(Eq, Show)` 会按参数顺序处理多个内建 derive trait。`0.5.0-alpha.3` 起，参数也可以解析为签名严格等于 `comptime Meta.DeriveInput -> Meta.Expansion` 的用户函数；内建 derive 与用户 generator 均按 attribute occurrence 和参数源码顺序执行到固定点。
-说明：`Meta` 是无需 import 的编译器内建域。`Meta.typeInfo(Type)`、`typeName`、`hasField`、`fieldType` 与 `declarationInfo` 提供只读、target-independent 事实；`Meta.layoutOf(Type, target)` 必须显式给出 target。`Meta.Expansion` 只接受结构化 declaration / expression / pattern builder，不接受字符串源码插入或任意 AST 修改。
-说明：`Build` 同样是无需 import 的编译器内建域，但不增加新的 grammar production。只有 `[build].program` 指定的构建程序能取得 `Build.Fs`、`Build.Env`、`Build.Process` 与 `Build.Emit` 能力并声明唯一顶层 `BuildGraph`；普通 pure comptime 对 `Build` 的能力访问会被拒绝。构建程序仍使用普通 name-first comptime binding、list 和 call 语法。
-说明：effect 声明上的 `@borrow(...)` 仅作为可接受的元数据，不会授予借用权限；borrow 检查与 effect 授权相互独立。
-说明：generic argument 按声明顺序和目标参数 domain 解析。类型参数消费 type argument，`comptime N: T` 消费编译期 value expression，`effects` 参数消费 effect-row argument。ADT、type alias、constructor、function、trait、`@impl(...)` 与 named instance 使用同一套有序 domain 模型。
+说明：typed declaration tag、derive trait、自定义 operator 与 unsupported value 的语义支持状态见 `docs/reference/semantic-capability-support-matrix.md`。`@[derive(Eq, Show)]` 按参数顺序处理内建 derive；自定义 generator 使用 `comptime meta.Type -> meta.Items`，通过 `@[expand(generator)]` 附着。编译器根据 typed protocol 签名自动推导依赖顺序与 fixed point，不开放 public scheduling clause。
+说明：`meta` 是无需 import 的编译器内建域。typed reflection 通过 `meta.Type`、`meta.Declaration`、`meta.Field` 与 `meta.Function` 提供只读、target-independent 事实；`meta.layoutOf(Type, target)` 必须显式给出 target。`meta.Items` 只接受结构化生成声明，不接受字符串源码插入或任意 AST 修改。
+说明：`build` 同样是无需 import 的编译器内建域，但不增加新的 grammar production。只有 `[build].program` 指定的构建程序能取得 `build.Fs`、`build.Env`、`build.Process` 与 `build.Emit` 能力并声明唯一顶层 `BuildGraph`；普通 pure comptime 对 `build` 的能力访问会被拒绝。构建程序仍使用普通 name-first comptime binding、list 和 call 语法。
+说明：旧 `@borrow(...)` 只属于迁移输入，不能授予借用或所有权权限；Eidos 0.7 从 typed signature 的 `T` / `Ref[T]` / `MRef[T]` 生成 ownership contract，borrow 检查与 effect 授权相互独立。迁移器无法证明定义与调用点可等价迁移时会原子停止，也不会插入 `clone`。
+说明：generic argument 按声明顺序和目标参数 domain 解析。类型参数消费 type argument，`comptime N: T` 消费编译期 value expression，`effects` 参数消费 effect-row argument。ADT、type alias、constructor、function、trait 与 named instance 使用同一套有序 domain 模型。
 说明：在 `0.5.0-alpha.1` 中，`comptime T: Type` 与 `T: comptime Type` 是类型域泛型参数，`comptime N: Int` 是值域 const generic。值实参必须可编译期求值且类型正确，并参与 type identity、layout、name mangling、specialization、trait coherence、cache fingerprint 和 IDE hover/completion。浮点值不能作为 specialization key；带运行期资源身份的值不能跨越该边界。
-说明：`@impl(...)` 也会在命名阶段做语义校验：函数名/签名必须与目标 trait 方法匹配；泛型 trait 实参不会由约定式注册自动推断；const-generic trait 实参会替换进方法签名；impl 重叠会在 alias canonicalization 后比较：严格更具体的头可以与更宽泛的头共存，但若 canonical 形状等价或不可比较，仍会直接以 `E3004` 拒绝。
+说明：named `instance` 声明会在命名阶段做语义校验：成员名/签名必须与目标 trait 匹配；const-generic trait 实参会替换进方法签名；重叠会在 alias canonicalization 后比较：严格更具体的头可以与更宽泛的头共存，但若 canonical 形状等价或不可比较，仍会直接以 `E3004` 拒绝。函数级 `@impl(...)` 是已删除的 0.7 迁移输入。
 说明：named `instance` 声明是 0.4.0-alpha.1 已实现的 evidence 声明表面。`given` 表达式可用 `expr given InstanceName` 显式选择一个 named instance；被选择的 evidence 会通过普通 module/import 可见性规则解析，注册到结构化 trait impl 表，参与 coherence 检查，并在类型推断与 HIR/MIR dispatch 中映射到具体 trait 方法。`Name :: instance Trait for Type { Ctor => { method = expr } }` 是构造器 instance bridge：它从目标 ADT 每个构造器的同名 fact entry 生成对应 trait 方法。
 说明：当前分支不再把 `proof` / lawful 语法作为教程基线的一部分；相关能力移至单独的 proof 分支维护。
 说明：构造器名后的 `type_params?` 是构造器局部类型参数。没有出现在返回类型中的局部参数会在构造后隐藏，只能通过模式匹配分支重新打开，例如 `type AnyDirection { AnyDirection[A](Direction[A]) -> AnyDirection }`。
 说明：GADT 构造器可写 `Ctor(args) -> CurrentAdt[Specialized]`，返回类型必须是当前 ADT head 的实例；无 `->` 的普通构造器仍按声明 head 糖化。内建擦除证据 `TypeEq[A, B]` 目前只有 `Refl`，用于同一类型或 GADT 分支局部精化产生的等式证据。
-说明：ADT 构造器列表只使用逗号分隔，例如 `Direction :: type { North, South }`。Eidos 0.6 会拒绝 ADT body 中的 `|` 并给出迁移诊断；`eidosc migrate syntax --from 0.5.0-alpha.1 --to 0.6.0-alpha.1` 可执行显式改写。
+说明：ADT 构造器列表只使用逗号分隔，例如 `Direction :: type { North, South }`。Eidos 0.7 会拒绝 ADT body 中的 `|` 并给出迁移诊断；`eidosc migrate syntax --from 0.5.0-alpha.1 --to 0.6.0-alpha.1` 可执行显式改写。
 说明：构造器命名块中 `name: Type` 是运行时字段，会成为构造器参数、layout 项和 ABI 相关字段。ADT 构造器中不再接受 `name = expr`；构造器事实应写入 named instance bridge。bridge fact 输入支持字面量、元组、列表、受限一元/二元表达式、值名或路径引用，以及构造器/普通函数调用表达式；与 GADT 组合时，生成 impl 按构造器分支局部精化检查。
-说明：裸积类型语法糖——当 `adt_body` 直接由 `field ("," field)*` 组成（无构造器变体）时，编译期在命名阶段自动合成一个与类型同名的默认构造子，等价于显式写出 `TypeName { field ("," field)* }`。例如 `Point :: type { x: Int, y: Int }` 等价于 `Point :: type { Point { x: Int, y: Int } }`，可直接用 `Point { x: 1, y: 2 }` 构造、`Point { x: a, y: b }` 模式匹配，并可叠加 `@derive`。`@cstruct` 行为不变。
-说明：作为高阶 trait 实参使用的部分应用 alias，现在也会参与类型推断/特化时的反向匹配。例如 `@impl(Applicative[KeepEdges[String, Bool]])` 在具体上下文收敛为 `Triple[String, A, Bool]` 时，可以满足后续的 `G[A]` 需求。这种反向推断同样适用于 `Result.traverse`、`Seq.traverse`、通过 `lift_pure` / `pure` 走空输入或短路分支的 traversable 标准库组合子、公开的 `Option.sequence` / `Seq.sequence` / `Result.sequence` helper，以及泛型公开 helper `Traversable.sequence`；现在也覆盖了 `Option[Result[A, E]]`、`Seq[Result[A, E]]`、`Result[Result[A, E], E]` 这类内建 `ResultWith[E]` 同构嵌套。
+说明：裸积类型语法糖——当 `adt_body` 直接由 `field ("," field)*` 组成（无构造器变体）时，编译期在命名阶段自动合成一个与类型同名的默认构造子，等价于显式写出 `TypeName { field ("," field)* }`。例如 `Point :: type { x: Int, y: Int }` 等价于 `Point :: type { Point { x: Int, y: Int } }`，可直接用 `Point { x: 1, y: 2 }` 构造、`Point { x: a, y: b }` 模式匹配，并可叠加 `@[derive(...)]`。`@[repr(c)]` 行为不变。
+说明：Eidos 0.7 开发线允许在 type body 中嵌套 `Case :: type { ... }`，形成词法封闭的 closed case。可见性是 root declaration 的语义属性：导出 root 会导出完整 descendant case/constructor/field graph；root 未导出或由编译器标记为 internal 时，整棵 graph 都保持私有。public root 若包含 toolchain-internal descendant，会报告 `E3061`；语言不会隐式进入 hidden-case 或 non-exhaustive 模式。
+说明：作为高阶 trait 实参使用的部分应用 alias，现在也会参与类型推断/特化时的反向匹配。例如 `ApplicativeKeepEdgesStringBool :: instance Applicative[KeepEdges[String, Bool]]` 在具体上下文收敛为 `Triple[String, A, Bool]` 时，可以满足后续的 `G[A]` 需求。这种反向推断同样适用于 `Result.traverse`、`Seq.traverse`、通过 `lift_pure` / `pure` 走空输入或短路分支的 traversable 标准库组合子、公开的 `Option.sequence` / `Seq.sequence` / `Result.sequence` helper，以及泛型公开 helper `Traversable.sequence`；现在也覆盖了 `Option[Result[A, E]]`、`Seq[Result[A, E]]`、`Result[Result[A, E], E]` 这类内建 `ResultWith[E]` 同构嵌套。
 说明：trait、effect tag 与普通函数通过限定路径独立解析。`Writer :: effect;` 在 `need` 中写作 `Io.Writer` 或 `Cap.Io.Writer`；普通函数 `write :: String -> Int need Writer` 则写作 `Io.write(...)` 或 `Cap.Io.write(...)`。effect 不拥有 operation。
 说明：workspace `import` 解析现在支持 `eidos.toml` 项目模型。解析总是先搜索当前文件所在目录；若最近祖先存在 `eidos.toml`，则继续按 `sourceRoots`、`importRoots` 的声明顺序搜索，并把该配置视为工程边界。两类相对路径都按 `eidos.toml` 所在目录解析。通过这些工程根发现的 workspace 源文件，要求声明的 `module` 路径与相对文件路径一致；重复模块路径会作为工程模型错误拒绝。只有在没有项目配置且没有显式导入根（`CompilationOptions.ImportSearchRoots`，或重复传入 CLI `--import-root`）时，编译器才回退到“首选祖先导入根”规则（若祖先链上存在 `src`/`source` 则优先使用，否则回退到最近的 workspace 根，例如包含 `.git` 或 `.sln` 的目录）。显式 CLI 导入根只覆盖所选项目中的 `importRoots`，保留有效 `sourceRoots`；IDE 的 `AddImport` quick-fix 也使用同一套导入根选择规则。`eidos.toml` 还支持紧凑默认值：省略 `sourceRoots` 等价于 `["src"]`，省略 `targets` 时可由 `src/Main.eidos` 推断 `main` 或由 `src/Lib.eidos` 推断 `lib`，`[dependencies]` 可接受版本字符串或 inline dependency table。CLI 可直接接收项目目录或 `eidos.toml`，选择或推断入口 target 的 `entry` 作为编译入口，并在编译前验证重复 target、缺失入口、缺失依赖与依赖环。
 

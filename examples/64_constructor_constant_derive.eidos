@@ -4,14 +4,14 @@ DirectionVector :: trait {
 }
 
 Axis :: type {
-    Vertical, Horizontal
+    Vertical :: type {}, Horizontal :: type {}
 }
 
 Direction[A] :: type {
-    North -> Direction[Vertical],
-    South -> Direction[Vertical],
-    East -> Direction[Horizontal],
-    West -> Direction[Horizontal]
+    North :: type case Direction[Vertical] {},
+    South :: type case Direction[Vertical] {},
+    East :: type case Direction[Horizontal] {},
+    West :: type case Direction[Horizontal] {}
 }
 
 DirectionVectorDirection[A] :: instance DirectionVector for Direction[A] {

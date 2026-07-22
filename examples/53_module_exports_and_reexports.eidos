@@ -6,9 +6,9 @@ Demo.Base :: module {
         x => x + 2
     }
 
-    export Writer :: effect;
+    export writer :: effect;
 
-    export write :: String -> Int need Writer
+    export write :: String -> Int need writer
     {
         _ => Demo.Base.add_two(Demo.Base.answer)
     }
@@ -21,19 +21,19 @@ Demo.Base :: module {
 
 Demo.Facade :: module {
     export BaseApi :: import Demo.Base;
-    export import Demo.Base.{Writer as W, write}
+    export import Demo.Base.{writer as w, write}
 }
 
 Demo.Main :: module {
     import Demo.Facade
-    import Demo.Facade.{W}
+    import Demo.Facade.{w}
 
-    run :: String -> Int need Facade.W
+    run :: String -> Int need Facade.w
     {
         text => Facade.write(text)
     }
 
-    main :: Unit -> Int need Facade.W
+    main :: Unit -> Int need Facade.w
     {
         _ => run("hello")
     }

@@ -1,17 +1,17 @@
 Demo.Logger :: module {
-    Logger :: effect;
+    logger :: effect;
 
-    log :: String -> Unit need Logger
+    log :: String -> Unit need logger
     {
         _ => ()
     }
 
-    helper :: Int -> Unit need Logger.Logger
+    helper :: Int -> Unit need Logger.logger
     {
         _ => Logger.log("hello")
     }
 
-    main :: Unit -> Unit need Logger.Logger
+    main :: Unit -> Unit need Logger.logger
     {
         _ => helper(0)
     }

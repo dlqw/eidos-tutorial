@@ -1,6 +1,6 @@
 # Eidos 教程（中文）
 
-> 语言基线：本教程以 Eidos 0.6.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`、点号 Namespace 与逗号分隔的 ADT 构造器；旧源码只通过显式迁移命令处理。
+> 语言基线：本教程以 Eidos 0.7.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`、点号 Namespace 与逗号分隔的 ADT 构造器；旧源码只通过显式迁移命令处理。
 
 ## 1. 教程范围与验证基线
 本教程只描述当前仓库中已经实现并可复现的功能。所有可运行的示例均在 [`docs/tutorial/examples/`](examples/) 目录下。
@@ -26,7 +26,7 @@ powershell -ExecutionPolicy Bypass -File docs/tutorial/verify-examples.ps1
 manifestSchema = 3
 
 [language]
-version = "0.6.0-alpha.1"
+version = "0.7.0-alpha.1"
 
 [package]
 name = "dev.eidos.app"
@@ -55,12 +55,12 @@ let mut counter = 1;
 
 #### Namespace 与命名风格
 
-Eidos 0.6 统一使用一套成员选择表面：
+Eidos 0.7 保持统一的一套成员选择表面：
 
 ```eidos
 import Std.Option
 
-Info :: comptime Meta.typeInfo(User);
+Info :: comptime meta.shape_of(User);
 fallback := Std.Option.unwrap_or(input)(0);
 name := user.profile.display_name;
 ```
@@ -218,55 +218,52 @@ use :: Unit -> Int
 
 值实参必须在实例化点可编译期求值，并且类型与参数注解一致。未被普通参数类型约束的值参数必须显式提供；能从 `Buffer[N, T]` 这类参数/结果类型推出时可以省略。值会进入 nominal type identity、layout、name mangling、generic specialization、trait coherence 和增量缓存键，因此 `Buffer[4, Int]` 与 `Buffer[5, Int]` 是不同类型。浮点值在 alpha.1 中不能作为 specialization key；引用、指针、closure 和其他带运行期资源身份的值也不能越过 comptime/type identity 边界。
 
-ADT、type alias、函数、trait、`@impl(...)` 和 named instance trait 引用均使用同一套有序 generic argument 规则。例如 `Sized[comptime N: Int] :: trait { ... }` 的实现必须显式写成 `@impl(Sized[4])`；trait 方法签名中的 `N` 会按该值替换，coherence 也会比较结构化值 key。完整示例见 `examples/68_const_generics.eidos`。
+ADT、type alias、函数、trait 和 named instance trait 引用均使用同一套有序 generic argument 规则。例如 `Sized[comptime N: Int] :: trait { ... }` 的实现应显式写成 `SizedHolder :: instance Sized[4]`；trait 方法签名中的 `N` 会按该值替换，coherence 也会比较结构化值 key。完整示例见 `examples/68_const_generics.eidos`。
 
 #### 只读类型反射、用户 derive 与结构化生成（0.5.0-alpha.3）
 
-`Meta` 是编译器内建域，不属于 `Std`，也不需要 `import`。反射只返回已经完成且可稳定序列化的编译器事实，不暴露可变 AST 或内部 `SymbolId`：
+`meta` 是编译器内建域，不属于 `Std`，也不需要 `import`。反射只返回已经完成且可稳定序列化的编译器事实，不暴露可变 AST 或内部 `SymbolId`：
 
 ```eidos
-Info :: comptime Meta.typeInfo(User);
-Kind :: comptime Meta.typeKind(Info);
-HasName :: comptime Meta.hasField(User, "name");
-NameType :: comptime Meta.fieldType(User, "name");
-IntLayout :: comptime Meta.layoutOf(Int, "x86_64-pc-windows-msvc");
+Info :: comptime meta.shape_of(User);
+Kind :: comptime meta.kind_of(Info);
+HasName :: comptime meta.has_field(User, "name");
+NameType :: comptime meta.type_of(User, "name");
+IntLayout :: comptime meta.layout_of(Int, "x86_64-pc-windows-msvc");
 ```
 
-`Meta.typeInfo` 覆盖 primitive、tuple、function、reference、ADT 与 trait；构造器、字段、关联声明和属性保持稳定源码顺序。`Meta.layoutOf` 是独立的 target-dependent 查询，必须显式给出受支持的 target triple；尚未完成布局的类型会产生 phase diagnostic，不会退回 host layout。
+`meta.shape_of` 覆盖 primitive、tuple、function、reference、ADT 与 trait；构造器、字段、关联声明和属性保持稳定源码顺序。`meta.layout_of` 是独立的 target-dependent 查询，必须显式给出受支持的 target triple；尚未完成布局的类型会产生 phase diagnostic，不会退回 host layout。
 
-用户 derive 必须是 `comptime Meta.DeriveInput -> Meta.Expansion`：
+自定义生成器使用编译器管理的 `comptime meta.Type -> meta.Items` 协议，并通过 typed `@[expand(...)]` 标签附着：
 
 ```eidos
 Marker :: trait {
     marker :: Self -> String
 }
 
-deriveMarker :: comptime Meta.DeriveInput -> Meta.Expansion {
-    input => {
-        target := Meta.target(input);
-        parameter := Meta.parameter("value", target);
-        method := Meta.function(
+derive_marker :: comptime meta.Type -> meta.Items {
+    target => {
+        parameter := meta.parameter("value", target);
+        method := meta.function(
             "marker",
             [parameter],
             String,
-            Meta.exprString(Meta.typeName(target))
+            meta.expr_string(meta.name_of(target))
         );
-        Meta.expansion([
-            Meta.implementation(Meta.decl(Marker), target, [method])
-        ])
+        [meta.instance(meta.declaration_of(Marker), target, [method])]
     }
 }
 
-@derive(deriveMarker)
+@[expand(derive_marker)]
 User :: type {
     name: String,
     age: Int
 }
 ```
 
-`Meta.Expansion` 可结构化生成 implementation、function、comptime value、attribute attachment、test、diagnostic 与 module member。函数体通过 `Meta.Expr` builder 构造，pattern branch 通过 `Meta.Pattern` / `Meta.Branch` builder 构造；声明引用使用 `Meta.Decl`，生成器局部引用使用 `Meta.Parameter` / `Meta.Binding` handle，以保持卫生。生成声明进入普通名称解析、类型检查、trait coherence、completion、hover、definition 与 references，并带稳定 `eidos-generated://` origin。
+`meta.Items` 包含结构化生成声明。`meta.Function -> meta.Function` 用于函数体变换，`meta.Syntax[K] -> meta.Syntax[K]` 用于 syntax-site expansion。生成声明进入普通名称解析、类型检查、trait coherence、completion、hover、definition 与 references，并带稳定 `eidos-generated://` origin。
 
-当前边界：不支持字符串源码插入、任意 AST 替换或删除；`@impl` 等语义属性不能通过 attribute attachment 回写，必须生成对应 structured declaration；pure comptime 不能读取文件、环境、进程、网络或 FFI。扩展按依赖与源码顺序执行到固定点，cycle、重复 stable identity、非法协议签名、预算超限和不完整反射都会产生确定 diagnostic。完整示例见 `examples/69_meta_reflection_derive.eidos`。
+当前边界：不支持字符串源码插入、任意 AST 替换、公开调度 clause 或公开 ownership attribute；pure comptime 不能读取文件、环境、进程、网络或 FFI。编译器根据 typed protocol 与 declaration tag 自动推导依赖顺序、fixed point、identity、cache、diagnostic 和 provenance。完整示例见 `examples/69_meta_reflection_derive.eidos`。
 
 可用 CLI：
 
@@ -278,7 +275,7 @@ eidosc meta expand source.eidos --trace-comptime --comptime-budget 200000
 
 #### 能力约束的 Build host 与 BuildGraph（0.5.0-alpha.4）
 
-`Build` 与 `Meta` 一样是无需 import 的编译器内建域，但只能在 `[build].program` 指定的构建程序中取得能力。普通 pure comptime 即使能解析 `Build.context()`，也会被拒绝访问文件、环境、进程与 artifact emit。
+`build` 与 `meta` 一样是无需 import 的编译器内建域，但只能在 `[build].program` 指定的构建程序中取得能力。普通 pure comptime 若尝试取得文件、环境、进程、网络或 artifact emit 能力会被拒绝。
 
 ```toml
 [build]
@@ -294,14 +291,14 @@ path = "tools/generator.exe"
 
 `fileInputs` 可以声明文件或目录；目录会递归展开并按项目相对路径稳定排序。所有输入内容、登记环境变量的存在性和值、登记工具的可执行文件路径/hash、build program、host triple 与 target triple 都进入 Build host cache key。build program、文件输入与输出必须留在 project root 内，program 和文件输入都不得与 output root 重叠；工具必须用显式路径登记，不依赖偶然的 `PATH` 查找。
 
-构建程序使用分离的 `Build.Fs`、`Build.Env`、`Build.Process` 与 `Build.Emit` 能力，并返回唯一的顶层 `BuildGraph`：
+构建程序先取得一个 opaque session，再投影分离的 `build.Process` 与 `build.Emit` 能力，并返回唯一的顶层 `BuildGraph`：
 
 ```eidos
-Context :: comptime Build.context();
-Process :: comptime Build.process(Context);
-Emit :: comptime Build.emit(Context);
+Session :: comptime build.session();
+Process :: comptime build.process(Session);
+Emit :: comptime build.emit(Session);
 
-Generate :: comptime Build.command(
+Generate :: comptime build.command(
     Process,
     "generate",
     "generator",
@@ -311,24 +308,24 @@ Generate :: comptime Build.command(
     []
 );
 
-Generated :: comptime Build.generatedSource(
+Generated :: comptime build.generated_source(
     Emit,
     "build/generated/Model.eidos",
     "generate",
     "main"
 );
 
-BuildGraph :: comptime Build.graph(Emit, [Generate], [Generated]);
+BuildGraph :: comptime build.graph(Emit, [Generate], [Generated]);
 ```
 
-`Build.readText(Fs, path)` 只能读取 `fileInputs` 展开的文件；`Build.environment(Env, name)` 只能读取已登记且存在的变量。`Build.command` 只描述 host 上执行的登记工具、参数、输入、输出和 step dependency，不会在表达式求值时产生隐式副作用。编译器验证 cycle、重复 output、未声明 input、缺失 dependency edge、output root、producer 与 target；随后按稳定拓扑顺序执行，并确认每个声明 output 已实际生成。`generatedSource` 的目录会自动加入当前 target 的 import roots。
+`build.read_text(Fs, path)` 只能读取 `fileInputs` 展开的文件；`build.environment(Env, name)` 只能读取已登记且存在的变量。`build.command` 只描述 host 上执行的登记工具、参数、输入、输出和 step dependency，不会在表达式求值时产生隐式副作用。编译器验证 cycle、重复 output、未声明 input、缺失 dependency edge、output root、producer 与 target；随后仅携带声明的环境变量按稳定拓扑顺序执行，并确认每个声明 output 已实际生成。`generated_source` 的目录会自动加入当前 target 的 import roots。
 
 ```powershell
 eidosc build --project . --target-name main --trace-build
 eidosc build --project . --emit-build-graph build/graph.json
 ```
 
-`--trace-build` 输出 capability dependency、实际 capability access、graph hash、step/cache 状态和工具输出。`--emit-build-graph` 写出 canonical JSON。相同 program、声明输入、环境、工具 hash、host/target 与 graph 会复用经过 output hash 验证的 BuildGraph cache。最小可验证项目见 `examples/build_host/`。
+`--trace-build` 输出 capability dependency、实际 capability access、graph hash、step/cache 状态和工具输出。`--emit-build-graph` 写出 canonical JSON。相同 program、声明输入、环境、工具 hash、host/target 与 graph 会复用经过 output hash 验证的 BuildGraph cache。成功构建会提供确定性的 in-toto/SLSA provenance 与 CycloneDX 1.6 SBOM metadata；release profile 会拒绝 volatile provenance。最小可验证项目见 `examples/build_host/`。
 
 普通同一作用域函数可以同名，只要参数签名不同。调用点会根据实参类型选择重载，
 覆盖普通调用、限定路径调用、链式方法调用、中缀调用和管道调用。裸重载函数引用
@@ -442,6 +439,22 @@ chain3 :: 3.inc.double;
 ### 3.4 ADT 与类型别名
 示例文件：`examples/04_adt_type_alias.eidos`
 
+Eidos 0.7 开发线同时支持词法封闭的 closed-case hierarchy。每个嵌套的 `Case :: type` 都是一等 exact nominal subtype，也是带同名构造器的类型：
+
+```eidos
+Message :: type {
+    Text :: type {
+        value :: String,
+    },
+
+    Control :: type {
+        code :: Int,
+    },
+}
+```
+
+完整 hierarchy 使用原子可见性。导出 `Message` 会同时导出穷尽匹配所需的所有 descendant case type、constructor 与 case field；root 未导出或由编译器标记为 internal 时，整棵 hierarchy 都保持私有。public root 不能包含 toolchain-internal descendant，编译器会报告 `E3061`，不会静默形成 hidden case。Eidos 0.7 不会根据 descendant visibility 隐式推导 non-exhaustive 或 opaque-case 模式。
+
 ```eidos
 type Option[T] { Some(T), None }
 type UserId = Int;
@@ -552,19 +565,16 @@ reset :: state.{ tick: 0 };
    - 字段不存在会报 `E3203`；
    - LLVM 侧遇到未解析字段偏移会报 `E3301`（不再静默回落）。
 
-### 3.5 Trait 与 `@impl`
+### 3.5 Trait 与 named instance
 示例文件：`examples/05_trait_impl_declaration.eidos`  
-推荐使用 name-first `instance` 声明 trait evidence；旧的 `@impl(Trait)` 函数形式仍可用于与既有代码兼容，但新示例优先展示 `instance`。
+trait evidence 使用 name-first `instance` 声明。函数级 `@impl(Trait)` 已从 0.7 authoring surface 删除，只作为显式迁移输入识别。
 `instance` 的成员名与签名必须匹配目标 Trait 方法，并且定义在同模块内。
 对于泛型 Trait，`instance` 支持显式 trait 类型实参（例如 `FunctorBox :: instance Functor[Box]`），并会在命名阶段检查实参数量是否匹配。
 约定式 impl 注册不会推断泛型 Trait 的类型实参；对泛型 Trait 必须使用显式 `Trait[...]`。
 `instance` 会先做 alias canonicalization，再比较 impl 头的结构特化关系。若一个头严格比另一个更具体（例如 `Option[Int]` 相对于 `Option[T]`），两者可以共存；但若两个头 canonicalize 后等价，或彼此不可比较，命名阶段仍会以 `E3004`（`overlapping impl registration`）拒绝。仅靠 alias 改写不会产生“更具体”的关系，所以 trait 实参侧或实现类型侧的 alias-only 等价重叠仍会报错。
 `expr given InstanceName` 可显式选择某个命名 evidence。
-旧 `@impl(Trait)` 形式要求函数名与签名必须与 Trait 方法匹配，并且定义在同模块内。
-对于泛型 Trait，`@impl` 现支持显式 trait 类型实参（例如 `@impl(Functor[Box])`），并会在命名阶段检查实参数量是否匹配。
-约定式 impl 注册不会推断泛型 Trait 的类型实参；对泛型 Trait 必须使用显式 `@impl(Trait[...])`。
-`@impl` 会先做 alias canonicalization，再比较 impl 头的结构特化关系。若一个头严格比另一个更具体（例如 `Option[Int]` 相对于 `Option[T]`），两者可以共存；但若两个头 canonicalize 后等价，或彼此不可比较，命名阶段仍会以 `E3004`（`overlapping impl registration`）拒绝。仅靠 alias 改写不会产生“更具体”的关系，所以 trait 实参侧或实现类型侧的 alias-only 等价重叠仍会报错。
-作为高阶 trait 实参使用的开放别名，现在也会参与类型推断与 MIR 特化时的反向匹配。例如 `@impl(Applicative[KeepEdges[String, Bool]])` 现在可以在外层期望 `Triple[String, A, Bool]` 时满足 `G[A]`；可参考 `examples/43_open_alias_trait_impl.eidos`。
+named instance 会先做 alias canonicalization，再比较 impl 头的结构特化关系。若一个头严格比另一个更具体（例如 `Option[Int]` 相对于 `Option[T]`），两者可以共存；但若两个头 canonicalize 后等价，或彼此不可比较，命名阶段仍会以 `E3004`（`overlapping impl registration`）拒绝。仅靠 alias 改写不会产生“更具体”的关系，所以 trait 实参侧或实现类型侧的 alias-only 等价重叠仍会报错。
+作为高阶 trait 实参使用的开放别名，现在也会参与类型推断与 MIR 特化时的反向匹配。例如 `ApplicativeKeepEdgesStringBool :: instance Applicative[KeepEdges[String, Bool]]` 可以在外层期望 `Triple[String, A, Bool]` 时满足 `G[A]`；可参考 `examples/43_open_alias_trait_impl.eidos`。
 同样的反向匹配现在也能穿过预编译标准库的泛型组合子：`Result.traverse(Ok(2))(produce_keep_edges)` 即使回调返回的是底层 `Triple[String, Int, Bool]`，也能反推出 `G = KeepEdges[String, Bool]`；而 `DeepBoxedResult[String]` 这类深别名链在 direct/helper 两条遍历路径上也都能继续正确特化；可参考 `examples/44_std_traversable_alias_applicative.eidos`。
 这一点现在也适用于递归 traversable：`Seq.traverse([1, 2])(produce_keep_edges)` 会在重复特化 `map2_applicative(cons)(...)` 的过程中持续保留用户自定义 open alias / deep alias `Applicative` impl；可参考 `examples/45_std_list_traversable_alias_applicative.eidos`。
 这同样适用于短路/空输入分支：`Option.traverse(None())(...)` 与 `Seq.traverse([])(...)` 现在也会通过用户自定义 alias-backed `Applicative` 的 `pure` 正确完成特化，而不再只在回调被真正调用时才可达；可参考 `examples/46_traversable_alias_applicative_empty_cases.eidos`。
@@ -596,8 +606,8 @@ Trait 约束求解当前行为（2026-03-15）：
 2. `TyCon`（构造类型）优先走内置 trait 映射，其次走符号表中的 `impl` 查找。
 3. 约束中的 `traitId` 缺失时，会回退按 `traitName` 在符号表中查找 trait 再做 `impl` 匹配。
 4. 泛型函数的 trait bound 会在调用点实例化后强制检查（例如 `id[T: Marker] :: T -> T` 在 `Int` 未实现 `Marker` 时调用 `id(1)` 会报错）。
-5. Trait 实参匹配采用精确语义：无实参 bound（例如 `T: Functor`）不会匹配仅有特化实参的 impl（如 `@impl(Functor[Box])`）。
-6. `@impl` 注册前会先做 alias canonicalization 再检测重叠。严格更具体的头可以与更宽泛的头并存，但等价或不可比较的 canonical 形状仍会报 `E3004`。例如 `@impl(Show)` on `Option[Int]` 可以与 `@impl(Show)` on `Option[T]` 共存；但 `ResultWith[E, T] = Result[T, E]` 与 `AlsoResult[E, T] = Result[T, E]` 若同时用于声明 `@impl(Applicative[...])`，仍会因底层折叠到同一形状而冲突。
+5. Trait 实参匹配采用精确语义：无实参 bound（例如 `T: Functor`）不会匹配仅有特化实参的 named instance（如 `FunctorBox :: instance Functor[Box]`）。
+6. named instance 注册前会先做 alias canonicalization 再检测重叠。严格更具体的头可以与更宽泛的头并存，但等价或不可比较的 canonical 形状仍会报 `E3004`。例如 `Show` on `Option[Int]` 可以与 `Show` on `Option[T]` 共存；但 `ResultWith[E, T] = Result[T, E]` 与 `AlsoResult[E, T] = Result[T, E]` 若同时用于声明同一 `Applicative[...]` evidence，仍会因底层折叠到同一形状而冲突。
 7. 泛型 trait bound 中的部分应用 alias 现在可以从具体底层返回类型反推出开放槽位。例如 `lift[A, G: kind2 : Applicative[G]] :: A -> G[A]` 现在可以通过 `KeepEdges[String, Bool] = Triple[String, _, Bool]` 在调用点特化出 `Triple[String, Int, Bool]`。
 8. 同样的 alias-backed 反推能力现在也能与预编译标准库 helper（如 `Result.traverse`）组合，所以即使回调签名暴露的是底层构造器类型，用户自定义 open alias / deep alias `Applicative` impl 仍然可达。
 9. 对 `Seq.traverse` 这类递归 traversable 也是如此：即使内部会反复经过 `map2_applicative` / `cons` 的特化链，alias-backed `Applicative` impl 仍能保持可用。
@@ -656,6 +666,14 @@ doubled :: [x * 2 | x <- [1, 2, 3]];
 11. 能力不足诊断与借用冲突诊断已分离，新增错误码：`E1011`（read 能力不足）、`E1012`（write 能力不足）、`E1013`（move 能力不足）。
 12. Borrow 授权与 effect 行独立；effect 声明即使带有 `@borrow(...)` 也不会授予 `read/write/move`。
 13. Borrow 权限由 borrow/ownership 流水线推导和约束，而不是由 `need` 提供。
+14. Eidos 0.7 由 typed callable signature 生成版本化 `OwnershipContract`：普通 `T` 是 `ByValue`，`Ref[T]` 是 `SharedBorrow`，`MRef[T]` 是 `MutableBorrow`。函数体不能把公开参数模式改成 borrow，也不能用 compiler tag 修补签名。
+15. `Copy` 不是第四种参数模式。传入 `ByValue` 参数时，compiler 根据结构化 `Copy` verifier 与当前 place 状态选择 Copy 或 Move；`Ref[T]` 固定为 Copy，`MRef[T]` 固定为 non-Copy。
+16. `Clone` 是普通显式 trait 调用，receiver 为 `Ref[Self]`；compiler 不会在调用、赋值或迁移过程中自动插入 `clone`，也不会把 `Clone` 当作 `Copy` fallback。
+17. non-Copy aggregate 支持字段/索引级 partial move 与显式重新初始化；控制流合流会保守合并已移动路径。对已 move/drop 的值再次 drop 报 `E1001`，每条路径只释放一次。
+18. reborrow 保留 place 与来源：`MRef[T] -> Ref[T]` 只产生共享 reborrow，不复制 pointee；返回 reference 必须保持可证明的输入 provenance 与 lifetime。
+19. body analysis 只生成独立 loan summary（provenance、lifetime/outlives、reborrow、escape 与验证事实），不会改写 `OwnershipContract`。两者分别版本化并参与 HIR/MIR、跨模块 cache 与增量失效。
+20. Meta reflection、IDE semantic snapshot 与 LSP hover 只能读取结构化 ownership slots，不能授权或覆盖所有权语义。
+21. 旧 `@borrow(read/write/move)` 只作为迁移输入看待；它无法唯一决定 `Ref`/`MRef`。0.7 migrator 遇到这类歧义会在写文件前原子停止，要求同时修改定义与 typed call sites，并且绝不自动插入 `clone`。
 
 ### 3.8 Effect Tag、授权与多态
 Effect 声明是 nominal 编译期标记，不包含 operation，也没有运行时表示：
@@ -674,7 +692,7 @@ write :: String -> Unit need Writer
 3. 高阶 API 使用 `E: effects` 行参数：`apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E`。
 4. 固定行与多态行可组合，例如 `need FFI, E`。Effect 变量会参与泛化，并保存在跨模块摘要和编译缓存状态中。
 5. Effect 在运行前擦除；语言不提供 handler、`with`、`resume`、CPS 重写或运行时 effect dispatch。
-6. Borrow 检查与 effect 授权独立；在 effect 上标注 `@borrow(...)` 不会授予 read、write 或 move 权限。
+6. Borrow 检查与 effect 授权独立；旧 `@borrow(...)` 即使仍作为迁移输入被识别，也不会授予 read、write 或 move 权限。
 
 ### 3.10 `match when` 分支守卫（已打通到 MIR）
 示例文件：`examples/10_match_guard.eidos`、`examples/27_pattern_guard_binding.eidos`  
@@ -927,7 +945,7 @@ dotnet run --project src/Eidosc/Eidosc.Cli -- info --stdlib
 详细教程见 [`FFI.zh-CN.md`](FFI.zh-CN.md)。
 
 已验证能力：
-1. `@ffi` 声明外部 C 函数（支持自定义符号名）。  
+1. `@[extern(c, ...)]` 声明外部 C 函数（支持自定义符号名）。
    样例：`examples/55_ffi_basic.eidos`。
 2. 指针操作：`ptr_null`、`ptr_is_null`、`ptr_add`、`ptr_load_int`、`ptr_store_int`。  
    样例：`examples/56_ffi_pointer_ops.eidos`。
@@ -937,7 +955,7 @@ dotnet run --project src/Eidosc/Eidosc.Cli -- info --stdlib
    样例：`examples/58_ffi_qsort.eidos`。
 
 FFI 安全类型集合：`Int`、`Int32`、`Float`、`Bool`、`Unit`、`RawPtr`、`Ptr[T]`、`Cfn`；函数类型参数可作为 Eidos closure 对象指针传给理解该 ABI 的 native 函数。
-错误码：E3050（@ffi 带函数体）、E3051（非安全类型）、W3050（无用 link 指令）。
+错误码：E3050（@[extern(...)] 带函数体）、E3051（非安全类型）、W3050（无用 link 指令）。
 
 ## 4. BNF 入口
 核心 BNF 摘要请看 [`BNF.zh-CN.md`](BNF.zh-CN.md)。

@@ -3,7 +3,7 @@ Applicative[F: kind2] :: trait {
 }
 
 Triple[A, B, C] :: type {
-    Triple(A, B, C)
+    Triple:: type(A, B, C)
 }
 
 KeepEdges[L, R, X] :: type = Triple[L, X, R];

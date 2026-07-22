@@ -3,11 +3,11 @@ Functor[F: kind2] :: trait {
 }
 
 Person :: type {
-    Person(Int)
+    Person:: type(Int)
 }
 
 Box[A] :: type {
-    Box(A)
+    Box:: type(A)
 }
 
 FunctorBox :: instance Functor[Box] {

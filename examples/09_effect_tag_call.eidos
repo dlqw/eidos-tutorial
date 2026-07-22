@@ -1,11 +1,11 @@
-Logger :: effect;
+logger :: effect;
 
-log :: String -> Int need Logger
+log :: String -> Int need logger
 {
     _ => 0
 }
 
-main :: Unit -> Int need Logger
+main :: Unit -> Int need logger
 {
     _ => log("hello")
 }

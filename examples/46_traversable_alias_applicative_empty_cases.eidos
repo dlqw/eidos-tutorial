@@ -1,10 +1,10 @@
-import Std.Applicative
-import Std.Seq
-import Std.Option
-import Std.Result
+import std.Applicative
+import std.Seq
+import std.Option
+import std.Result
 
 Triple[A, B, C] :: type {
-    Triple(A, B, C)
+    Triple:: type(A, B, C)
 }
 
 KeepEdges[L, R, X] :: type = Triple[L, X, R];
@@ -23,7 +23,7 @@ ApplicativeKeepEdgesStringBool :: instance Applicative.Applicative[KeepEdges[Str
     }
     apply[A, B, E: effects] :: KeepEdges[String, Bool, A -> B need E] -> KeepEdges[String, Bool, A] -> KeepEdges[String, Bool, B] need E
     {
-        Triple(leftCtx, f, leftOk) => Triple(rightCtx, value, rightOk) => Triple(join_ctx(leftCtx)(rightCtx), f(value), leftOk && rightOk)
+        Triple(left_ctx, f, left_ok) => Triple(right_ctx, value, right_ok) => Triple(join_ctx(left_ctx)(right_ctx), f(value), left_ok && right_ok)
     }
 }
 
@@ -34,7 +34,7 @@ ApplicativeDeepBoxedResultString :: instance Applicative.Applicative[DeepBoxedRe
     }
     apply[A, B, E: effects] :: DeepBoxedResult[String, A -> B need E] -> DeepBoxedResult[String, A] -> DeepBoxedResult[String, B] need E
     {
-        fResult => valueResult => match (fResult, valueResult)
+        f_result => value_result => match (f_result, value_result)
         {
             (Ok(f), Ok(value)) => Ok(f(value)),
             (Err(error), _) => Err(error),
@@ -89,28 +89,28 @@ collapse_deep_option_result :: Result[Option[Int], String] -> Int
 
 collapse_open_list_result :: Triple[String, Seq[Int], Bool] -> Int
 {
-    Triple(_, values, ok) => if ok && Seq.is_empty(values) then { 1 } else { 0 }
+    Triple(_, values, ok) => if ok && Seq.is_empty(ref values) then { 1 } else { 0 }
 }
 
 collapse_deep_list_result :: Result[Seq[Int], String] -> Int
 {
-    Ok(values) => if Seq.is_empty(values) then { 1 } else { 0 },
+    Ok(values) => if Seq.is_empty(ref values) then { 1 } else { 0 },
     Err(_) => 0
 }
 
 main :: Unit -> Int
 {
     _ => {
-        openOptionDirect := collapse_open_option_result(Option.traverse(None())(produce_keep_edges));
-        openOptionViaHelper := collapse_open_option_result(traverse_option_with_alias_applicative(None())(produce_keep_edges));
-        deepOptionDirect := collapse_deep_option_result(Option.traverse(None())(produce_deep_boxed_result));
-        deepOptionViaHelper := collapse_deep_option_result(traverse_option_with_alias_applicative(None())(produce_deep_boxed_result));
-        openListDirect := collapse_open_list_result(Seq.traverse([])(produce_keep_edges));
-        openListViaHelper := collapse_open_list_result(traverse_seq_with_alias_applicative([])(produce_keep_edges));
-        deepListDirect := collapse_deep_list_result(Seq.traverse([])(produce_deep_boxed_result));
-        deepListViaHelper := collapse_deep_list_result(traverse_seq_with_alias_applicative([])(produce_deep_boxed_result));
+        open_option_direct := collapse_open_option_result(Option.traverse(None())(produce_keep_edges));
+        open_option_via_helper := collapse_open_option_result(traverse_option_with_alias_applicative(None())(produce_keep_edges));
+        deep_option_direct := collapse_deep_option_result(Option.traverse(None())(produce_deep_boxed_result));
+        deep_option_via_helper := collapse_deep_option_result(traverse_option_with_alias_applicative(None())(produce_deep_boxed_result));
+        open_list_direct := collapse_open_list_result(Seq.traverse([])(produce_keep_edges));
+        open_list_via_helper := collapse_open_list_result(traverse_seq_with_alias_applicative([])(produce_keep_edges));
+        deep_list_direct := collapse_deep_list_result(Seq.traverse([])(produce_deep_boxed_result));
+        deep_list_via_helper := collapse_deep_list_result(traverse_seq_with_alias_applicative([])(produce_deep_boxed_result));
 
-        openOptionDirect + openOptionViaHelper + deepOptionDirect + deepOptionViaHelper +
-        openListDirect + openListViaHelper + deepListDirect + deepListViaHelper
+        open_option_direct + open_option_via_helper + deep_option_direct + deep_option_via_helper +
+        open_list_direct + open_list_via_helper + deep_list_direct + deep_list_via_helper
     }
 }

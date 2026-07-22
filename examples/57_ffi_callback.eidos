@@ -1,7 +1,9 @@
 // 57_ffi_callback.eidos — C 回调：Eidos 函数作为 C 函数指针
 
-@ffi
-puts :: RawPtr -> Int
+
+@[extern(c, name: "puts")]
+puts :: RawPtr -> Int need ffi;
+
 
 // cfn_from 将 Eidos 函数转为 C 函数指针 (RawPtr)
 // 零捕获函数直接 bitcast，闭包提取 invoke_fn
@@ -16,7 +18,7 @@ double_it :: Int -> Int
     x => x * 2
 }
 
-main :: Int -> Int need FFI, IO
+main :: Int -> Int need ffi, io
 {
     _ => {
         // 转换为 C 函数指针

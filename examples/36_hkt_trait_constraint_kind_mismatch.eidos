@@ -1,5 +1,5 @@
 Box[A] :: type {
-    Wrap(A)
+    Wrap:: type(A)
 }
 
 Functor[F: kind2] :: trait {

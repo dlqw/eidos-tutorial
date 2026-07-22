@@ -25,7 +25,7 @@
 ## 1. 概述
 
 Eidos FFI 允许：
-- **调用 C 函数**：通过 `@ffi` 声明外部 C 函数，在 Eidos 代码中直接调用
+- **调用 C 函数**：通过 `@[extern(c, ...)]` typed tag 和 `need ffi` 声明外部 C 函数，在 Eidos 代码中直接调用
 - **操作 C 内存**：通过 `RawPtr` / `Ptr[T]` 类型和指针工具函数操作原始内存
 - **C 回调**：将 Eidos 函数转换为 C 函数指针，传给接受回调的 C API
 - **间接调用**：通过 `cfn_call` 从 Eidos 调用 C 函数指针
@@ -42,7 +42,7 @@ eidosc build src/main.eidos
 eidosc build src/main.eidos -v
 ```
 
-编译器自动处理链接——`@ffi` 声明的函数会生成 LLVM `declare`，最终由 `clang` 链接为可执行文件。
+编译器自动处理链接——`@[extern(c, ...)]` 声明的函数会生成 LLVM `declare`，最终由 `clang` 链接为可执行文件。
 
 ---
 
@@ -50,25 +50,25 @@ eidosc build src/main.eidos -v
 
 ### 基本声明
 
-使用 `@ffi` 属性声明外部 C 函数。声明**不能有函数体**：
+使用结构化 `@[extern(c, ...)]` typed tag 声明外部 C 函数。声明**不能有函数体**，并显式声明 `need ffi`：
 
 ```eidos
-@ffi
-puts :: Ptr[Char] -> Int
+@[extern(c, name: "puts")]
+puts :: Ptr[Char] -> Int need ffi;
 ```
 
-编译器使用函数名 `"puts"` 作为 C 符号名。
+编译器使用 `name` 字段作为 C 符号名。
 
 ### 自定义符号名
 
-如果 Eidos 函数名和 C 符号名不同，可以在 `@ffi` 中指定：
+如果 Eidos 函数名和 C 符号名不同，可以在 `extern` 中指定：
 
 ```eidos
-@ffi("malloc")
-alloc :: Int -> RawPtr
+@[extern(c, name: "malloc")]
+alloc :: Int -> RawPtr need ffi;
 
-@ffi("free")
-dealloc :: RawPtr -> Unit
+@[extern(c, name: "free")]
+dealloc :: RawPtr -> Unit need ffi;
 ```
 
 ### 链接外部库
@@ -78,8 +78,8 @@ dealloc :: RawPtr -> Unit
 ```eidos
 link "curl"
 
-@ffi("curl_easy_init")
-curl_init :: () -> RawPtr
+@[extern(c, library: "curl", name: "curl_easy_init")]
+curl_init :: Unit -> RawPtr need ffi;
 ```
 
 `link "curl"` 会传递 `-lcurl` 给链接器。
@@ -89,7 +89,7 @@ curl_init :: () -> RawPtr
 Eidos 使用柯里化语法，但 FFI 声明支持多参数：
 
 ```eidos
-@ffi("qsort")
+@[extern(c, name: "qsort")]
 qsort :: RawPtr -> Int -> Int -> RawPtr -> Unit
 ```
 
@@ -107,7 +107,7 @@ qsort(arr, 5, 8, cmp_fn)
 
 ## 3. FFI 类型安全
 
-编译器在类型推断后运行 FFI 类型校验，确保 `@ffi` 函数的参数和返回值类型是 **FFI 安全类型**。
+编译器在类型推断后运行 FFI 类型校验，确保 ``extern` typed tag` 函数的参数和返回值类型是 **FFI 安全类型**。
 
 ### FFI 安全类型
 
@@ -128,7 +128,7 @@ qsort(arr, 5, 8, cmp_fn)
 
 ```eidos
 // 错误：String 不是 FFI 安全类型
-@ffi
+`extern` typed tag
 bad :: String -> Int          // E3051 错误
 
 // 正确：先转换为 RawPtr
@@ -140,9 +140,9 @@ puts(cstr);                      // RawPtr 是安全类型
 
 | 代码 | 级别 | 描述 |
 |------|------|------|
-| E3050 | Error | `@ffi` 函数带函数体 |
-| E3051 | Error | `@ffi` 参数或返回值类型不安全 |
-| W3050 | Warn | `link` 指令但无 `@ffi` 函数 |
+| E3050 | Error | ``extern` typed tag` 函数带函数体 |
+| E3051 | Error | ``extern` typed tag` 参数或返回值类型不安全 |
+| W3050 | Warn | `link` 指令但无 ``extern` typed tag` 函数 |
 
 ---
 
@@ -214,7 +214,7 @@ ptr_load_int(ptr) -> Int            // 从 ptr 读取 i64
 cfn_from(func) -> RawPtr
 ```
 
-将 Eidos 零捕获函数转换为 C 函数指针。带捕获闭包不是 C 函数指针；`cfn_from` 会以 `E3053` 拒绝。需要把带捕获函数传给 native runtime 时，使用明确接受 Eidos closure 对象指针的 `@ffi` 参数，而不是 C 回调槽位。
+将 Eidos 零捕获函数转换为 C 函数指针。带捕获闭包不是 C 函数指针；`cfn_from` 会以 `E3053` 拒绝。需要把带捕获函数传给 native runtime 时，使用明确接受 Eidos closure 对象指针的 ``extern` typed tag` 参数，而不是 C 回调槽位。
 
 ```eidos
 add_one :: Int -> Int { x => x + 1 }
@@ -267,10 +267,10 @@ my_cmp :: Int -> Int -> Int
 端到端演示：分配内存 → 填充数组 → 转换比较函数 → 调用 `qsort` → 读取排序结果。
 
 ```eidos
-@ffi("qsort")
+@[extern(c, name: "qsort")]
 qsort :: RawPtr -> Int -> Int -> RawPtr -> Unit
 
-@ffi("malloc")
+@[extern(c, name: "malloc")]
 malloc :: Int -> RawPtr
 
 my_cmp :: Int -> Int -> Int
@@ -376,7 +376,7 @@ value := FFI.with_malloc[Int](8)({ ptr => {
 
 | Eidos 构造 | LLVM IR |
 |-----------|---------|
-| `@ffi puts` | `declare i64 @puts(ptr)` |
+| ``extern` typed tag puts` | `declare i64 @puts(ptr)` |
 | `RawPtr` / `Ptr[T]` / `Cfn` | `ptr`（不参与 RC） |
 | `string_to_cstr(s)` | `call ptr @eidos_string_to_cstr(ptr %s)` |
 | `cfn_from(f)` | `bitcast ptr @f to ptr` |
@@ -397,7 +397,7 @@ value := FFI.with_malloc[Int](8)({ ptr => {
 
 ## 10. 绑定包生成
 
-复杂 C 库不要把 include path、native source、linker flags 和大量 `@ffi`
+复杂 C 库不要把 include path、native source、linker flags 和大量 ``extern` typed tag`
 声明直接写进应用项目。推荐先生成独立绑定包：
 
 ```powershell
@@ -432,7 +432,7 @@ main :: Int -> Int need FFI {
 ```
 
 限定名结构是 `包名::模块名::符号名`；0.4.0-alpha.1 文档中模块名内部使用 dot-separated segments，例如
-`Demo.Graphics.Color.red`；旧 slash-separated 写法只作为显式 migration 输入，不属于 Eidos 0.6 编译语法。
+`Demo.Graphics.Color.red`；旧 slash-separated 写法只作为显式 migration 输入，不属于 Eidos 0.7 编译语法。
 
 ## 11. 已知限制
 

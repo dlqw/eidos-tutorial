@@ -1,4 +1,4 @@
-Option[T] :: type { Some(T), None }
+Option[T] :: type { Some:: type(T), None :: type {} }
 
 unwrap_or_zero :: Option[Int] -> Int
 {

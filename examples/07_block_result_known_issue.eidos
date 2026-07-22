@@ -1,4 +1,4 @@
-add1ViaBlock :: Int -> Int
+add_1_via_block :: Int -> Int
 {
     x => {
         y := x + 1;

@@ -3,15 +3,17 @@
 // Point :: type { x: Int, y: Int }  等价于  Point :: type { Point { x: Int, y: Int } }
 
 Point :: type {
-    x: Int,
-    y: Int
+    x:: Int,
+    y:: Int
 }
 
-@derive(Eq)
-@derive(Show)
-Record :: type {
-    name: Int,
-    age: Int
+
+
+@[derive(Eq), derive(Show)]
+Record :: type
+{
+    name:: Int,
+    age:: Int
 }
 
 origin :: Point { x: 0, y: 0 };

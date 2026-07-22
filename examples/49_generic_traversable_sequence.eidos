@@ -1,11 +1,11 @@
-import Std.Applicative
-import Std.Seq
-import Std.Option
-import Std.Result
-import Std.Traversable
+import std.Applicative
+import std.Seq
+import std.Option
+import std.Result
+import std.Traversable
 
 Triple[A, B, C] :: type {
-    Triple(A, B, C)
+    Triple:: type(A, B, C)
 }
 
 KeepEdges[L, R, X] :: type = Triple[L, X, R];
@@ -24,7 +24,7 @@ ApplicativeKeepEdgesStringBool :: instance Applicative.Applicative[KeepEdges[Str
     }
     apply[A, B, E: effects] :: KeepEdges[String, Bool, A -> B need E] -> KeepEdges[String, Bool, A] -> KeepEdges[String, Bool, B] need E
     {
-        Triple(leftCtx, f, leftOk) => Triple(rightCtx, value, rightOk) => Triple(join_ctx(leftCtx)(rightCtx), f(value), leftOk && rightOk)
+        Triple(left_ctx, f, left_ok) => Triple(right_ctx, value, right_ok) => Triple(join_ctx(left_ctx)(right_ctx), f(value), left_ok && right_ok)
     }
 }
 
@@ -35,7 +35,7 @@ ApplicativeDeepBoxedResultString :: instance Applicative.Applicative[DeepBoxedRe
     }
     apply[A, B, E: effects] :: DeepBoxedResult[String, A -> B need E] -> DeepBoxedResult[String, A] -> DeepBoxedResult[String, B] need E
     {
-        fResult => valueResult => match (fResult, valueResult)
+        f_result => value_result => match (f_result, value_result)
         {
             (Ok(f), Ok(value)) => Ok(f(value)),
             (Err(error), _) => Err(error),
@@ -56,7 +56,7 @@ collapse_open_result :: Triple[String, Result[Int, String], Bool] -> Int
     } else { 0 }
 }
 
-collapse_open_Seq :: Triple[String, Seq[Int], Bool] -> Int
+collapse_open_seq :: Triple[String, Seq[Int], Bool] -> Int
 {
     Triple(_, values, ok) => if ok then {
         Seq.head_or(values)(0)
@@ -91,22 +91,22 @@ collapse_result_result :: Result[Result[Int, String], String] -> Int
 main :: Unit -> Int
 {
     _ => {
-        openResultDirect := collapse_open_result(sequence(Ok(Triple("edge", 2, true))));
-        openResultViaHelper := collapse_open_result(generic_sequence(Ok(Triple("edge", 2, true))));
-        openListDirect := collapse_open_Seq(sequence([Triple("left", 3, true), Triple("right", 4, true)]));
-        openListViaHelper := collapse_open_Seq(generic_sequence([Triple("left", 3, true), Triple("right", 4, true)]));
-        openOptionDirect := collapse_open_option(sequence(Some(Triple("solo", 5, true))));
-        openOptionViaHelper := collapse_open_option(generic_sequence(Some(Triple("solo", 5, true))));
+        open_result_direct := collapse_open_result(sequence(Ok(Triple("edge", 2, true))));
+        open_result_via_helper := collapse_open_result(generic_sequence(Ok(Triple("edge", 2, true))));
+        open_list_direct := collapse_open_seq(sequence([Triple("left", 3, true), Triple("right", 4, true)]));
+        open_list_via_helper := collapse_open_seq(generic_sequence([Triple("left", 3, true), Triple("right", 4, true)]));
+        open_option_direct := collapse_open_option(sequence(Some(Triple("solo", 5, true))));
+        open_option_via_helper := collapse_open_option(generic_sequence(Some(Triple("solo", 5, true))));
 
-        optionResultDirect := collapse_option_result(sequence(Some(Ok(6))));
-        optionResultViaHelper := collapse_option_result(generic_sequence(Some(Ok(6))));
-        listResultDirect := collapse_seq_result(sequence([Ok(7), Ok(8)]));
-        listResultViaHelper := collapse_seq_result(generic_sequence([Ok(7), Ok(8)]));
-        resultResultDirect := collapse_result_result(sequence(Ok(Ok(9))));
-        resultResultViaHelper := collapse_result_result(generic_sequence(Ok(Ok(9))));
+        option_result_direct := collapse_option_result(sequence(Some(Ok(6))));
+        option_result_via_helper := collapse_option_result(generic_sequence(Some(Ok(6))));
+        list_result_direct := collapse_seq_result(sequence([Ok(7), Ok(8)]));
+        list_result_via_helper := collapse_seq_result(generic_sequence([Ok(7), Ok(8)]));
+        result_result_direct := collapse_result_result(sequence(Ok(Ok(9))));
+        result_result_via_helper := collapse_result_result(generic_sequence(Ok(Ok(9))));
 
-        openResultDirect + openResultViaHelper + openListDirect + openListViaHelper +
-        openOptionDirect + openOptionViaHelper + optionResultDirect + optionResultViaHelper +
-        listResultDirect + listResultViaHelper + resultResultDirect + resultResultViaHelper
+        open_result_direct + open_result_via_helper + open_list_direct + open_list_via_helper +
+        open_option_direct + open_option_via_helper + option_result_direct + option_result_via_helper +
+        list_result_direct + list_result_via_helper + result_result_direct + result_result_via_helper
     }
 }

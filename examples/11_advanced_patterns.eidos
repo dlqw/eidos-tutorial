@@ -49,7 +49,7 @@ classify_with_expr_view :: Int -> Int
 }
 
 Pair :: type {
-    Pair(Int, Int)
+    Pair:: type(Int, Int)
 }
 
 classify_with_and :: Pair -> Int

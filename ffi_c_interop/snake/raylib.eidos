@@ -4,54 +4,84 @@ link "raylib"
 link "snake_shim"
 
 // Memory management
-@ffi("malloc")
-malloc :: Int -> RawPtr
 
-@ffi("free")
-free :: RawPtr -> Unit
+@[extern(c, name: "malloc")]
+malloc :: Int -> RawPtr need ffi need ffi;
+
+
+
+@[extern(c, name: "free")]
+free :: RawPtr -> Unit need ffi need ffi;
+
 
 // Window management
-@ffi("InitWindow")
-init_window :: Int32 -> Int32 -> RawPtr -> Unit
 
-@ffi("CloseWindow")
-close_window :: Unit -> Unit
+@[extern(c, name: "InitWindow")]
+init_window :: Int32 -> Int32 -> RawPtr -> Unit need ffi need ffi;
 
-@ffi("WindowShouldClose")
-window_should_close :: Unit -> Bool
 
-@ffi("SetTargetFPS")
-set_target_fps :: Int32 -> Unit
+
+@[extern(c, name: "CloseWindow")]
+close_window :: Unit -> Unit need ffi need ffi;
+
+
+
+@[extern(c, name: "WindowShouldClose")]
+window_should_close :: Unit -> Bool need ffi need ffi;
+
+
+
+@[extern(c, name: "SetTargetFPS")]
+set_target_fps :: Int32 -> Unit need ffi need ffi;
+
 
 // Drawing
-@ffi("BeginDrawing")
-begin_drawing :: Unit -> Unit
 
-@ffi("EndDrawing")
-end_drawing :: Unit -> Unit
+@[extern(c, name: "BeginDrawing")]
+begin_drawing :: Unit -> Unit need ffi need ffi;
 
-@ffi("shim_clear_background")
-clear_background :: Int32 -> Int32 -> Int32 -> Int32 -> Unit
 
-@ffi("shim_draw_rectangle")
-draw_rectangle :: Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit
 
-@ffi("shim_draw_text")
-draw_text :: RawPtr -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit
+@[extern(c, name: "EndDrawing")]
+end_drawing :: Unit -> Unit need ffi need ffi;
+
+
+
+@[extern(c, name: "shim_clear_background")]
+clear_background :: Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi need ffi;
+
+
+
+@[extern(c, name: "shim_draw_rectangle")]
+draw_rectangle :: Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi need ffi;
+
+
+
+@[extern(c, name: "shim_draw_text")]
+draw_text :: RawPtr -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Int32 -> Unit need ffi need ffi;
+
 
 // Input
-@ffi("IsKeyPressed")
-is_key_pressed :: Int32 -> Bool
 
-@ffi("IsKeyDown")
-is_key_down :: Int32 -> Bool
+@[extern(c, name: "IsKeyPressed")]
+is_key_pressed :: Int32 -> Bool need ffi need ffi;
+
+
+
+@[extern(c, name: "IsKeyDown")]
+is_key_down :: Int32 -> Bool need ffi need ffi;
+
 
 // Utilities
-@ffi("shim_get_random_value")
-get_random_value :: Int32 -> Int32 -> Int32
 
-@ffi("GetFrameTime")
-get_frame_time :: Unit -> Float32
+@[extern(c, name: "shim_get_random_value")]
+get_random_value :: Int32 -> Int32 -> Int32 need ffi need ffi;
+
+
+
+@[extern(c, name: "GetFrameTime")]
+get_frame_time :: Unit -> Float32 need ffi need ffi;
+
 
 // String interop
 string_to_cstr :: String -> RawPtr

@@ -4,55 +4,81 @@
 link "raylib"
 link "snake_shim"
 
-@ffi("malloc")
-malloc :: Int -> RawPtr
 
-@ffi("free")
-free :: RawPtr -> Unit
+@[extern(c, name: "malloc")]
+malloc :: Int -> RawPtr need ffi need ffi;
 
-@ffi("InitWindow")
-init_window :: Int -> Int -> RawPtr -> Unit
 
-@ffi("CloseWindow")
-close_window :: Unit -> Unit
 
-@ffi("WindowShouldClose")
-window_should_close :: Unit -> Bool
+@[extern(c, name: "free")]
+free :: RawPtr -> Unit need ffi need ffi;
 
-@ffi("SetTargetFPS")
-set_target_fps :: Int -> Unit
 
-@ffi("BeginDrawing")
-begin_drawing :: Unit -> Unit
 
-@ffi("EndDrawing")
-end_drawing :: Unit -> Unit
+@[extern(c, name: "InitWindow")]
+init_window :: Int -> Int -> RawPtr -> Unit need ffi need ffi;
 
-@ffi("shim_clear_background")
-clear_background :: Int -> Int -> Int -> Int -> Unit
 
-@ffi("shim_draw_rectangle")
-draw_rectangle :: Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit
 
-@ffi("shim_draw_text")
-draw_text :: RawPtr -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit
+@[extern(c, name: "CloseWindow")]
+close_window :: Unit -> Unit need ffi need ffi;
 
-@ffi("IsKeyPressed")
-is_key_pressed :: Int -> Bool
 
-@ffi("shim_get_random_value")
-get_random_value :: Int -> Int -> Int
+
+@[extern(c, name: "WindowShouldClose")]
+window_should_close :: Unit -> Bool need ffi need ffi;
+
+
+
+@[extern(c, name: "SetTargetFPS")]
+set_target_fps :: Int -> Unit need ffi need ffi;
+
+
+
+@[extern(c, name: "BeginDrawing")]
+begin_drawing :: Unit -> Unit need ffi need ffi;
+
+
+
+@[extern(c, name: "EndDrawing")]
+end_drawing :: Unit -> Unit need ffi need ffi;
+
+
+
+@[extern(c, name: "shim_clear_background")]
+clear_background :: Int -> Int -> Int -> Int -> Unit need ffi need ffi;
+
+
+
+@[extern(c, name: "shim_draw_rectangle")]
+draw_rectangle :: Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi need ffi;
+
+
+
+@[extern(c, name: "shim_draw_text")]
+draw_text :: RawPtr -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi need ffi;
+
+
+
+@[extern(c, name: "IsKeyPressed")]
+is_key_pressed :: Int -> Bool need ffi need ffi;
+
+
+
+@[extern(c, name: "shim_get_random_value")]
+get_random_value :: Int -> Int -> Int need ffi need ffi;
+
 
 
 // Array helpers — index into Int64 array
-arr_set :: RawPtr -> Int -> Int -> Unit need FFI
+arr_set :: RawPtr -> Int -> Int -> Unit need ffi
 {
     (arr, i, v) => {
         ptr_store_int(ptr_add(arr, i * 8), v)
     }
 }
 
-arr_get :: RawPtr -> Int -> Int need FFI
+arr_get :: RawPtr -> Int -> Int need ffi
 {
     (arr, i) => {
         ptr_load_int(ptr_add(arr, i * 8))
@@ -84,7 +110,7 @@ new_dir :: Int -> Int -> Int
 }
 
 // Check all 4 arrow keys and return updated direction
-check_input :: Int -> Int need FFI
+check_input :: Int -> Int need ffi
 {
     (dir) => {
         d1 := new_dir(dir, 262);
@@ -126,7 +152,7 @@ dy :: Int -> Int
 }
 
 // Main entry point
-main :: Int -> Int need FFI, IO
+main :: Int -> Int need ffi, io
 {
     _ => {
         // Allocate game state in raw memory

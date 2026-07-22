@@ -8,4 +8,4 @@ classify :: Int -> Int
 }
 
 positive :: classify(3);
-nonPositive :: classify(-1);
+non_positive :: classify(-1);

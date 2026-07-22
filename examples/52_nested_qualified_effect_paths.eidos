@@ -1,7 +1,7 @@
 Cap.Io :: module {
-    Writer :: effect;
+    writer :: effect;
 
-    write :: String -> Int need Writer
+    write :: String -> Int need writer
     {
         _ => 1
     }
@@ -10,17 +10,17 @@ Cap.Io :: module {
 Demo.Main :: module {
     import Cap.Io
 
-    run_imported :: String -> Int need Io.Writer
+    run_imported :: String -> Int need Io.writer
     {
         text => Io.write(text)
     }
 
-    run_root :: String -> Int need Cap.Io.Writer
+    run_root :: String -> Int need Cap.Io.writer
     {
         text => Cap.Io.write(text)
     }
 
-    main :: Unit -> Int need Io.Writer
+    main :: Unit -> Int need Io.writer
     {
         _ => run_imported("hello") + run_root("world")
     }

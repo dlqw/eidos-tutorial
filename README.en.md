@@ -1,6 +1,6 @@
 # Eidos Tutorial (English)
 
-> Language baseline: this tutorial targets Eidos 0.6.0-alpha.1. New code uses `name :: Type { ... }`, `name :: expr;`, local `name := expr;` / `mut name := expr;`, dot-qualified Namespaces, and comma-separated ADT constructors. Older source is handled only by the explicit migration command.
+> Language baseline: this tutorial targets Eidos 0.7.0-alpha.1. New code uses `name :: Type { ... }`, `name :: expr;`, local `name := expr;` / `mut name := expr;`, dot-qualified Namespaces, and comma-separated ADT constructors. Older source is handled only by the explicit migration command.
 
 ## 1. Scope and Validation Baseline
 This tutorial only describes features that are implemented and reproducible in this repository today. All runnable snippets are under [`docs/tutorial/examples/`](examples/).  
@@ -26,7 +26,7 @@ Recommended minimal `eidos.toml`:
 manifestSchema = 3
 
 [language]
-version = "0.6.0-alpha.1"
+version = "0.7.0-alpha.1"
 
 [package]
 name = "dev.eidos.app"
@@ -55,12 +55,12 @@ Naming tiers: runtime values use lower-case-leading identifiers, while compile-t
 
 #### Namespace and naming style
 
-Eidos 0.6 uses one member-selection surface:
+Eidos 0.7 retains one member-selection surface:
 
 ```eidos
 import Std.Option
 
-Info :: comptime Meta.typeInfo(User);
+Info :: comptime meta.shape_of(User);
 fallback := Std.Option.unwrap_or(input)(0);
 name := user.profile.display_name;
 ```
@@ -218,55 +218,52 @@ use :: Unit -> Int
 
 A value argument must be compile-time evaluable at the instantiation site and must match its declared type. A value parameter that is not constrained by ordinary parameter types must be supplied explicitly; it may be omitted when it can be inferred through a type such as `Buffer[N, T]`. Values participate in nominal type identity, layout, name mangling, generic specialization, trait coherence, and incremental cache keys, so `Buffer[4, Int]` and `Buffer[5, Int]` are distinct types. Floating-point values are not specialization keys in alpha.1. References, pointers, closures, and other values with runtime resource identity cannot cross the comptime/type-identity boundary.
 
-ADTs, type aliases, functions, traits, `@impl(...)`, and named-instance trait references use the same ordered generic-argument rules. For example, an implementation of `Sized[comptime N: Int] :: trait { ... }` must explicitly name a value such as `@impl(Sized[4])`; `N` is substituted through the trait method signature and coherence compares the structured value key. See `examples/68_const_generics.eidos` for the complete example.
+ADTs, type aliases, functions, traits, and named-instance trait references use the same ordered generic-argument rules. For example, an implementation of `Sized[comptime N: Int] :: trait { ... }` explicitly names the value in a head such as `SizedHolder :: instance Sized[4]`; `N` is substituted through the trait method signature and coherence compares the structured value key. See `examples/68_const_generics.eidos` for the complete example.
 
 #### Read-only reflection, user derives, and structured generation (0.5.0-alpha.3)
 
-`Meta` is a compiler-built-in domain. It is not part of `Std` and does not require an `import`. Reflection exposes only completed, stably serializable compiler facts; it does not expose mutable AST objects or internal `SymbolId` values:
+`meta` is a compiler-built-in domain. It is not part of `Std` and does not require an `import`. Reflection exposes only completed, stably serializable compiler facts; it does not expose mutable AST objects or internal `SymbolId` values:
 
 ```eidos
-Info :: comptime Meta.typeInfo(User);
-Kind :: comptime Meta.typeKind(Info);
-HasName :: comptime Meta.hasField(User, "name");
-NameType :: comptime Meta.fieldType(User, "name");
-IntLayout :: comptime Meta.layoutOf(Int, "x86_64-pc-windows-msvc");
+Info :: comptime meta.shape_of(User);
+Kind :: comptime meta.kind_of(Info);
+HasName :: comptime meta.has_field(User, "name");
+NameType :: comptime meta.type_of(User, "name");
+IntLayout :: comptime meta.layout_of(Int, "x86_64-pc-windows-msvc");
 ```
 
-`Meta.typeInfo` covers primitives, tuples, functions, references, ADTs, and traits. Constructors, fields, associated declarations, and attributes retain stable source order. `Meta.layoutOf` is a separate target-dependent query and requires an explicit supported target triple. A type whose layout is not complete produces a phase diagnostic instead of falling back to host layout.
+`meta.shape_of` covers primitives, tuples, functions, references, ADTs, and traits. Constructors, fields, associated declarations, and attributes retain stable source order. `meta.layout_of` is a separate target-dependent query and requires an explicit supported target triple. A type whose layout is not complete produces a phase diagnostic instead of falling back to host layout.
 
-A user derive must have the type `comptime Meta.DeriveInput -> Meta.Expansion`:
+A custom generator uses the compiler-managed type `comptime meta.Type -> meta.Items` and is attached with the typed `@[expand(...)]` tag:
 
 ```eidos
 Marker :: trait {
     marker :: Self -> String
 }
 
-deriveMarker :: comptime Meta.DeriveInput -> Meta.Expansion {
-    input => {
-        target := Meta.target(input);
-        parameter := Meta.parameter("value", target);
-        method := Meta.function(
+derive_marker :: comptime meta.Type -> meta.Items {
+    target => {
+        parameter := meta.parameter("value", target);
+        method := meta.function(
             "marker",
             [parameter],
             String,
-            Meta.exprString(Meta.typeName(target))
+            meta.expr_string(meta.name_of(target))
         );
-        Meta.expansion([
-            Meta.implementation(Meta.decl(Marker), target, [method])
-        ])
+        [meta.instance(meta.declaration_of(Marker), target, [method])]
     }
 }
 
-@derive(deriveMarker)
+@[expand(derive_marker)]
 User :: type {
     name: String,
     age: Int
 }
 ```
 
-`Meta.Expansion` can structurally generate implementations, functions, comptime values, attribute attachments, tests, diagnostics, and module members. Function bodies use `Meta.Expr` builders, while pattern branches use `Meta.Pattern` / `Meta.Branch` builders. Declaration references use `Meta.Decl`; generator-local references use `Meta.Parameter` / `Meta.Binding` handles for hygiene. Generated declarations participate in ordinary name resolution, type checking, trait coherence, completion, hover, definition, and references, with stable `eidos-generated://` origins.
+`meta.Items` contains structured generated declarations. `meta.Function -> meta.Function` is the body transformation protocol, while `meta.Syntax[K] -> meta.Syntax[K]` is used for syntax-site expansion. Generated declarations participate in ordinary name resolution, type checking, trait coherence, completion, hover, definition, and references, with stable `eidos-generated://` origins.
 
-Current boundaries: there is no string source insertion and no arbitrary AST replacement or deletion. Semantic attributes such as `@impl` cannot be written back through an attribute attachment; generate the corresponding structured declaration instead. Pure comptime cannot access files, environment variables, processes, networks, or FFI. Expansions execute to a fixed point in dependency and source order; cycles, duplicate stable identities, invalid protocol signatures, budget exhaustion, and incomplete reflection produce deterministic diagnostics. See `examples/69_meta_reflection_derive.eidos` for the complete example.
+Current boundaries: there is no string source insertion, arbitrary AST replacement, public scheduling clause, or public ownership attribute. Pure comptime cannot access files, environment variables, processes, networks, or FFI. The compiler derives dependency order, fixed-point execution, identity, cache, diagnostics, and provenance from the typed protocol and declaration tags. See `examples/69_meta_reflection_derive.eidos` for the complete example.
 
 CLI surfaces:
 
@@ -278,7 +275,7 @@ eidosc meta expand source.eidos --trace-comptime --comptime-budget 200000
 
 #### Capability-constrained Build host and BuildGraph (0.5.0-alpha.4)
 
-Like `Meta`, `Build` is a compiler-built-in domain that needs no import, but capabilities are issued only while compiling the program named by `[build].program`. Ordinary pure comptime may resolve `Build.context()` but is rejected if it tries to acquire filesystem, environment, process, or artifact-emission capabilities.
+Like `meta`, `build` is a compiler-built-in domain that needs no import, but capabilities are issued only while compiling the program named by `[build].program`. Ordinary pure comptime is rejected if it tries to acquire filesystem, environment, process, network, or artifact-emission capabilities.
 
 ```toml
 [build]
@@ -294,14 +291,14 @@ path = "tools/generator.exe"
 
 `fileInputs` may name files or directories. Directories expand recursively in stable project-relative order. Input contents, registered environment-variable presence and values, registered executable path/hash identity, the build program, and the host and target triples all participate in the Build host cache key. The build program, file inputs, and outputs must remain inside the project root; the program and file inputs must be disjoint from output roots. Tools use explicit registered paths rather than ambient `PATH` lookup.
 
-A build program uses separate `Build.Fs`, `Build.Env`, `Build.Process`, and `Build.Emit` capabilities and returns one top-level `BuildGraph`:
+A build program starts one opaque session, projects separate `build.Process` and `build.Emit` capabilities, and returns one top-level `BuildGraph`:
 
 ```eidos
-Context :: comptime Build.context();
-Process :: comptime Build.process(Context);
-Emit :: comptime Build.emit(Context);
+Session :: comptime build.session();
+Process :: comptime build.process(Session);
+Emit :: comptime build.emit(Session);
 
-Generate :: comptime Build.command(
+Generate :: comptime build.command(
     Process,
     "generate",
     "generator",
@@ -311,24 +308,24 @@ Generate :: comptime Build.command(
     []
 );
 
-Generated :: comptime Build.generatedSource(
+Generated :: comptime build.generated_source(
     Emit,
     "build/generated/Model.eidos",
     "generate",
     "main"
 );
 
-BuildGraph :: comptime Build.graph(Emit, [Generate], [Generated]);
+BuildGraph :: comptime build.graph(Emit, [Generate], [Generated]);
 ```
 
-`Build.readText(Fs, path)` can read only files expanded from `fileInputs`; `Build.environment(Env, name)` can read only a registered variable that is present. `Build.command` describes a registered host tool, its arguments, inputs, outputs, and step dependencies; it does not perform hidden side effects during expression evaluation. The compiler checks cycles, duplicate outputs, undeclared inputs, missing dependency edges, output roots, producers, and target use, then executes steps in stable topological order and verifies every declared output. A `generatedSource` directory is added automatically to the selected target's import roots.
+`build.read_text(Fs, path)` can read only files expanded from `fileInputs`; `build.environment(Env, name)` can read only a registered variable that is present. `build.command` describes a registered host tool, its arguments, inputs, outputs, and step dependencies; it does not perform hidden side effects during expression evaluation. The compiler checks cycles, duplicate outputs, undeclared inputs, missing dependency edges, output roots, producers, and target use, then executes steps in stable topological order with only declared environment variables and verifies every declared output. A `generated_source` directory is added automatically to the selected target's import roots.
 
 ```powershell
 eidosc build --project . --target-name main --trace-build
 eidosc build --project . --emit-build-graph build/graph.json
 ```
 
-`--trace-build` reports capability dependencies and accesses, graph hashes, step/cache decisions, and tool output. `--emit-build-graph` writes canonical JSON. Identical programs, declared inputs, environment, executable hashes, host/target pairs, and graphs reuse a BuildGraph cache whose output hashes are revalidated. See `examples/build_host/` for a minimal verified project.
+`--trace-build` reports capability dependencies and accesses, graph hashes, step/cache decisions, and tool output. `--emit-build-graph` writes canonical JSON. Identical programs, declared inputs, environment, executable hashes, host/target pairs, and graphs reuse a BuildGraph cache whose output hashes are revalidated. Successful builds expose deterministic in-toto/SLSA provenance and CycloneDX 1.6 SBOM metadata; release profiles reject volatile provenance. See `examples/build_host/` for a minimal verified project.
 
 Ordinary same-scope functions may share a name when their parameter signatures
 are distinct. Calls resolve the overload from argument types, including direct
@@ -446,6 +443,22 @@ chain3 :: 3.inc.double;
 ### 3.4 ADT and Type Alias
 Example file: `examples/04_adt_type_alias.eidos`
 
+The Eidos 0.7 development line also supports lexically sealed closed-case hierarchies. Each nested `Case :: type` is both an exact nominal subtype and a constructor-bearing type:
+
+```eidos
+Message :: type {
+    Text :: type {
+        value :: String,
+    },
+
+    Control :: type {
+        code :: Int,
+    },
+}
+```
+
+Visibility is atomic for the complete hierarchy. Exporting `Message` exports every descendant case type, constructor, and case field needed for exhaustive matching. If the root is not exported or is compiler-internal, the complete hierarchy stays private. A public root cannot contain a toolchain-internal descendant; the compiler reports `E3061` instead of silently creating a hidden case. Eidos 0.7 does not infer a non-exhaustive or opaque-case mode from descendant visibility.
+
 ```eidos
 type Option[T] { Some(T), None }
 type UserId = Int;
@@ -556,19 +569,16 @@ Update (2026-03-16): backend constructor-pattern lowering now takes the real mat
    - unknown field: `E3203`;
    - unresolved LLVM field offset now reports `E3301` (no silent fallback).
 
-### 3.5 Trait and `@impl`
+### 3.5 Traits and named instances
 Example file: `examples/05_trait_impl_declaration.eidos`  
-Prefer name-first `instance` declarations for trait evidence. The legacy `@impl(Trait)` function form remains available for existing code, but new examples should use `instance`.
+Use name-first `instance` declarations for trait evidence. Function-level `@impl(Trait)` is removed from the 0.7 authoring surface and is accepted only as explicit migration input.
 Instance member names and signatures must match the target trait methods and stay in the same module.
 For generic traits, `instance` supports explicit trait type arguments (for example `FunctorBox :: instance Functor[Box]`), and arity mismatch is reported during naming.
 Convention-based impl registration does not infer generic trait arguments; use explicit `Trait[...]` for generic traits.
 `instance` registration canonicalizes aliases before overlap checking. Strictly more specific heads may coexist with broader heads, but equivalent or incomparable canonical shapes still fail with `E3004`.
 `expr given InstanceName` can explicitly select a named evidence value.
-The legacy `@impl(Trait)` form requires the function name/signature to match the trait method and stay in the same module.
-For generic traits, `@impl` supports explicit trait type arguments (for example `@impl(Functor[Box])`), and arity mismatch is reported during naming.
-Convention-based impl registration does not infer generic trait arguments; use explicit `@impl(Trait[...])` for generic traits.
 Impl heads are compared after alias canonicalization. Strict specialization is allowed when one head is structurally narrower than the other (for example `Option[Int]` over `Option[T]`), but equivalent or incomparable overlaps are still rejected during naming with `E3004` (`overlapping impl registration`). Alias-only rewrites do not create specialization, so overlaps introduced purely through equivalent aliases on either the trait-argument side or the implementing-type side are still rejected.
-Open alias heads used as higher-kinded trait arguments now also participate in reverse matching during type inference and MIR specialization. For example, `@impl(Applicative[KeepEdges[String, Bool]])` can satisfy `G[A]` when the surrounding context expects `Triple[String, A, Bool]`; see `examples/43_open_alias_trait_impl.eidos`.
+Open alias heads used as higher-kinded trait arguments now also participate in reverse matching during type inference and MIR specialization. For example, `ApplicativeKeepEdgesStringBool :: instance Applicative[KeepEdges[String, Bool]]` can satisfy `G[A]` when the surrounding context expects `Triple[String, A, Bool]`; see `examples/43_open_alias_trait_impl.eidos`.
 The same reverse matching now survives precompiled stdlib generic combinators as well: `Result.traverse(Ok(2))(produce_keep_edges)` can infer `G = KeepEdges[String, Bool]` even when the callback returns the underlying `Triple[String, Int, Bool]`, and deep alias chains such as `DeepBoxedResult[String]` continue to specialize correctly through both direct and helper-wrapped traversal; see `examples/44_std_traversable_alias_applicative.eidos`.
 This now also holds for recursive traversables: `Seq.traverse([1, 2])(produce_keep_edges)` can thread a user-defined alias-backed `Applicative` through repeated `map2_applicative(cons)(...)` specialization without losing the open-alias or deep-alias impl; see `examples/45_std_list_traversable_alias_applicative.eidos`.
 Short-circuit traversable branches now behave the same way. `Option.traverse(None())(...)` and `Seq.traverse([])(...)` still specialize `lift_pure`/`pure` through the user-defined alias-backed `Applicative`, so empty inputs no longer depend on the callback path to keep the impl reachable; see `examples/46_traversable_alias_applicative_empty_cases.eidos`.
@@ -600,8 +610,8 @@ Current trait-constraint solving behavior (2026-03-15):
 2. `TyCon` (constructed types) uses builtin-trait mapping first, then symbol-table `impl` lookup.
 3. If a constraint carries no valid `traitId`, solver falls back to `traitName` lookup before matching `impl`.
 4. Generic function trait bounds are now enforced at call-site instantiation (for example `id[T: Marker] :: T -> T` rejects `id(1)` when `Int` has no `Marker` impl).
-5. Trait-argument matching is exact: a no-arg bound (for example `T: Functor`) does not match only-specialized impls like `@impl(Functor[Box])`.
-6. `@impl` registration canonicalizes aliases before overlap checking. Strictly more specific heads may coexist with broader heads, but equivalent or incomparable canonical shapes still fail with `E3004`. For example, `@impl(Show)` on `Option[Int]` may coexist with `@impl(Show)` on `Option[T]`, while `ResultWith[E, T] = Result[T, E]` and `AlsoResult[E, T] = Result[T, E]` still conflict because both heads collapse to the same underlying shape.
+5. Trait-argument matching is exact: a no-arg bound (for example `T: Functor`) does not match only-specialized instances such as `FunctorBox :: instance Functor[Box]`.
+6. Named-instance registration canonicalizes aliases before overlap checking. Strictly more specific heads may coexist with broader heads, but equivalent or incomparable canonical shapes still fail with `E3004`. For example, a `Show` instance on `Option[Int]` may coexist with one on `Option[T]`, while `ResultWith[E, T] = Result[T, E]` and `AlsoResult[E, T] = Result[T, E]` still conflict when both instance heads collapse to the same underlying shape.
 7. Partially applied aliases in generic trait bounds can now be inferred back from concrete underlying return types. A helper like `lift[A, G: kind2 : Applicative[G]] :: A -> G[A]` may specialize through `KeepEdges[String, Bool] = Triple[String, _, Bool]` and produce `Triple[String, Int, Bool]` at the call site.
 8. The same alias-backed reverse inference now composes with precompiled stdlib helpers like `Result.traverse`, so user-defined `Applicative` impls over open aliases or deep alias chains remain reachable even when the callback surface uses the underlying constructor type.
 9. Recursive traversables such as `Seq.traverse` now preserve the same behavior across repeated `map2_applicative` specialization, so alias-backed `Applicative` impls remain usable beyond single-step containers.
@@ -660,6 +670,14 @@ Current status (2026-03-15):
 11. Capability-insufficient diagnostics are now separated from borrow-conflict roots with dedicated codes: `E1011` (missing read), `E1012` (missing write), and `E1013` (missing move).
 12. Borrow authorization is independent from effect rows. Effect declarations, including effects annotated with `@borrow(...)`, do not grant `read/write/move` permissions.
 13. Borrow permissions are derived and enforced by the borrow/ownership pipeline rather than by `need`.
+14. Eidos 0.7 derives a versioned `OwnershipContract` from each typed callable signature: plain `T` is `ByValue`, `Ref[T]` is `SharedBorrow`, and `MRef[T]` is `MutableBorrow`. A function body cannot downgrade a public parameter to a borrow or patch the signature through a compiler tag.
+15. `Copy` is not a fourth parameter mode. For a `ByValue` parameter, the compiler uses the structured `Copy` verifier and current place state to choose Copy or Move; `Ref[T]` is always Copy and `MRef[T]` is always non-Copy.
+16. `Clone` is an ordinary explicit trait call with a `Ref[Self]` receiver. The compiler never inserts `clone` for calls, assignments, or migration, and never treats `Clone` as a `Copy` fallback.
+17. Non-Copy aggregates support field/index partial moves followed by explicit reinitialization; control-flow joins conservatively merge moved paths. Dropping a moved or already dropped value reports `E1001`, so each path releases ownership exactly once.
+18. Reborrows preserve their place and provenance: `MRef[T] -> Ref[T]` creates a shared reborrow and does not copy the pointee. Returned references must retain provable input provenance and lifetime.
+19. Body analysis produces a separate loan summary (provenance, lifetime/outlives, reborrow, escape, and verification facts) and never rewrites the `OwnershipContract`. Both payloads are versioned independently across HIR/MIR, module caches, and incremental invalidation.
+20. Meta reflection, IDE semantic snapshots, and LSP hover can only read structured ownership slots; they cannot authorize or override ownership semantics.
+21. Legacy `@borrow(read/write/move)` is migration input only and cannot uniquely determine `Ref` versus `MRef`. The 0.7 migrator stops atomically before writing, requires the definition and typed call sites to be updated together, and never inserts `clone`.
 
 ### 3.8 Effect Tags, Authorization, and Polymorphism
 Effect declarations are nominal compile-time markers with no operations or runtime representation:
@@ -678,7 +696,7 @@ write :: String -> Unit need Writer
 3. Higher-order APIs use row parameters such as `E: effects`: `apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E`.
 4. Fixed and polymorphic rows can be combined, for example `need FFI, E`. Effect variables are generalized and preserved across module summaries and cached compilation state.
 5. Effects are erased before runtime. There are no handlers, `with`, `resume`, CPS rewriting, or runtime effect dispatch.
-6. Borrow checking is independent from effect authorization; annotating an effect with `@borrow(...)` does not grant read, write, or move permission.
+6. Borrow checking is independent from effect authorization; even when legacy `@borrow(...)` is recognized as migration input, it does not grant read, write, or move permission.
 
 ### 3.10 `match when` Branch Guards (Lowered Through MIR)
 Example files: `examples/10_match_guard.eidos`, `examples/27_pattern_guard_binding.eidos`  
