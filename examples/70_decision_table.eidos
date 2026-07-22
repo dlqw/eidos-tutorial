@@ -1,0 +1,18 @@
+is_even :: Int -> Bool
+{
+    value => value % 2 == 0
+}
+
+choose :: Int -> Int
+{
+    fallback => decide fallback {
+        is_even(_):
+            2 | 4 => 20,
+            6 when fallback > 0 => 60
+    }
+}
+
+main :: Unit -> Int
+{
+    _ => choose(4)
+}

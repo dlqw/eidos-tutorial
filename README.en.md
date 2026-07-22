@@ -700,6 +700,7 @@ write :: String -> Unit need Writer
 
 ### 3.10 `match when` Branch Guards (Lowered Through MIR)
 Example files: `examples/10_match_guard.eidos`, `examples/27_pattern_guard_binding.eidos`  
+
 Update (2026-03-16): `pattern when guard => expr` is now fully wired through lowering, not only type checking:
 1. HIR match branches now preserve the `Guard` expression.
 2. MIR lowers match branches as ordered executable checks; when `guard=false`, control falls through to later branches.
@@ -709,6 +710,23 @@ Update (2026-03-16): `pattern when guard => expr` is now fully wired through low
 6. The same guard form is available in both `match` branches and function-body pattern branches, with dedicated MIR guard flow and fallback semantics.
 7. The left-hand side of `when pat <- expr` is now the full pattern grammar, not only constructor/list/`_` forms. Tuple, `or/and/not`, and `view` patterns are accepted there as well.
 8. `&&` and `||` now use real short-circuit lowering in guards and normal expressions. If the left side already determines the result, the right side is not evaluated.
+
+#### Decision table expressions
+
+Use `decide fallback { template: rows }` when several branches call the same predicate and vary only a small set of arguments. Each `_` in the template is replaced by the row key; rows are tested in source order and keys from left to right, with the first match returning immediately and the fallback evaluated only after every row misses. Multi-hole templates use tuple keys, and `when` adds a row guard.
+
+```eidos
+choose :: Int -> Int
+{
+    fallback => decide fallback {
+        is_even(_):
+            2 | 4 => 20,
+            6 when fallback > 0 => 60
+    }
+}
+```
+
+A duplicate literal key in one template group produces `W4301` because the later key is unreachable. See `examples/70_decision_table.eidos` for the complete example.
 
 ### 3.11 ViewPattern (standard syntax `(expr -> pattern)`)
 Example file: `examples/11_advanced_patterns.eidos`
