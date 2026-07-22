@@ -41,7 +41,7 @@ main :: Unit -> Int need io
         via_head := unwrap_or(head([1, 2, 3]))(0);
         via_tail := match tail([1, 2, 3])
         {
-            Some(rest) => len(rest),
+            Some(rest) => len(ref rest),
             None() => 0
         };
         via_fold_right := fold_right([1, 2, 3])(0)(sum_right);

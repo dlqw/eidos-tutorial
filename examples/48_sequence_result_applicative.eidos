@@ -33,7 +33,7 @@ main :: Unit -> Int
         list_direct := collapse_seq_result(sequence([Ok(2), Ok(3)]));
         list_err := match sequence([Ok(2), Err("bad")])
         {
-            Ok(values) => Seq.len(values),
+            Ok(values) => Seq.len(ref values),
             Err(_) => 1
         };
 

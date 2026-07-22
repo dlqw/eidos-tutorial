@@ -432,7 +432,7 @@ main :: Int -> Int need FFI {
 ```
 
 限定名结构是 `包名::模块名::符号名`；0.4.0-alpha.1 文档中模块名内部使用 dot-separated segments，例如
-`Demo.Graphics.Color.red`；旧 slash-separated 写法只作为显式 migration 输入，不属于 Eidos 0.6 编译语法。
+`Demo.Graphics.Color.red`；旧 slash-separated 写法只作为显式 migration 输入，不属于 Eidos 0.7 编译语法。
 
 ## 11. 已知限制
 

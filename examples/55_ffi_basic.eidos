@@ -4,13 +4,13 @@
 // 编译器自动使用函数名作为 C 符号名
 
 @[extern(c, name: "puts")]
-puts :: RawPtr -> Int need ffi need ffi;;
+puts :: RawPtr -> Int need ffi;
 
 
 // 显式指定 C 符号名（当 Eidos 名 != C 名时使用）
 
 @[extern(c, name: "malloc")]
-alloc :: Int -> RawPtr need ffi need ffi;;
+alloc :: Int -> RawPtr need ffi;
 
 
 main :: Int -> Int need ffi

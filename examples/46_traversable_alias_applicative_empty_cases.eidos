@@ -89,12 +89,12 @@ collapse_deep_option_result :: Result[Option[Int], String] -> Int
 
 collapse_open_list_result :: Triple[String, Seq[Int], Bool] -> Int
 {
-    Triple(_, values, ok) => if ok && Seq.is_empty(values) then { 1 } else { 0 }
+    Triple(_, values, ok) => if ok && Seq.is_empty(ref values) then { 1 } else { 0 }
 }
 
 collapse_deep_list_result :: Result[Seq[Int], String] -> Int
 {
-    Ok(values) => if Seq.is_empty(values) then { 1 } else { 0 },
+    Ok(values) => if Seq.is_empty(ref values) then { 1 } else { 0 },
     Err(_) => 0
 }
 

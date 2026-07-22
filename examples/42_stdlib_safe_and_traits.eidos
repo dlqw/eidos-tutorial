@@ -60,14 +60,16 @@ main :: Unit -> Int
         first_head := unwrap_or(head([10, 20, 30]))(0);
         tail_len := match tail([10, 20, 30])
         {
-            Some(rest) => len(rest),
+            Some(rest) => len(ref rest),
             None() => 0
         };
         found := unwrap_or(find([1, 2, 3, 4])(is_three))(0);
         folded := fold_right([1, 2, 3])(0)(sum_right);
-        functor_list_len := len(fmap([1, 2])(inc));
+        functor_list := fmap([1, 2])(inc);
+        functor_list_len := len(ref functor_list);
         applicative_list_head := unwrap_or(head(Seq.apply([add(10), add(20)])([1, 2])))(0);
-        monad_list_len := len(bind([1, 2])(duplicate));
+        monad_list := bind([1, 2])(duplicate);
+        monad_list_len := len(ref monad_list);
 
         text_index := index_of_or("eidos")("id")(-1);
         text_last_index := last_index_of_or("banana")("ana")(-1);

@@ -2,17 +2,17 @@
 
 
 @[extern(c, name: "qsort")]
-qsort :: RawPtr -> Int -> Int -> Cfn[Int, Int, Int] -> Unit need ffi need ffi;;
+qsort :: RawPtr -> Int -> Int -> Cfn[Int, Int, Int] -> Unit need ffi;
 
 
 
 @[extern(c, name: "malloc")]
-malloc :: Int -> RawPtr need ffi need ffi;;
+malloc :: Int -> RawPtr need ffi;
 
 
 
 @[extern(c, name: "puts")]
-puts :: RawPtr -> Int need ffi need ffi;;
+puts :: RawPtr -> Int need ffi;
 
 
 // 升序比较函数：使用嵌套 lambda 语法

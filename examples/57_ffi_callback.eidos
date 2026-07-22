@@ -2,7 +2,7 @@
 
 
 @[extern(c, name: "puts")]
-puts :: RawPtr -> Int need ffi need ffi;;
+puts :: RawPtr -> Int need ffi;
 
 
 // cfn_from 将 Eidos 函数转为 C 函数指针 (RawPtr)
