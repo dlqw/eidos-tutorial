@@ -696,6 +696,7 @@ write :: String -> Unit need Writer
 
 ### 3.10 `match when` 分支守卫（已打通到 MIR）
 示例文件：`examples/10_match_guard.eidos`、`examples/27_pattern_guard_binding.eidos`  
+
 补充（2026-03-16）：`pattern when guard => expr` 现在不再只停留在类型阶段，已在 HIR/MIR 贯通：
 1. HIR 分支会保留 `Guard` 表达式；
 2. MIR 会按分支顺序生成可执行条件链，`guard=false` 会继续尝试后续分支；
@@ -705,6 +706,23 @@ write :: String -> Unit need Writer
 6. 该语义在 `match` 分支和“函数体模式分支”两种入口都可用，MIR 会生成独立 guard 流并在 guard 失败时继续尝试后续分支。
 7. `when pat <- expr` 里的 `pat` 现在是完整模式，不再只限构造器/列表/`_`；元组、`or/and/not`、`view` 等模式都可放进去。
 8. 守卫和普通表达式里的 `&&` / `||` 现在按短路求值；左边已经决定结果时，右边不会再继续执行。
+
+#### Decision table 表达式
+
+当多个分支重复调用同一个 predicate、只改变少量参数时，可以使用 `decide fallback { template: rows }`。表头中的 `_` 是 row key 的代入位置；row 按源码顺序、key 按从左到右顺序测试，命中第一项后短路返回，否则只在最后求值 fallback。多 hole 表头使用 tuple key，`when` 可追加 row guard。
+
+```eidos
+choose :: Int -> Int
+{
+    fallback => decide fallback {
+        is_even(_):
+            2 | 4 => 20,
+            6 when fallback > 0 => 60
+    }
+}
+```
+
+同一表头组内的重复字面量 key 会产生 `W4301`，因为后一个 key 永远不可达。完整示例见 `examples/70_decision_table.eidos`。
 
 ### 3.11 ViewPattern（标准语法 `(expr -> pattern)`）
 示例文件：`examples/11_advanced_patterns.eidos`
