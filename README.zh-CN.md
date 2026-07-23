@@ -194,6 +194,32 @@ e :: 1 `add` 2;
 
 对柯里化函数，逗号分隔的调用参数会从左到右逐个应用：`add(1, 2)` 等价于 `add(1)(2)`，`sum3(1, 2)` 仍可返回等待最后一个参数的函数。反引号中缀调用沿用同一规则：``left `add` right`` 等价于 `add(left)(right)`。
 
+#### 隐式 `Unit` body 与 `then` / `else` selection（0.8.0-alpha.1）
+
+首个运行时参数规范化为 `Unit` 时，普通 block 隐式等价于唯一的 `_ => block` 分支；显式写法仍然合法：
+
+```eidos
+main :: Unit -> Int
+{
+    initialize();
+    run()
+}
+```
+
+`then` / `else` 对 `Bool`、`Option`、`Result` 和 right-biased `Either` 提供固定二分支选择。`_0`、`_1` 是当前 arm 的 payload 占位符；单臂缺失侧为 `Unit`。多个 subject 写成括号 tuple，全部从左到右求值一次，group `else` 不提供占位符：
+
+```eidos
+result
+    then render(_0)
+    else render_error(_0);
+
+(ready, maybe_user, parse_result)
+    then continue_with(_0, _1)
+    else show_unavailable();
+```
+
+formatter 不为单表达式 arm 添加花括号；只有含绑定、赋值或多条语句的 arm 使用 block。`if`、`if let`、`while let` 和完整 `match` 均继续保留。
+
 #### 值级 const generic（0.5.0-alpha.1）
 
 `comptime N: Int` 声明值域泛型参数；`comptime T: Type` 仍声明类型域参数。参数顺序就是应用顺序，编译器在 AST、symbol、HIR/MIR、缓存和 IDE 中保留 type/value/effect-row 三种 domain，不再把值参数伪装成类型参数。
@@ -933,7 +959,7 @@ head_or_zero :: Int -> Int
 
 | 能力分类 | 模块 | 这类模块能做什么 | 代表接口 |
 | --- | --- | --- | --- |
-| 函数式能力 | `Std.Fn`、`Std.Prelude`、`Std.Functor`、`Std.Applicative`、`Std.Foldable`、`Std.Traversable`、`Std.Monad`、`Std.Option`、`Std.Result`、`Std.Ordering`、`Std.Trait`、`Std.TraitInvoke` | `Std.Fn` 提供函数工具，`Std.Prelude` 提供常用 Text 安全 helper 与基础 File 文本 I/O fallback，再配合 `Option/Result`、trait 与 `Functor/Applicative/Foldable/Traversable/Monad` 抽象；当前 `Option/Result/Seq` 都已具备 `fmap/pure/apply/traverse/bind` 使用面，并共享 `fold_left/fold_right` 折叠入口；`Option/Result/Ordering` 也都已具备 `Eq` / `Ord` / `Show` 这组基础值类型能力；`T?` 可作为 `Std.Option.Option[T]` 类型糖，`??` 可作为 `Option.unwrap_or` fallback 运算符，`let?` 可作为 `Option/Result` 早返回绑定语法；教程风格优先展示 `|>`、`>>>`、`<<<`、`<$>`、`<*>`、`>>=`、`<>`、`??`、`let?` 与链式调用 | `value |> f |> g`、`f >>> g`、`inc <$> Some(1)`、`Some(f) <*> Some(x)`、`Some(x) >>= f`、`maybe_count ?? 0`、`let? value = maybe_value`、`xs.map(f).filter(p)`、`Fn.compose`、`Option.traverse`、`Seq.traverse`、`Result.and_then` |
+| 函数式能力 | `Std.Fn`、`Std.Prelude`、`Std.Functor`、`Std.Applicative`、`Std.Foldable`、`Std.Traversable`、`Std.Monad`、`Std.Option`、`Std.Result`、`Std.Either`、`Std.Ordering`、`Std.Trait`、`Std.TraitInvoke` | `Std.Fn` 提供函数工具，`Std.Prelude` 提供常用 Text 安全 helper 与基础 File 文本 I/O fallback，再配合 `Option/Result/Either`、trait 与 `Functor/Applicative/Foldable/Traversable/Monad` 抽象；`Either[L, R]` 使用 right-biased `map`，并提供 `map_left`、`bimap`、`fold` 与 `unwrap_or`；`T?` 可作为 `Std.Option.Option[T]` 类型糖，`??` 可作为 `Option.unwrap_or` fallback 运算符，`let?` 可作为 `Option/Result` 早返回绑定语法 | `value |> f |> g`、`f >>> g`、`inc <$> Some(1)`、`Some(x) >>= f`、`result then render(_0) else render_error(_0)`、`Either.map`、`Result.and_then` |
 | 数学能力 | `Std.Math`、`Std.FloatMath`、`Std.GameMath` | 标量数学、角度/插值辅助，以及 `IVec2/Vec2/IRect/Rect` 这类游戏数学类型与网格/几何 helper | `Math.wrap`、`FloatMath.smoothstep`、`FloatMath.angle_delta_degrees`、`GameMath.ivec2`、`GameMath.grid_cell_rect` |
 | 容器能力 | `Std.Seq`、`Std.SeqBuilder` | 只读序列的查询、变换、过滤、折叠、拼接、拉链组合，以及显式 builder 阶段的 push/set/swap/freeze 工作流 | `Seq.head`、`Seq.tail`、`Seq.find`、`Seq.map`、`Seq.filter`、`Seq.fold_left`、`SeqBuilder.push`、`SeqBuilder.freeze` |
 | 文件 IO 能力 | `Std.File` | 判断文件是否存在、整文件读写、fallback 读取与最后一次 IO 状态 | `File.exists`、`File.read_text_or`、`File.last_error`、`File.write_text` |

@@ -194,6 +194,32 @@ e :: 1 `add` 2;
 
 For curried functions, comma-separated call arguments apply the function left-to-right: `add(1, 2)` is equivalent to `add(1)(2)`, and `sum3(1, 2)` can still return a function waiting for the final argument. Backtick infix calls use the same rule: ``left `add` right`` is equivalent to `add(left)(right)`.
 
+#### Implicit `Unit` bodies and `then` / `else` selection (0.8.0-alpha.1)
+
+When the first normalized runtime parameter is `Unit`, an ordinary block is implicitly equivalent to the single `_ => block` branch. The explicit spelling remains valid:
+
+```eidos
+main :: Unit -> Int
+{
+    initialize();
+    run()
+}
+```
+
+`then` / `else` provides fixed binary selection for `Bool`, `Option`, `Result`, and right-biased `Either`. `_0`, `_1`, and so on refer to payloads in the current arm; a missing arm has value `Unit`. Multiple subjects use a parenthesized tuple, are all evaluated once from left to right, and expose no placeholders in the group `else` arm:
+
+```eidos
+result
+    then render(_0)
+    else render_error(_0);
+
+(ready, maybe_user, parse_result)
+    then continue_with(_0, _1)
+    else show_unavailable();
+```
+
+The formatter does not add braces around a single-expression arm. Use a block only when an arm contains bindings, assignments, or multiple statements. `if`, `if let`, `while let`, and full `match` all remain available.
+
 #### Value-level const generics (0.5.0-alpha.1)
 
 `comptime N: Int` declares a value-domain generic parameter, while `comptime T: Type` remains a type-domain parameter. Declaration order is application order. The compiler preserves type, value, and effect-row domains independently through AST, symbols, HIR/MIR, caches, and IDE output instead of representing values as fake type arguments.
@@ -938,7 +964,7 @@ The compiler now ships precompiled stdlib modules as embedded resources, and the
 
 | Capability | Modules | What this group is for | Representative APIs |
 | --- | --- | --- | --- |
-| Functional | `Std.Fn`, `Std.Prelude`, `Std.Functor`, `Std.Applicative`, `Std.Foldable`, `Std.Traversable`, `Std.Monad`, `Std.Option`, `Std.Result`, `Std.Ordering`, `Std.Trait`, `Std.TraitInvoke` | `Std.Fn` is the home for function tools, `Std.Prelude` keeps common Text safe helpers plus basic File text-I/O fallback helpers, and the rest covers optional/error pipelines plus reusable `Functor`/`Applicative`/`Foldable`/`Traversable`/`Monad` abstractions; `Option/Result/Seq` now expose the full `fmap/pure/apply/traverse/bind` surface and share `fold_left/fold_right`, while `Option/Result/Ordering` also expose the basic value-type `Eq` / `Ord` / `Show` surface; `T?` is available as sugar for `Std.Option.Option[T]`, `??` is available as an `Option.unwrap_or` fallback operator, and `let?` is available for early-return `Option/Result` binding; tutorial style now prefers `|>`, `>>>`, `<<<`, `<$>`, `<*>`, `>>=`, `<>`, `??`, `let?`, and chained calls | `value |> f |> g`, `f >>> g`, `inc <$> Some(1)`, `Some(f) <*> Some(x)`, `Some(x) >>= f`, `maybe_count ?? 0`, `let? value = maybe_value`, `xs.map(f).filter(p)`, `Fn.compose`, `Option.traverse`, `Seq.traverse`, `Result.and_then` |
+| Functional | `Std.Fn`, `Std.Prelude`, `Std.Functor`, `Std.Applicative`, `Std.Foldable`, `Std.Traversable`, `Std.Monad`, `Std.Option`, `Std.Result`, `Std.Either`, `Std.Ordering`, `Std.Trait`, `Std.TraitInvoke` | `Std.Fn` provides function tools, while `Option`, `Result`, and right-biased `Either` cover optional and error pipelines. `Either[L, R]` provides `map`, `map_left`, `bimap`, `fold`, and `unwrap_or`. `T?`, `??`, and `let?` retain their existing Option/Result meanings. | `value |> f |> g`, `f >>> g`, `inc <$> Some(1)`, `Some(x) >>= f`, `result then render(_0) else render_error(_0)`, `Either.map`, `Result.and_then` |
 | Math | `Std.Math`, `Std.FloatMath`, `Std.GameMath` | Scalar math, angle/interpolation helpers, and game-oriented `IVec2`/`Vec2`/`IRect`/`Rect` geometry plus grid helpers | `Math.wrap`, `FloatMath.smoothstep`, `FloatMath.angle_delta_degrees`, `GameMath.ivec2`, `GameMath.grid_cell_rect` |
 | Containers | `Std.Seq`, `Std.SeqBuilder` | Read-side sequence querying, mapping, filtering, folding, concatenation, and zipping plus explicit builder-side push/set/swap/freeze workflows | `Seq.head`, `Seq.tail`, `Seq.find`, `Seq.map`, `Seq.filter`, `Seq.fold_left`, `SeqBuilder.push`, `SeqBuilder.freeze` |
 | File IO | `Std.File` | File existence checks, whole-file text reads/writes, fallback reads, and last IO status | `File.exists`, `File.read_text_or`, `File.last_error`, `File.write_text` |
