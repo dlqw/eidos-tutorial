@@ -84,7 +84,9 @@ func_name    ::= lower_identifier | "(" operator_identifier ")"
 func_def     ::= attribute* "func" func_name type_params? ":" signature need_clause? func_body
 name_first_func_def  ::= attribute* func_name type_params? "::" signature need_clause? generic_where? func_body
 name_first_func_decl ::= attribute* func_name type_params? "::" signature need_clause? generic_where? ";"
-func_body    ::= "{" pattern_branch ("," pattern_branch)* "}"
+func_body    ::= explicit_func_body | implicit_unit_body
+explicit_func_body ::= "{" pattern_branch ("," pattern_branch)* "}"
+implicit_unit_body ::= block_expr
 pattern_branch ::= pattern ("when" (pattern "<-" expr | expr))? "=>" expr
                  | pattern "=>" curried_branch_rhs
 curried_branch_rhs ::= expr
@@ -172,7 +174,10 @@ Note: workspace `import` resolution now supports the `eidos.toml` project model.
 
 ## 5. Expression Precedence (low to high)
 ```bnf
-expr                 ::= pipe_expr
+expr                 ::= selection_expr
+selection_expr       ::= pipe_expr ("then" selection_arm ("else" selection_arm)?)?
+                       | pipe_expr "else" selection_arm
+selection_arm        ::= pipe_expr | block_expr | "(" selection_expr ")"
 pipe_expr            ::= coalesce_expr (("|>" | ">>=") coalesce_expr)*
 coalesce_expr        ::= or_expr ("??" coalesce_expr)?
 or_expr              ::= and_expr ("||" and_expr)*
@@ -313,12 +318,21 @@ if_expr              ::= "if" expr "then" expr else_clause?
 if_let_expr          ::= "if" "let" pattern "=" expr "then" expr else_clause?
 while_let_expr       ::= "while" "let" pattern "=" expr "then" block_expr
 else_clause          ::= "else" expr
+branch_placeholder   ::= "_" ("0" | [1-9] [0-9]*)
 decision_expr        ::= "decide" expr "{" decision_group ("," decision_group)* ","? "}"
 decision_group       ::= expr ":" decision_row ("," decision_row)* ","?
 decision_row         ::= expr ("|" expr)* ("when" expr)? "=>" expr
 ```
 
 When `else_clause` is omitted, the missing branch has value `Unit`. This makes side-effect-only conditionals natural as `if cond then { ... }`; conditionals that return a non-`Unit` value still need an explicit `else`.
+
+`implicit_unit_body` is valid only when the function's first normalized runtime parameter is `Unit`; it is equivalent to the existing `_ => block`, which remains valid. `then` / `else` selection supports `Bool`, canonical `Std.Option.Option`, `Std.Result.Result`, and right-biased `Std.Either.Either`. `_0`, `_1`, and so on are arm-local payload placeholders. Positive payloads in `(a, b) then ...` are numbered in subject order, while a group `else` exposes no placeholders. A missing arm has the fixed value `Unit`, so a single present arm must return `Unit` or `Never`. The formatter does not add braces around a single-expression arm; its canonical layout is:
+
+```eidos
+result
+    then render(_0)
+    else render_error(_0);
+```
 
 `decision_expr` is for table-driven conditionals where the same predicate/template changes only by argument. `decide fallback { Input.key_down(_) != 0: 87 | 265 => North() }` tests keys in source order, returns the first matching row result, and returns fallback when no row matches. The template expression must contain a `_` hole; multi-hole templates use tuple keys.
 

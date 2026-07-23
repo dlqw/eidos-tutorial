@@ -84,7 +84,9 @@ func_name    ::= lower_identifier | "(" operator_identifier ")"
 func_def     ::= attribute* "func" func_name type_params? ":" signature need_clause? func_body
 name_first_func_def  ::= attribute* func_name type_params? "::" signature need_clause? generic_where? func_body
 name_first_func_decl ::= attribute* func_name type_params? "::" signature need_clause? generic_where? ";"
-func_body    ::= "{" pattern_branch ("," pattern_branch)* "}"
+func_body    ::= explicit_func_body | implicit_unit_body
+explicit_func_body ::= "{" pattern_branch ("," pattern_branch)* "}"
+implicit_unit_body ::= block_expr
 pattern_branch ::= pattern ("when" (pattern "<-" expr | expr))? "=>" expr
                  | pattern "=>" curried_branch_rhs
 curried_branch_rhs ::= expr
@@ -172,7 +174,10 @@ typed_tag    ::= lower_identifier ("(" arg_list? ")")?
 
 ## 5. 表达式优先级（从低到高）
 ```bnf
-expr                 ::= pipe_expr
+expr                 ::= selection_expr
+selection_expr       ::= pipe_expr ("then" selection_arm ("else" selection_arm)?)?
+                       | pipe_expr "else" selection_arm
+selection_arm        ::= pipe_expr | block_expr | "(" selection_expr ")"
 pipe_expr            ::= coalesce_expr (("|>" | ">>=") coalesce_expr)*
 coalesce_expr        ::= or_expr ("??" coalesce_expr)?
 or_expr              ::= and_expr ("||" and_expr)*
@@ -313,12 +318,21 @@ if_expr              ::= "if" expr "then" expr else_clause?
 if_let_expr          ::= "if" "let" pattern "=" expr "then" expr else_clause?
 while_let_expr       ::= "while" "let" pattern "=" expr "then" block_expr
 else_clause          ::= "else" expr
+branch_placeholder   ::= "_" ("0" | [1-9] [0-9]*)
 decision_expr        ::= "decide" expr "{" decision_group ("," decision_group)* ","? "}"
 decision_group       ::= expr ":" decision_row ("," decision_row)* ","?
 decision_row         ::= expr ("|" expr)* ("when" expr)? "=>" expr
 ```
 
 省略 `else_clause` 时，缺失分支为 `Unit`。这让只为副作用执行的条件块可以自然写成 `if cond then { ... }`；返回非 `Unit` 值的条件表达式仍必须写出 `else`。
+
+`implicit_unit_body` 只在函数第一个规范化运行时参数为 `Unit` 时合法；它等价于现有的 `_ => block`，显式 branch 写法继续有效。`then` / `else` selection 支持 `Bool`、canonical `Std.Option.Option`、`Std.Result.Result` 和 right-biased `Std.Either.Either`。`_0`、`_1` 是 arm-local payload 占位符；`(a, b) then ...` 的 positive payload 按 subject 顺序连续编号，group `else` 不提供占位符。单臂缺失侧固定为 `Unit`，所以执行 arm 必须返回 `Unit` 或 `Never`。formatter 对单表达式 arm 不添加花括号，规范布局为：
+
+```eidos
+result
+    then render(_0)
+    else render_error(_0);
+```
 
 `decision_expr` 用于同一 predicate/template 只改变参数的表驱动条件。`decide fallback { Input.key_down(_) != 0: 87 | 265 => North() }` 按源码顺序测试每个 key，命中第一个 row 时返回 row result，否则返回 fallback。表头表达式必须包含 `_` hole；多 hole 表头使用 tuple key。
 
