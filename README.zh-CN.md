@@ -1,6 +1,6 @@
 # Eidos 教程（中文）
 
-> 语言基线：本教程以 Eidos 0.7.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`、点号 Namespace 与逗号分隔的 ADT 构造器；旧源码只通过显式迁移命令处理。
+> 语言基线：本教程以 Eidos 0.8.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`、点号 Namespace 与逗号分隔的 ADT 构造器；旧源码只通过显式迁移命令处理。
 
 ## 1. 教程范围与验证基线
 本教程只描述当前仓库中已经实现并可复现的功能。所有可运行的示例均在 [`docs/tutorial/examples/`](examples/) 目录下。
@@ -26,7 +26,7 @@ powershell -ExecutionPolicy Bypass -File docs/tutorial/verify-examples.ps1
 manifestSchema = 3
 
 [language]
-version = "0.7.0-alpha.1"
+version = "0.8.0-alpha.1"
 
 [package]
 name = "dev.eidos.app"

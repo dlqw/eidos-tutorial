@@ -2,7 +2,7 @@ manifestSchema = 3
 sourceRoots = ["examples", "ffi_c_interop"]
 
 [language]
-version = "0.7.0-alpha.1"
+version = "0.8.0-alpha.1"
 
 [package]
 name = "dev.eidos.tutorial"

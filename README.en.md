@@ -1,6 +1,6 @@
 # Eidos Tutorial (English)
 
-> Language baseline: this tutorial targets Eidos 0.7.0-alpha.1. New code uses `name :: Type { ... }`, `name :: expr;`, local `name := expr;` / `mut name := expr;`, dot-qualified Namespaces, and comma-separated ADT constructors. Older source is handled only by the explicit migration command.
+> Language baseline: this tutorial targets Eidos 0.8.0-alpha.1. New code uses `name :: Type { ... }`, `name :: expr;`, local `name := expr;` / `mut name := expr;`, dot-qualified Namespaces, and comma-separated ADT constructors. Older source is handled only by the explicit migration command.
 
 ## 1. Scope and Validation Baseline
 This tutorial only describes features that are implemented and reproducible in this repository today. All runnable snippets are under [`docs/tutorial/examples/`](examples/).  
@@ -26,7 +26,7 @@ Recommended minimal `eidos.toml`:
 manifestSchema = 3
 
 [language]
-version = "0.7.0-alpha.1"
+version = "0.8.0-alpha.1"
 
 [package]
 name = "dev.eidos.app"
