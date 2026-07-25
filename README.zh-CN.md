@@ -716,7 +716,7 @@ write :: String -> Unit need Writer
 1. 调用方必须在 `need` 中声明所调用函数需要的全部 effect；缺少授权会报告 `E3003`。
 2. Effect 不拥有函数。`Io.Writer` 等限定 effect 路径只用于 `need`；普通函数按模块路径调用，例如 `Io.write(text)`。
 3. 高阶 API 使用 `E: effects` 行参数：`apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E`。
-4. 固定行与多态行可组合，例如 `need FFI, E`。Effect 变量会参与泛化，并保存在跨模块摘要和编译缓存状态中。
+4. 固定行与多态行可组合，例如 `need ffi, E`。Effect 变量会参与泛化，并保存在跨模块摘要和编译缓存状态中。
 5. Effect 在运行前擦除；语言不提供 handler、`with`、`resume`、CPS 重写或运行时 effect dispatch。
 6. Borrow 检查与 effect 授权独立；旧 `@borrow(...)` 即使仍作为迁移输入被识别，也不会授予 read、write 或 move 权限。
 
@@ -1000,11 +1000,11 @@ dotnet run --project Eidosc/src/Eidosc.Cli -- info --stdlib
 已验证能力：
 1. `@[extern(c, ...)]` 声明外部 C 函数（支持自定义符号名）。
    样例：`examples/55_ffi_basic.eidos`。
-2. 指针操作：`ptr_null`、`ptr_is_null`、`ptr_add`、`ptr_load_int`、`ptr_store_int`。  
+2. 指针操作：显式 `import std.Ffi`，使用 `Ffi.null_pointer`、`Ffi.is_null`、`Ffi.offset_bytes`、`Ffi.load[T]`、`Ffi.store[T]`。
    样例：`examples/56_ffi_pointer_ops.eidos`。
-3. 函数指针回调：`cfn_from` 将 Eidos 函数转为 C 函数指针，`cfn_call` 通过指针间接调用。  
+3. 函数指针回调：`Ffi.cfn_from` 将 Eidos 函数转为 C 函数指针，`Ffi.cfn_call` 通过指针间接调用。
    样例：`examples/57_ffi_callback.eidos`。
-4. 端到端 `qsort` 回调集成：Eidos 比较函数通过 `cfn_from` 传给 C `qsort`，排序结果正确。  
+4. 端到端 `qsort` 回调集成：Eidos 比较函数通过 `Ffi.cfn_from` 传给 C `qsort`，排序结果正确。
    样例：`examples/58_ffi_qsort.eidos`。
 
 FFI 安全类型集合：`Int`、`Int32`、`Float`、`Bool`、`Unit`、`RawPtr`、`Ptr[T]`、`Cfn`；函数类型参数可作为 Eidos closure 对象指针传给理解该 ABI 的 native 函数。

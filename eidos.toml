@@ -10,3 +10,6 @@ version = "0.1.0"
 
 [dependencies]
 std = "0.1.0-alpha.1"
+
+[ffi]
+libraries = ["raylib", "snake_shim"]

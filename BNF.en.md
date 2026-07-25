@@ -115,7 +115,7 @@ type         ::= function_type_head ("->" type)?
 function_type_head ::= tuple_type | postfix_type
 postfix_type ::= primary_type ("?" | "??" | "." upper_identifier)*
 ```
-Note: a structured foreign declaration uses `@[extern(c, name: "malloc")] malloc :: Int -> RawPtr need ffi;` and cannot have an Eidos function body. Name-first entry functions do not receive the legacy implicit root `FFI`/`IO` capability; calls to FFI/native declarations from `main` or another entry function must be covered by an explicit `need FFI` or equivalent effect tag.
+Note: a structured foreign declaration uses `@[extern(c, name: "malloc")] malloc :: Int -> RawPtr need ffi;` and cannot have an Eidos function body. Name-first entry functions do not receive legacy implicit root capabilities; calls to FFI/native declarations from `main` or another entry function must be covered by explicit `need ffi` / `need io` effect tags.
 Note: postfix `?` on a type is sugar for `Std.Option.Option[...]`; for example, `Int?` is equivalent to `Std.Option.Option[Int]`. Repeated suffixes nest, so `Int??` is equivalent to `Option[Option[Int]]`.
 Note: in 0.4.0-alpha.1 mode, type postfix projection such as `Iterator[I].Item` names an associated type declared by the target trait and reduced through a concrete named instance when available.
 

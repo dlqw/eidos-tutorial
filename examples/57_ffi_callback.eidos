@@ -1,5 +1,6 @@
 // 57_ffi_callback.eidos — C 回调：Eidos 函数作为 C 函数指针
 
+import std.Ffi
 
 @[extern(c, name: "puts")]
 puts :: RawPtr -> Int need ffi;
@@ -22,16 +23,16 @@ main :: Int -> Int need ffi, io
 {
     _ => {
         // 转换为 C 函数指针
-        fp1 := cfn_from(add_one);
-        fp2 := cfn_from(double_it);
+        fp1 := Ffi.cfn_from(add_one);
+        fp2 := Ffi.cfn_from(double_it);
 
         // 通过函数指针间接调用
-        r1 := cfn_call(fp1, 9);   // 10
-        r2 := cfn_call(fp2, 21);  // 42
+        r1 := Ffi.cfn_call(fp1, 9);   // 10
+        r2 := Ffi.cfn_call(fp2, 21);  // 42
 
         println(r1 + r2);  // 52
 
-        ok := string_to_cstr("Callback OK");
+        ok := Ffi.to_c_string("Callback OK");
         puts(ok);
 
         0

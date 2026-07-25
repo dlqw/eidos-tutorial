@@ -720,7 +720,7 @@ write :: String -> Unit need Writer
 1. A caller must declare every effect required by the functions it invokes. Missing authorization is reported as `E3003`.
 2. Effects do not own functions. Qualified effect paths such as `Io.Writer` are used only in `need`; ordinary functions are called through their module path, for example `Io.write(text)`.
 3. Higher-order APIs use row parameters such as `E: effects`: `apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E`.
-4. Fixed and polymorphic rows can be combined, for example `need FFI, E`. Effect variables are generalized and preserved across module summaries and cached compilation state.
+4. Fixed and polymorphic rows can be combined, for example `need ffi, E`. Effect variables are generalized and preserved across module summaries and cached compilation state.
 5. Effects are erased before runtime. There are no handlers, `with`, `resume`, CPS rewriting, or runtime effect dispatch.
 6. Borrow checking is independent from effect authorization; even when legacy `@borrow(...)` is recognized as migration input, it does not grant read, write, or move permission.
 

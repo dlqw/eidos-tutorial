@@ -26,9 +26,9 @@
 
 Eidos FFI 允许：
 - **调用 C 函数**：通过 `@[extern(c, ...)]` typed tag 和 `need ffi` 声明外部 C 函数，在 Eidos 代码中直接调用
-- **操作 C 内存**：通过 `RawPtr` / `Ptr[T]` 类型和指针工具函数操作原始内存
+- **操作 C 内存**：显式 `import std.Ffi`，通过 `RawPtr` / `Ptr[T]` 和 `Ffi` 的安全公开封装操作原始内存
 - **C 回调**：将 Eidos 函数转换为 C 函数指针，传给接受回调的 C API
-- **间接调用**：通过 `cfn_call` 从 Eidos 调用 C 函数指针
+- **间接调用**：通过 `Ffi.cfn_call` 从 Eidos 调用 C 函数指针
 - **生成绑定包**：用 `eidosc pkg bind` 从 C header 和声明式规则生成独立
   Eidos package，应用项目只通过普通 `[dependencies]` 引用
 
@@ -73,24 +73,31 @@ dealloc :: RawPtr -> Unit need ffi;
 
 ### 链接外部库
 
-如果需要链接非默认库，使用 `link` 指令：
+如果需要链接非默认库，在 `eidos.toml` 中声明允许并参与链接的库：
+
+```toml
+[ffi]
+libraries = ["curl"]
+```
+
+外部声明用相同的 `library` 身份关联该库：
 
 ```eidos
-link "curl"
-
 @[extern(c, library: "curl", name: "curl_easy_init")]
 curl_init :: Unit -> RawPtr need ffi;
 ```
 
-`link "curl"` 会传递 `-lcurl` 给链接器。
+编译器会在分析阶段检查 `library` 是否已由项目或依赖包声明，并在链接阶段把对应库传给平台链接器。复杂的头文件、shim、库路径和平台差异应封装在生成的绑定包中，而不是写入 Eidos 源文件。
 
 ### 多参数函数
 
 Eidos 使用柯里化语法，但 FFI 声明支持多参数：
 
 ```eidos
+import std.Ffi
+
 @[extern(c, name: "qsort")]
-qsort :: RawPtr -> Int -> Int -> RawPtr -> Unit
+qsort :: RawPtr -> Int -> Int -> Cfn[Int, Int, Int] -> Unit need ffi;
 ```
 
 调用时逐参数应用或使用元组语法：
@@ -124,7 +131,7 @@ qsort(arr, 5, 8, cmp_fn)
 
 ### 不安全类型
 
-函数类型参数只适合传给明确理解 Eidos closure ABI 的 native 函数；它不是 C 函数指针。C 回调槽位仍应使用 `Cfn` / `cfn_from`。`String`、自定义 ADT、列表等托管类型**不能**直接用于 FFI 参数或返回值。必须先转换：
+函数类型参数只适合传给明确理解 Eidos closure ABI 的 native 函数；它不是 C 函数指针。C 回调槽位仍应使用 `Cfn` / `Ffi.cfn_from`。`String`、自定义 ADT、列表等托管类型**不能**直接用于 FFI 参数或返回值。必须先转换：
 
 ```eidos
 // 错误：String 不是 FFI 安全类型
@@ -132,7 +139,8 @@ qsort(arr, 5, 8, cmp_fn)
 bad :: String -> Int          // E3051 错误
 
 // 正确：先转换为 RawPtr
-cstr := string_to_cstr("hello");
+import std.Ffi
+cstr := Ffi.to_c_string("hello");
 puts(cstr);                      // RawPtr 是安全类型
 ```
 
@@ -151,14 +159,16 @@ puts(cstr);                      // RawPtr 是安全类型
 Eidos 的 `String` 是托管类型（带引用计数），不能直接传给 C。需要通过转换函数：
 
 ```eidos
+import std.Ffi
+
 // String → char*（C 字符串）
-cstr: RawPtr  := string_to_cstr("hello");
+cstr: RawPtr  := Ffi.to_c_string("hello");
 
 // char* → String（Eidos 字符串）
-eidos_str: String  := cstr_to_string(cstr);
+eidos_str: String  := Ffi.from_c_string(cstr);
 ```
 
-`string_to_cstr` 返回的 `RawPtr` 指向 C 兼容的 null-terminated 字符串，可直接传给 `puts`、`printf` 等 C 函数。
+`Ffi.to_c_string` 返回的 `RawPtr` 指向 C 兼容的 null-terminated 字符串，可直接传给 `puts`、`printf` 等 C 函数。
 
 ---
 
@@ -174,67 +184,65 @@ eidos_str: String  := cstr_to_string(cstr);
 ### 空指针
 
 ```eidos
-null := ptr_null();              // 创建空指针
-yes := ptr_is_null(null);        // true
-no := ptr_is_null(malloc(8));   // false
+null := Ffi.null_pointer();       // 创建空指针
+yes := Ffi.is_null(null);         // true
+no := Ffi.is_null(Ffi.malloc(8)); // false
 ```
 
 ### 指针算术
 
 ```eidos
-ptr_add(ptr, byte_offset) -> RawPtr
+Ffi.offset_bytes(ptr, byte_offset) -> RawPtr
 ```
 
 `byte_offset` 以**字节**为单位：
 
 ```eidos
-// ptr_add 按 8 字节偏移（一个 i64 的大小）
-second := ptr_add(arr, 8);
-third := ptr_add(arr, 16);
+// offset_bytes 按 8 字节偏移（一个 i64 的大小）
+second := Ffi.offset_bytes(arr, 8);
+third := Ffi.offset_bytes(arr, 16);
 ```
 
 ### 内存读写
 
 ```eidos
-ptr_store_int(ptr, value) -> Unit   // 向 ptr 写入 i64
-ptr_load_int(ptr) -> Int            // 从 ptr 读取 i64
+Ffi.store[Int](ptr, value) -> Unit  // 按类型写入
+Ffi.load[Int](ptr) -> Int           // 按类型读取
 ```
 
 > 示例文件：[`examples/56_ffi_pointer_ops.eidos`](examples/56_ffi_pointer_ops.eidos)
 
-> **限制**：`ptr_load_int` / `ptr_store_int` 仅支持 i64。对于其他类型，使用下方的类型化变体。
+`Ffi.load[T]` / `Ffi.store[T]` 使用统一泛型 API；用户代码不直接调用按类型后缀拆分的编译器内部 intrinsic。
 
 ---
 
 ## 6. 函数指针与回调
 
-### cfn_from：Eidos → C 函数指针
+### Ffi.cfn_from：Eidos → C 函数指针
 
 ```eidos
-cfn_from(func) -> RawPtr
+Ffi.cfn_from(func) -> Cfn[A..., R]
 ```
 
-将 Eidos 零捕获函数转换为 C 函数指针。带捕获闭包不是 C 函数指针；`cfn_from` 会以 `E3053` 拒绝。需要把带捕获函数传给 native runtime 时，使用明确接受 Eidos closure 对象指针的 ``extern` typed tag` 参数，而不是 C 回调槽位。
+将 Eidos 零捕获函数转换为 C 函数指针。带捕获闭包不是 C 函数指针；`Ffi.cfn_from` 会以 `E3053` 拒绝。需要把带捕获函数传给 native runtime 时，使用明确接受 Eidos closure 对象指针的 ``extern` typed tag` 参数，而不是 C 回调槽位。
 
 ```eidos
 add_one :: Int -> Int { x => x + 1 }
 
-fp: RawPtr  := cfn_from(add_one);
+fp: Cfn[Int, Int] := Ffi.cfn_from(add_one);
 ```
 
-### cfn_call：通过 C 函数指针调用
+### Ffi.cfn_call：通过 C 函数指针调用
 
 ```eidos
-cfn_call(fn_ptr, arg1, arg2, ...) -> Int
+Ffi.cfn_call(fn_ptr, args...) -> R
 ```
 
-接受可变参数——第一个参数是函数指针，后续参数直接传递给目标函数。
+类型参数从 `Cfn[A, R]` 推导输入和返回类型；多参数 C 函数使用对应的 `Cfn[A..., R]` 类型。
 
 ```eidos
-result := cfn_call(fp, 41);  // 通过 fp 调用，返回 42
+result := Ffi.cfn_call(fp, 41);  // 通过 fp 调用，返回 42
 ```
-
-> 返回类型固定为 `Int`（i64）。对于返回指针的 C 函数，需要将结果 `inttoptr`（尚未提供内置函数）。
 
 ### 多参数回调
 
@@ -267,36 +275,35 @@ my_cmp :: Int -> Int -> Int
 端到端演示：分配内存 → 填充数组 → 转换比较函数 → 调用 `qsort` → 读取排序结果。
 
 ```eidos
-@[extern(c, name: "qsort")]
-qsort :: RawPtr -> Int -> Int -> RawPtr -> Unit
+import std.Ffi
 
-@[extern(c, name: "malloc")]
-malloc :: Int -> RawPtr
+@[extern(c, name: "qsort")]
+qsort :: RawPtr -> Int -> Int -> Cfn[Int, Int, Int] -> Unit need ffi;
 
 my_cmp :: Int -> Int -> Int
 {
     a => b => a - b
 }
 
-main :: Int -> Int need FFI
+main :: Int -> Int need ffi
 {
     _ => {
-        arr := malloc(40);
+        arr := Ffi.malloc(40);
 
-        ptr_store_int(arr, 5);
-        ptr_store_int(ptr_add(arr, 8), 3);
-        ptr_store_int(ptr_add(arr, 16), 1);
-        ptr_store_int(ptr_add(arr, 24), 4);
-        ptr_store_int(ptr_add(arr, 32), 2);
+        Ffi.store[Int](arr, 5);
+        Ffi.store[Int](Ffi.offset_bytes(arr, 8), 3);
+        Ffi.store[Int](Ffi.offset_bytes(arr, 16), 1);
+        Ffi.store[Int](Ffi.offset_bytes(arr, 24), 4);
+        Ffi.store[Int](Ffi.offset_bytes(arr, 32), 2);
 
-        qsort(arr, 5, 8, cfn_from(my_cmp));
+        qsort(arr, 5, 8, Ffi.cfn_from(my_cmp));
 
         // 排序后: [1, 2, 3, 4, 5]
-        sum := ptr_load_int(arr)
-                + ptr_load_int(ptr_add(arr, 8))
-                + ptr_load_int(ptr_add(arr, 16))
-                + ptr_load_int(ptr_add(arr, 24))
-                + ptr_load_int(ptr_add(arr, 32));
+        sum := Ffi.load[Int](arr)
+                + Ffi.load[Int](Ffi.offset_bytes(arr, 8))
+                + Ffi.load[Int](Ffi.offset_bytes(arr, 16))
+                + Ffi.load[Int](Ffi.offset_bytes(arr, 24))
+                + Ffi.load[Int](Ffi.offset_bytes(arr, 32));
 
         println(sum);  // 输出: 15
         0
@@ -308,56 +315,48 @@ main :: Int -> Int need FFI
 
 ---
 
-## 8. 内置函数参考
+## 8. 标准库公开 API 参考
 
 ### 字符串转换
 
 | 函数 | 签名 | 说明 |
 |------|------|------|
-| `string_to_cstr` | `String -> RawPtr` | Eidos String → C `char*` |
-| `cstr_to_string` | `RawPtr -> String` | C `char*` → Eidos String |
+| `Ffi.to_c_string` | `String -> RawPtr` | Eidos String → C `char*` |
+| `Ffi.from_c_string` | `RawPtr -> String` | C `char*` → Eidos String |
 
 ### 指针操作
 
 | 函数 | 签名 | 说明 |
 |------|------|------|
-| `ptr_null` | `() -> RawPtr` | 创建空指针 |
-| `ptr_is_null` | `RawPtr -> Bool` | 空指针检测 |
-| `ptr_add` | `(RawPtr, Int) -> RawPtr` | 指针字节偏移 |
-| `ptr_load_int` | `RawPtr -> Int` | 加载 `i64` |
-| `ptr_store_int` | `(RawPtr, Int) -> Unit` | 存储 `i64` |
-| `ptr_load_float` | `RawPtr -> Float` | 加载 `f64` |
-| `ptr_store_float` | `(RawPtr, Float) -> Unit` | 存储 `f64` |
-| `ptr_load_ptr` | `RawPtr -> RawPtr` | 加载 `ptr` |
-| `ptr_store_ptr` | `(RawPtr, RawPtr) -> Unit` | 存储 `ptr` |
-| `ptr_load_i32` | `RawPtr -> Int` | 加载 `i32`（自动扩展为 Int） |
-| `ptr_store_i32` | `(RawPtr, Int) -> Unit` | 存储 `i32`（自动截断） |
-| `ptr_load_i8` | `RawPtr -> Int` | 加载 `i8`（自动扩展为 Int） |
-| `ptr_store_i8` | `(RawPtr, Int) -> Unit` | 存储 `i8`（自动截断） |
-| `ptr_load_bool` | `RawPtr -> Bool` | 加载 `i1` |
+| `Ffi.null_pointer` | `Unit -> RawPtr` | 创建空指针 |
+| `Ffi.is_null` | `RawPtr -> Bool` | 空指针检测 |
+| `Ffi.pointer_eq` | `RawPtr -> RawPtr -> Bool` | 指针相等比较 |
+| `Ffi.offset_bytes` | `RawPtr -> Int -> RawPtr` | 指针字节偏移 |
+| `Ffi.load[T]` | `RawPtr -> T` | 按 `T` 加载值 |
+| `Ffi.store[T]` | `RawPtr -> T -> Unit` | 按 `T` 存储值 |
 
 ### 标准库内存管理
 
-`Std.FFI` 提供 C 标准内存管理绑定和两个作用域式辅助函数：
+`std.Ffi` 提供 C 标准内存管理绑定和作用域式辅助函数：
 
 | 函数 | 签名 | 说明 |
 |------|------|------|
-| `FFI.malloc` | `Int -> RawPtr` | 调用 C `malloc` |
-| `FFI.free` | `RawPtr -> Unit` | 调用 C `free` |
-| `FFI.calloc` | `Int -> Int -> RawPtr` | 调用 C `calloc` |
-| `FFI.realloc` | `RawPtr -> Int -> RawPtr` | 调用 C `realloc` |
-| `FFI.with_malloc[A]` | `Int -> (RawPtr -> A) -> A` | 分配后执行回调，返回前自动 `free` |
-| `FFI.with_malloc_zeroed[A]` | `Int -> (RawPtr -> A) -> A` | 使用 `calloc` 分配零初始化内存，返回前自动 `free` |
+| `Ffi.malloc` | `Int -> RawPtr` | 调用 C `malloc` |
+| `Ffi.free` | `RawPtr -> Unit` | 调用 C `free` |
+| `Ffi.calloc` | `Int -> Int -> RawPtr` | 调用 C `calloc` |
+| `Ffi.realloc` | `RawPtr -> Int -> RawPtr` | 调用 C `realloc` |
+| `Ffi.with_malloc[A]` | `Int -> (RawPtr -> A) -> A` | 分配后执行回调，返回前自动 `free` |
+| `Ffi.with_malloc_zeroed[A]` | `Int -> (RawPtr -> A) -> A` | 使用 `calloc` 分配零初始化内存，返回前自动 `free` |
 
 示例：
 
 ```eidos
-import Std.FFI
+import std.Ffi
 
-value := FFI.with_malloc[Int](8)({ ptr => {
-    stored := ptr_store_as[Int](ptr, 7);
-    ptr_load_as[Int](ptr)
-}});
+value := Ffi.with_malloc(8, ptr => {
+    stored := Ffi.store[Int](ptr, 7);
+    Ffi.load[Int](ptr)
+});
 ```
 
 `with_malloc` / `with_malloc_zeroed` 只适合指针不逃逸回调的场景；如果把 `ptr` 保存到全局状态、返回给外部或交给异步任务，仍需要自己保证生命周期正确。
@@ -366,8 +365,8 @@ value := FFI.with_malloc[Int](8)({ ptr => {
 
 | 函数 | 签名 | 说明 |
 |------|------|------|
-| `cfn_from` | `func -> RawPtr` | Eidos 函数 → C 函数指针 |
-| `cfn_call` | `(RawPtr, ...) -> Int` | 通过 C 函数指针间接调用 |
+| `Ffi.cfn_from` | `(A... -> R) -> Cfn[A..., R]` | Eidos 零捕获函数 → 类型化 C 函数指针 |
+| `Ffi.cfn_call` | `Cfn[A..., R] -> A... -> R` | 按完整 C 函数签名间接调用 |
 
 ---
 
@@ -377,20 +376,13 @@ value := FFI.with_malloc[Int](8)({ ptr => {
 |-----------|---------|
 | ``extern` typed tag puts` | `declare i64 @puts(ptr)` |
 | `RawPtr` / `Ptr[T]` / `Cfn` | `ptr`（不参与 RC） |
-| `string_to_cstr(s)` | `call ptr @eidos_string_to_cstr(ptr %s)` |
-| `cfn_from(f)` | `bitcast ptr @f to ptr` |
-| `cfn_call(fp, x)` | `call i64 %fp(i64 %x)` |
-| `ptr_add(p, n)` | `getelementptr i8, ptr %p, i64 %n` |
-| `ptr_load_int(p)` | `load i64, ptr %p` |
-| `ptr_store_int(p, v)` | `store i64 %v, ptr %p` |
-| `ptr_load_float(p)` | `load double, ptr %p` |
-| `ptr_store_float(p, v)` | `store double %v, ptr %p` |
-| `ptr_load_ptr(p)` | `load ptr, ptr %p` |
-| `ptr_store_ptr(p, v)` | `store ptr %v, ptr %p` |
-| `ptr_load_i32(p)` | `load i32, ptr %p` + `zext i32→i64` |
-| `ptr_store_i32(p, v)` | `trunc i64→i32` + `store i32` |
-| `ptr_load_i8(p)` | `load i8, ptr %p` + `zext i8→i64` |
-| `ptr_store_i8(p, v)` | `trunc i64→i8` + `store i8` |
+| `Ffi.to_c_string(s)` | `call ptr @eidos_string_to_cstr(ptr %s)` |
+| `Ffi.from_c_string(p)` | `call ptr @eidos_string_from_cstr_raw(ptr %p)` |
+| `Ffi.cfn_from(f)` | `bitcast ptr @f to ptr` |
+| `Ffi.cfn_call(fp, x)` | 按 `Cfn` 签名生成间接 `call` |
+| `Ffi.offset_bytes(p, n)` | `getelementptr i8, ptr %p, i64 %n` |
+| `Ffi.load[T](p)` | 按 `T` 表示生成类型化 `load` |
+| `Ffi.store[T](p, v)` | 按 `T` 表示生成类型化 `store` |
 
 ---
 
@@ -421,30 +413,26 @@ Demo = { path = "../bindings/demo", target = "lib" }
 
 ```eidos
 import Demo.Window
+import std.Ffi
 
-main :: Int -> Int need FFI {
+main :: Int -> Int need ffi {
     _ => {
-        Window.init(640, 400, "Eidos".string_to_cstr());
+        Window.init(640, 400, Ffi.to_c_string("Eidos"));
         0
     }
 }
 ```
 
-限定名结构是 `包名::模块名::符号名`；0.4.0-alpha.1 文档中模块名内部使用 dot-separated segments，例如
-`Demo.Graphics.Color.red`；旧 slash-separated 写法只作为显式 migration 输入，不属于 Eidos 0.7 编译语法。
+限定名结构使用点分路径，例如 `Demo.Graphics.Color.red`；`::` 只用于声明绑定，不用于限定名。
 
 ## 11. 已知限制
 
-1. **`cfn_call` 返回类型固定为 `Int`**
-   - 未实现从 `Cfn[..., Ret]` 推导返回类型
-   - 返回指针时需要额外处理
+1. **闭包回调 ABI 仍有边界**
+   - `Ffi.cfn_from` 只支持零捕获函数；带捕获函数只能作为 Eidos closure 对象指针传给理解该 ABI 的 native API
 
-2. **闭包回调 ABI 仍有边界**
-   - `cfn_from` 只支持零捕获函数；带捕获函数只能作为 Eidos closure 对象指针传给理解该 ABI 的 native API
+2. **C 结构体未支持**
+   - 无法直接映射 C `struct`，需手动通过 `Ffi.offset_bytes` + `Ffi.load[T]` 操作字段
 
-4. **C 结构体未支持**
-   - 无法直接映射 C `struct`，需手动通过 `ptr_add` + `ptr_load_int` 操作字段
-
-5. **RawPtr 生命周期仍需人工约束**
-   - 标准库已提供 `Std.FFI.free`、`with_malloc` 和 `with_malloc_zeroed`
+3. **RawPtr 生命周期仍需人工约束**
+   - 标准库已提供 `Ffi.free`、`Ffi.with_malloc` 和 `Ffi.with_malloc_zeroed`
    - `with_malloc` 系列不会让类型系统自动证明指针未逃逸；复杂 ownership 仍应使用项目本地封装或 C shim 明确约束
