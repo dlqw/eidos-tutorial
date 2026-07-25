@@ -238,7 +238,7 @@ fp: Cfn[Int, Int] := Ffi.cfn_from(add_one);
 Ffi.cfn_call(fn_ptr, args...) -> R
 ```
 
-类型参数从 `Cfn[A, R]` 推导输入和返回类型；多参数 C 函数使用对应的 `Cfn[A..., R]` 类型。当前 C ABI 表面支持 0 到 16 个参数，超出范围会在类型检查阶段直接报错。
+类型参数从 `Cfn[A, R]` 推导输入和返回类型；多参数 C 函数使用对应的 `Cfn[A..., R]` 类型。编译器根据完整 `Cfn` 类型检查任意实参数量，并把高 arity 调用直接绑定到内部 intrinsic，不要求用户选择带 arity 后缀的 API。
 
 ```eidos
 result := Ffi.cfn_call(fp, 41);  // 通过 fp 调用，返回 42
