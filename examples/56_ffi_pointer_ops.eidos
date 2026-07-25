@@ -26,8 +26,7 @@ main :: Int -> Int need ffi, io
         b := ptr_load_int(ptr_add(buf, 8));
         c := ptr_load_int(ptr_add(buf, 16));
 
-        print_int(a + b + c);  // 600
-        print_newline();
+        println(a + b + c);  // 600
 
         0
     }

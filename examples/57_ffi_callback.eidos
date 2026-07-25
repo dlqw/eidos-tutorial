@@ -29,8 +29,7 @@ main :: Int -> Int need ffi, io
         r1 := cfn_call(fp1, 9);   // 10
         r2 := cfn_call(fp2, 21);  // 42
 
-        print_int(r1 + r2);  // 52
-        print_newline();
+        println(r1 + r2);  // 52
 
         ok := string_to_cstr("Callback OK");
         puts(ok);

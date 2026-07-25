@@ -298,8 +298,7 @@ main :: Int -> Int need FFI
                 + ptr_load_int(ptr_add(arr, 24))
                 + ptr_load_int(ptr_add(arr, 32));
 
-        print_int(sum);  // 输出: 15
-        print_newline();
+        println(sum);  // 输出: 15
         0
     }
 }

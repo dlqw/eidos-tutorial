@@ -58,10 +58,10 @@ Naming tiers: runtime values use lower-case-leading identifiers, while compile-t
 Eidos 0.7 retains one member-selection surface:
 
 ```eidos
-import Std.Option
+import std.Option
 
 Info :: comptime meta.shape_of(User);
-fallback := Std.Option.unwrap_or(input)(0);
+fallback := std.Option.unwrap_or(input)(0);
 name := user.profile.display_name;
 ```
 
@@ -71,7 +71,7 @@ name := user.profile.display_name;
 4. A dependency alias may remain `lower_snake_case`; its next segment is an upper-case module, as in `crypto_a.Hash.Sha256.digest(bytes)`.
 5. A lower-case root followed by lower-case segments is an ordinary runtime member chain, such as `user.profile.display_name`; an upper-case root, or a lower-case package alias followed by an upper-case module, starts a Namespace path.
 
-Update (2026-03-16): builtin I/O now includes `print_char: Int -> Unit`, which prints one character by code point (for example `34` for `"`, `39` for `'`).
+Eidos 0.8 uses `Display`-driven `print` / `println`. Use the explicit boundary API `Console.write_char_code` for code-point output (for example, `34` for `"` and `39` for `'`). Typed low-level output intrinsics are not user APIs.
 
 ### 3.1.1 `let` Pattern Binding (Block Scope)
 Example files: `examples/12_let_pattern.eidos`, `examples/15_pattern_binding_modes.eidos`  
@@ -609,8 +609,8 @@ The same reverse matching now survives precompiled stdlib generic combinators as
 This now also holds for recursive traversables: `Seq.traverse([1, 2])(produce_keep_edges)` can thread a user-defined alias-backed `Applicative` through repeated `map2_applicative(cons)(...)` specialization without losing the open-alias or deep-alias impl; see `examples/45_std_list_traversable_alias_applicative.eidos`.
 Short-circuit traversable branches now behave the same way. `Option.traverse(None())(...)` and `Seq.traverse([])(...)` still specialize `lift_pure`/`pure` through the user-defined alias-backed `Applicative`, so empty inputs no longer depend on the callback path to keep the impl reachable; see `examples/46_traversable_alias_applicative_empty_cases.eidos`.
 `Option`, `Seq`, and `Result` now also expose public `sequence` helpers built on top of their traversable implementations. This gives a stable stdlib path for flipping `Option[G[A]]`, `Seq[G[A]]`, or `Result[G[A], E]` into `G[Option[A]]`, `G[Seq[A]]`, or `G[Result[A, E]]`; the current alias-backed coverage is locked through open aliases such as `KeepEdges[String, Bool]`, and built-in `ResultWith[E]` nesting now also works through `Option.sequence(Some(Ok(...)))`, `Seq.sequence([Ok(...), ...])`, and `Result.sequence(Ok(Ok(...)))`; see `examples/47_traversable_sequence_alias_applicative.eidos` and `examples/48_sequence_result_applicative.eidos`.
-`Std.Traversable` now also exposes a public generic `Traversable.sequence`, so callers no longer need to choose the outer container-specific helper up front. The generic form now specializes through both user-defined alias-backed applicatives and built-in `ResultWith[E]` nesting for `Option`, `List`, and `Result`; see `examples/49_generic_traversable_sequence.eidos`.
-Qualified trait-method paths are now first-class callable value paths as well. In generic code you can call methods through the imported module alias (`Applicative.pure`, `Traversable.traverse`), nested imported-module owner paths (`Trait.Eq.eq`), the fully qualified stdlib root (`Std.Applicative.pure`, `Std.Traversable.traverse`), or the current module's own same-named trait path (for example `Show.show` inside `Demo.Show :: module { ... }`); the precompiled `Std.Traversable` helpers now rely on that module-relative form internally, while `examples/50_qualified_trait_method_paths.eidos` now covers alias/root/nested-import forms together.
+`std.Traversable` now also exposes a public generic `Traversable.sequence`, so callers no longer need to choose the outer container-specific helper up front. The generic form now specializes through both user-defined alias-backed applicatives and built-in `ResultWith[E]` nesting for `Option`, `List`, and `Result`; see `examples/49_generic_traversable_sequence.eidos`.
+Qualified trait-method paths are now first-class callable value paths as well. In generic code you can call methods through the imported module alias (`Applicative.pure`, `Traversable.traverse`), nested imported-module owner paths (`Trait.Eq.eq`), the fully qualified stdlib root (`std.Applicative.pure`, `std.Traversable.traverse`), or the current module's own same-named trait path (for example `Show.show` inside `Demo.Show :: module { ... }`); the precompiled `std.Traversable` helpers now rely on that module-relative form internally, while `examples/50_qualified_trait_method_paths.eidos` now covers alias/root/nested-import forms together.
 Qualified effect paths and ordinary function paths resolve independently. Use `Logger.Logger`, `Io.Writer`, or `Cap.Io.Writer` in `need`, and call ordinary module functions as `Logger.log(...)`, `Io.write(...)`, or `Cap.Io.write(...)`. See `examples/51_qualified_effect_paths.eidos` and `examples/52_nested_qualified_effect_paths.eidos`.
 
 Note (2026-06-18): this branch no longer treats `proof` / lawful material as part of the tutorial baseline; the experimental material lives on the dedicated proof branch.
@@ -957,37 +957,46 @@ Semantics update (2026-03-19):
 21. For guarded list coverage sources made only of uncertain-view alternatives (no provable deterministic non-view hit), covered-style `W4201` is now conservatively suppressed, avoiding false reports where a branch like `[((normalize -> (1..2)) | (normalize -> 3))]` incorrectly shadows a later `[3]`. If a deterministic non-view hit can be proven, or the `view-inner` is provably always/never over the finite domain, precise covered diagnostics are still preserved (see `examples/26_view_guard_uncertain_only_conservative.eidos`).
 22. Deep `not` mixed uncertain-view list branches (for example `[!((normalize -> (2..3)) & 2)]`) now follow the same boundary as ADT: restore `W4201 covered` when the target token is provably excluded by inner non-view constraints (for example target `[3]`), and stay conservative when inner uncertainty is still unresolved (for example target `[2]`).
 
-### 3.13 Precompiled Standard Library (Officially Available)
+### 3.13 Prelude Core Image and explicit `std` package
+
 Example files: `examples/29_precompiled_stdlib.eidos`, `examples/42_stdlib_safe_and_traits.eidos`
 
-The compiler now ships precompiled stdlib modules as embedded resources, and the CLI presents them by capability instead of as one flat list:
+Eidosc distributes a precompiled **Prelude Core Image** separately from the ordinary `std` package. Prelude is not a package and is opened automatically. It supplies the core functional contracts and types required by language elaboration: `Display`, `Option`, `Result`, `Either`, `Ordering`, `Seq`, `Functor`, `Applicative`, `Monad`, `Foldable`, `Traversable`, `Semigroup`, `Monoid`, and `Alternative`.
 
-| Capability | Modules | What this group is for | Representative APIs |
-| --- | --- | --- | --- |
-| Functional | `Std.Fn`, `Std.Prelude`, `Std.Functor`, `Std.Applicative`, `Std.Foldable`, `Std.Traversable`, `Std.Monad`, `Std.Option`, `Std.Result`, `Std.Either`, `Std.Ordering`, `Std.Trait`, `Std.TraitInvoke` | `Std.Fn` provides function tools, while `Option`, `Result`, and right-biased `Either` cover optional and error pipelines. `Either[L, R]` provides `map`, `map_left`, `bimap`, `fold`, and `unwrap_or`. `T?`, `??`, and `let?` retain their existing Option/Result meanings. | `value |> f |> g`, `f >>> g`, `inc <$> Some(1)`, `Some(x) >>= f`, `result then render(_0) else render_error(_0)`, `Either.map`, `Result.and_then` |
-| Math | `Std.Math`, `Std.FloatMath`, `Std.GameMath` | Scalar math, angle/interpolation helpers, and game-oriented `IVec2`/`Vec2`/`IRect`/`Rect` geometry plus grid helpers | `Math.wrap`, `FloatMath.smoothstep`, `FloatMath.angle_delta_degrees`, `GameMath.ivec2`, `GameMath.grid_cell_rect` |
-| Containers | `Std.Seq`, `Std.SeqBuilder` | Read-side sequence querying, mapping, filtering, folding, concatenation, and zipping plus explicit builder-side push/set/swap/freeze workflows | `Seq.head`, `Seq.tail`, `Seq.find`, `Seq.map`, `Seq.filter`, `Seq.fold_left`, `SeqBuilder.push`, `SeqBuilder.freeze` |
-| File IO | `Std.File` | File existence checks, whole-file text reads/writes, fallback reads, and last IO status | `File.exists`, `File.read_text_or`, `File.last_error`, `File.write_text` |
-| Console IO | `Std.Console` | Text/integer/float/char/bool output, prefix+value line output, plus single-line input | `Console.write_line`, `Console.write_int`, `Console.write_text_int_line`, `Console.read_line_text` |
-| Network | `Std.Network` | Minimal text-oriented HTTP GET access | `Network.http_get_text_or_empty` |
-| Serialization | `Std.Binary`, `Std.Json` | Basic binary encoding/decoding plus JSON text construction for strings, arrays, and objects | `Binary.encode_u32_le`, `Binary.bytes_to_string`, `Json.array`, `Json.object` |
-| Other foundation | `Std.Text` | String length, emptiness, primitive-to-text construction, trimming, slicing, safe char/code-point reads, and substring search; safe lookup helpers now come in both `*_opt` and `*_or` forms | `Text.len`, `Text.from_int`, `Text.from_bool`, `Text.trim`, `Text.slice`, `Text.char_code_at_opt`, `Text.char_code_at_or`, `Text.char_at_opt`, `Text.index_of_or` |
-
-If you want the live module/export list, use the CLI directly:
-
-You can inspect available modules and exported functions via CLI:
-
-```powershell
-dotnet run --project src/Eidosc/Eidosc.Cli -- info --stdlib
+```eidos
+main :: Unit -> Int need io {
+    print(Some(42));
+    println();
+    0
+}
 ```
 
-Validation scope as of 2026-04-11:
-1. `examples/29_precompiled_stdlib.eidos` still covers the core functional modules and passes LLVM-phase validation; the example now explicitly exercises composed `Option/Result/Seq/Text/Ordering` flows, Prelude wildcard Text/File helpers, Text trimming, safe fallback helpers, and a subset of trait-driven APIs.
-2. `examples/42_stdlib_safe_and_traits.eidos` now provides a shorter combined entry point that simultaneously exercises `Option/Result/Seq` `Functor/Applicative/Foldable/Traversable/Monad` usage, `Option/Result/Ordering` `Eq/Ord/Show`, and `Text` `*_opt` / `*_or` helpers; the current baseline also includes `Result.traverse` inferring its applicative back to `ResultWith[E]`.
-3. `Std.Option`, `Std.Result`, `Std.Ordering`, `Std.Seq`, and `Std.Text` all have dedicated import fixtures plus LLVM integration assertions; `Option/Result/Seq` now cover the full `fmap/pure/apply/bind` path plus `fold_left/fold_right`; `let?` `Option/Result` binding sugar is also covered by `examples/63_let_question_option_result.eidos` and `projects/test/src/stdlib/std_let_question_binding.eidos`.
-4. `Std.Math`, `Std.FloatMath`, `Std.GameMath`, `Std.Console`, `Std.File`, `Std.Network`, `Std.Binary`, and `Std.Json` have dedicated import fixtures plus targeted tests; `Std.Prelude.*` is additionally covered by `projects/test/src/stdlib/std_prelude_core_import.eidos` for direct Text/File core-helper imports; `Std.Functor`, `Std.Applicative`, `Std.Foldable`, `Std.Traversable`, `Std.Monad`, and `Std.TraitInvoke` are currently covered through export-table checks and CLI grouping visibility.
-5. `Std.Network` is still intentionally minimal: the current implementation is a best-effort text fetch and returns an empty string on failure instead of modeling a full HTTP client surface.
-6. `Std.Json` is currently encode-oriented rather than a full JSON parser, and `Std.Binary` currently focuses on foundational bool/int/string helpers.
+`print` and `println` are ordinary `Display`-constrained overloads. Primitive values and core ADTs have `Display` instances. Operator and `do` elaboration resolve compiler-owned semantic roles registered by Prelude declarations; they do not depend on hard-coded `std.Module.function` paths.
+
+Non-core facilities remain in the explicit `std` package:
+
+```toml
+[dependencies]
+std = "0.1.0-alpha.1"
+```
+
+| Capability | Explicit modules | Representative APIs |
+| --- | --- | --- |
+| Math and geometry | `std.Math`, `std.FloatMath`, `std.GameMath` | overloaded `Math.abs`, `GameMath.add`, `GameMath.scale` |
+| Console IO | `std.Console` | generic `Console.write`, `Console.write_line`, `Console.read_line`, `Console.write_char_code` |
+| Text and files | `std.Text`, `std.File` | `Text.trim`, `File.read_text`, `File.write_text` |
+| Containers | `std.SeqBuilder`, maps, sets, queues, stacks | builder and specialized container operations |
+| Network and serialization | `std.Network`, `std.Binary`, `std.Json`, `std.JsonParser`, `std.JsonValue` | HTTP, binary codecs, JSON construction/parsing |
+
+Declarations are private by default; only `export` creates a cross-module API, and `compiler(internal)` never leaks. `[language].noImplicitPrelude = true` disables the automatic core-image open. The removed `noImplicitStdlib` key is rejected.
+
+Type-distinguishable APIs use overloads instead of type suffixes (`Ordering.compare`, `Hash.hash`, `Hash.mix_value`, `Console.write`). Return-only, conversion, unit-bearing, character-code, and raw/safe FFI distinctions retain semantic names where argument-based overload resolution would be ambiguous or unsafe.
+
+Inspect the live explicit package surface with:
+
+```powershell
+dotnet run --project Eidosc/src/Eidosc.Cli -- info --stdlib
+```
 
 ## 4. BNF Entry
 See the compact grammar guide in [`BNF.en.md`](BNF.en.md).

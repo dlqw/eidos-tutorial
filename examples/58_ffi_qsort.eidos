@@ -45,8 +45,7 @@ main :: Int -> Int need ffi, io
                 + ptr_load_int(ptr_add(arr, 24))
                 + ptr_load_int(ptr_add(arr, 32));
 
-        print_int(sum);  // 15
-        print_newline();
+        println(sum);  // 15
 
         ok := string_to_cstr("qsort OK");
         puts(ok);

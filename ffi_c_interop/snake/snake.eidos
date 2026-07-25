@@ -277,8 +277,7 @@ main :: Int -> Int need ffi, io
         close_window();
 
         final_score := ptr_load_int(ptr_add(state, 16));
-        print_int(final_score);
-        print_newline();
+        println(final_score);
 
         free(xs);
         free(ys);

@@ -20,6 +20,11 @@ collapse_result_result :: Result[Result[Int, String], String] -> Int
     Err(_) => 0
 }
 
+sequence_result_result :: Result[Result[Int, String], String] -> Result[Result[Int, String], String]
+{
+    value => sequence(value)
+}
+
 main :: Unit -> Int
 {
     _ => {
@@ -37,8 +42,8 @@ main :: Unit -> Int
             Err(_) => 1
         };
 
-        result_direct := collapse_result_result(sequence(Ok(Ok(4))));
-        result_inner_err := match sequence(Ok(Err("inner")))
+        result_direct := collapse_result_result(sequence_result_result(Ok(Ok(4))));
+        result_inner_err := match sequence_result_result(Ok(Err("inner")))
         {
             Ok(inner) => match inner
             {
@@ -48,7 +53,7 @@ main :: Unit -> Int
             Err(_) => 0
         };
 
-        result_outer_err := match sequence(Err("outer"))
+        result_outer_err := match sequence_result_result(Err("outer"))
         {
             Ok(_) => 0,
             Err(_) => 1
