@@ -46,12 +46,12 @@ import_item  ::= (lower_identifier | upper_identifier)
                  ("as" (lower_identifier | upper_identifier))?
 operator_identifier ::= one or more symbolic operator characters, excluding reserved tokens
 ```
-Note: once a module contains any `export` declaration, external visibility switches to explicit-export mode. `export import ...` re-exports the imported bindings as real public module members.
+Note: declarations are private unless explicitly marked `export`. `compiler(internal)` remains private regardless of package/module relationship. `export import ...` re-exports only the imported public bindings as real public module members.
 Note: module import aliases are compile-time module names and must start with an upper-case letter. Selective import member aliases follow the imported symbol tier: runtime value aliases start lower-case, while aliases for types, constructors, traits, effects, and other compile-time symbols start upper-case.
-Note: modules from dependency packages use `packageAlias.Module.Path`, where `packageAlias` is the dependency key in the current project's `eidos.toml`. The standard library has the built-in package alias `Std`, so the standard sequence module is `Std.Seq`: `Std` is the package name and `Seq` is the module name. The standard sequence type is `Std.Seq.Seq[Int]`. Final symbols such as types, functions, traits, effects, and constructors can use `packageAlias.Module.Path.Item`; current-package modules and imported module aliases can still use `Module.Path.Item` or alias-qualified forms. When a module path is written without a package, the compiler collects candidates from the current package, `Std`, and dependency packages. A unique candidate is accepted; multiple candidates are an error and require a package-qualified path. Explicit package-qualified paths never fall back to another package.
-Note: Eidos 0.7 retains one Namespace surface. Packages, modules, types, traits, effects, constructors, compile-time values, and their members are selected with `.`, for example `Std.Option.Option[Int]`, `meta.shape_of(User)`, and `Parser :: import Compiler.Parser;`. `::` is reserved exclusively for declaration binding. Explicit migration from Eidos 0.5 rewrites removed `::` qualifiers and slash module paths to dots.
-Note: `Std.Prelude.*` now uses that re-export behavior to expose common Text safe helpers such as `trim`, `char_code_at_or`, and `last_index_of_or`, plus basic File text-I/O fallback helpers such as `read_text_or` and `write_text_result`; full modules remain available through explicit `Std.Text` and `Std.File` imports.
-Note: an unaliased module import introduces both the module alias and bare names for that module's public values / constructors. For example, after `import Std.Seq`, both `Seq.append(xs)(ys)` and `append(xs)(ys)` are valid. A name-first module-alias binding `M :: import A;` introduces only the alias, and effects do not become bare-name-visible through module imports. The legacy `import A as M` keyword form is accepted only in `legacy` syntax mode; in `0.4.0-alpha.1` it is rejected with a migration diagnostic.
+Note: modules from dependency packages use `packageAlias.Module.Path`, where `packageAlias` is the dependency key in the current project's `eidos.toml`. The ordinary standard library is an explicit dependency, conventionally `std = "0.1.0-alpha.1"`, and is imported as `std.Seq`, `std.Console`, and so on. The compiler-distributed Prelude Core Image is not a package: it is opened automatically and its symbols are normally written without qualification. `[language].noImplicitPrelude = true` disables that open; the removed `noImplicitStdlib` key is rejected.
+Note: Eidos 0.7 retains one Namespace surface. Packages, modules, types, traits, effects, constructors, compile-time values, and their members are selected with `.`, for example `std.Option.Option[Int]`, `meta.shape_of(User)`, and `Parser :: import Compiler.Parser;`. `::` is reserved exclusively for declaration binding. Explicit migration from Eidos 0.5 rewrites removed `::` qualifiers and slash module paths to dots.
+Note: the implicit Prelude Core Image contains core types and functional contracts such as `Display`, `Option`, `Result`, `Either`, `Seq`, `Functor`, `Monad`, `Foldable`, and `Traversable`; non-core modules such as `Text`, `File`, `Console`, and `Math` require an explicit `std` dependency and import.
+Note: an unaliased module import introduces both the module alias and bare names for that module's public values / constructors. For example, after `import std.Seq`, both `Seq.append(xs)(ys)` and `append(xs)(ys)` are valid. A name-first module-alias binding `M :: import A;` introduces only the alias, and effects do not become bare-name-visible through module imports. The legacy `import A as M` keyword form is accepted only in `legacy` syntax mode; in `0.4.0-alpha.1` it is rejected with a migration diagnostic.
 Note: symbolic custom operators use characters from `! $ % & * + / < = > ? ^ | - ~ :`; reserved built-in tokens such as `->`, `=>`, `:`, `::`, `=`, `<-`, `<$>`, `<*>`, `|>`, `?`, and `??` keep their built-in meaning.
 Note: user declarations and bindings cannot use names beginning with `__` or names containing `__spec_`; that internal namespace is reserved for compiler-generated artifacts and reports `E3055`.
 Note: Eidos uses a naming-tier split: runtime values use lower-case-leading identifiers, and compile-time values use upper-case-leading identifiers. Types are first-class compile-time values, so types, traits, effects, constructors, module path segments, and generic parameters that denote types belong to the upper-case namespace. A constructor call produces a runtime value, but the constructor symbol itself is still a compile-time value.
@@ -84,7 +84,9 @@ func_name    ::= lower_identifier | "(" operator_identifier ")"
 func_def     ::= attribute* "func" func_name type_params? ":" signature need_clause? func_body
 name_first_func_def  ::= attribute* func_name type_params? "::" signature need_clause? generic_where? func_body
 name_first_func_decl ::= attribute* func_name type_params? "::" signature need_clause? generic_where? ";"
-func_body    ::= "{" pattern_branch ("," pattern_branch)* "}"
+func_body    ::= explicit_func_body | implicit_unit_body
+explicit_func_body ::= "{" pattern_branch ("," pattern_branch)* "}"
+implicit_unit_body ::= block_expr
 pattern_branch ::= pattern ("when" (pattern "<-" expr | expr))? "=>" expr
                  | pattern "=>" curried_branch_rhs
 curried_branch_rhs ::= expr
@@ -113,7 +115,7 @@ type         ::= function_type_head ("->" type)?
 function_type_head ::= tuple_type | postfix_type
 postfix_type ::= primary_type ("?" | "??" | "." upper_identifier)*
 ```
-Note: a structured foreign declaration uses `@[extern(c, name: "malloc")] malloc :: Int -> RawPtr need ffi;` and cannot have an Eidos function body. Name-first entry functions do not receive the legacy implicit root `FFI`/`IO` capability; calls to FFI/native declarations from `main` or another entry function must be covered by an explicit `need FFI` or equivalent effect tag.
+Note: a structured foreign declaration uses `@[extern(c, name: "malloc")] malloc :: Int -> RawPtr need ffi;` and cannot have an Eidos function body. Name-first entry functions do not receive legacy implicit root capabilities; calls to FFI/native declarations from `main` or another entry function must be covered by explicit `need ffi` / `need io` effect tags.
 Note: postfix `?` on a type is sugar for `Std.Option.Option[...]`; for example, `Int?` is equivalent to `Std.Option.Option[Int]`. Repeated suffixes nest, so `Int??` is equivalent to `Option[Option[Int]]`.
 Note: in 0.4.0-alpha.1 mode, type postfix projection such as `Iterator[I].Item` names an associated type declared by the target trait and reduced through a concrete named instance when available.
 
@@ -172,7 +174,10 @@ Note: workspace `import` resolution now supports the `eidos.toml` project model.
 
 ## 5. Expression Precedence (low to high)
 ```bnf
-expr                 ::= pipe_expr
+expr                 ::= selection_expr
+selection_expr       ::= pipe_expr ("then" selection_arm ("else" selection_arm)?)?
+                       | pipe_expr "else" selection_arm
+selection_arm        ::= pipe_expr | block_expr | "(" selection_expr ")"
 pipe_expr            ::= coalesce_expr (("|>" | ">>=") coalesce_expr)*
 coalesce_expr        ::= or_expr ("??" coalesce_expr)?
 or_expr              ::= and_expr ("||" and_expr)*
@@ -220,6 +225,8 @@ These rules support:
 7. Mixed postfix: `arr[0].m()(x)`
 
 Empty call note: `f()` is a call with zero explicit arguments, not the `Unit` literal; explicitly passing `Unit` is still written as `f(())`. For an ordinary Eidos `Unit -> T` callable, `f()` desugars to `f(())` and consumes one `Unit` layer; for `Unit -> Unit -> T`, `f()` still returns `Unit -> T`. For an external/bodyless FFI C ABI declaration whose source signature uses `Unit -> T` to represent a C zero-argument function, `f()` lowers as a true C zero-argument call.
+
+Note: `compiler(internal, intrinsic: "...", llvm_abi: "...", role: "...")` is a typed declaration clause reserved for exact toolchain-owned source. `role` is valid only on functions and registers a compiler semantic role used by typed elaboration; ordinary user and generated source cannot acquire this privilege.
 
 ## 7. Common `primary_expr` and `pattern`
 ```bnf
@@ -313,12 +320,21 @@ if_expr              ::= "if" expr "then" expr else_clause?
 if_let_expr          ::= "if" "let" pattern "=" expr "then" expr else_clause?
 while_let_expr       ::= "while" "let" pattern "=" expr "then" block_expr
 else_clause          ::= "else" expr
+branch_placeholder   ::= "_" ("0" | [1-9] [0-9]*)
 decision_expr        ::= "decide" expr "{" decision_group ("," decision_group)* ","? "}"
 decision_group       ::= expr ":" decision_row ("," decision_row)* ","?
 decision_row         ::= expr ("|" expr)* ("when" expr)? "=>" expr
 ```
 
 When `else_clause` is omitted, the missing branch has value `Unit`. This makes side-effect-only conditionals natural as `if cond then { ... }`; conditionals that return a non-`Unit` value still need an explicit `else`.
+
+`implicit_unit_body` is valid only when the function's first normalized runtime parameter is `Unit`; it is equivalent to the existing `_ => block`, which remains valid. `then` / `else` selection supports `Bool`, canonical `Std.Option.Option`, `Std.Result.Result`, and right-biased `Std.Either.Either`. `_0`, `_1`, and so on are arm-local payload placeholders. Positive payloads in `(a, b) then ...` are numbered in subject order, while a group `else` exposes no placeholders. A missing arm has the fixed value `Unit`, so a single present arm must return `Unit` or `Never`. The formatter does not add braces around a single-expression arm; its canonical layout is:
+
+```eidos
+result
+    then render(_0)
+    else render_error(_0);
+```
 
 `decision_expr` is for table-driven conditionals where the same predicate/template changes only by argument. `decide fallback { Input.key_down(_) != 0: 87 | 265 => North() }` tests keys in source order, returns the first matching row result, and returns fallback when no row matches. The template expression must contain a `_` hole; multi-hole templates use tuple keys.
 

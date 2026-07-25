@@ -1,72 +1,60 @@
 // Snake Game — Eidos + raylib FFI demo
 // All mutable state stored via FFI pointers to avoid ownership/borrow issues
 
-link "raylib"
-link "snake_shim"
+import std.Ffi
 
-
-@[extern(c, name: "malloc")]
-malloc :: Int -> RawPtr need ffi need ffi;
-
-
-
-@[extern(c, name: "free")]
-free :: RawPtr -> Unit need ffi need ffi;
+@[extern(c, library: "raylib", name: "InitWindow")]
+init_window :: Int -> Int -> RawPtr -> Unit need ffi;
 
 
 
-@[extern(c, name: "InitWindow")]
-init_window :: Int -> Int -> RawPtr -> Unit need ffi need ffi;
+@[extern(c, library: "raylib", name: "CloseWindow")]
+close_window :: Unit -> Unit need ffi;
 
 
 
-@[extern(c, name: "CloseWindow")]
-close_window :: Unit -> Unit need ffi need ffi;
+@[extern(c, library: "raylib", name: "WindowShouldClose")]
+window_should_close :: Unit -> Bool need ffi;
 
 
 
-@[extern(c, name: "WindowShouldClose")]
-window_should_close :: Unit -> Bool need ffi need ffi;
+@[extern(c, library: "raylib", name: "SetTargetFPS")]
+set_target_fps :: Int -> Unit need ffi;
 
 
 
-@[extern(c, name: "SetTargetFPS")]
-set_target_fps :: Int -> Unit need ffi need ffi;
+@[extern(c, library: "raylib", name: "BeginDrawing")]
+begin_drawing :: Unit -> Unit need ffi;
 
 
 
-@[extern(c, name: "BeginDrawing")]
-begin_drawing :: Unit -> Unit need ffi need ffi;
+@[extern(c, library: "raylib", name: "EndDrawing")]
+end_drawing :: Unit -> Unit need ffi;
 
 
 
-@[extern(c, name: "EndDrawing")]
-end_drawing :: Unit -> Unit need ffi need ffi;
+@[extern(c, library: "snake_shim", name: "shim_clear_background")]
+clear_background :: Int -> Int -> Int -> Int -> Unit need ffi;
 
 
 
-@[extern(c, name: "shim_clear_background")]
-clear_background :: Int -> Int -> Int -> Int -> Unit need ffi need ffi;
+@[extern(c, library: "snake_shim", name: "shim_draw_rectangle")]
+draw_rectangle :: Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi;
 
 
 
-@[extern(c, name: "shim_draw_rectangle")]
-draw_rectangle :: Int -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi need ffi;
+@[extern(c, library: "snake_shim", name: "shim_draw_text")]
+draw_text :: RawPtr -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi;
 
 
 
-@[extern(c, name: "shim_draw_text")]
-draw_text :: RawPtr -> Int -> Int -> Int -> Int -> Int -> Int -> Int -> Unit need ffi need ffi;
+@[extern(c, library: "raylib", name: "IsKeyPressed")]
+is_key_pressed :: Int -> Bool need ffi;
 
 
 
-@[extern(c, name: "IsKeyPressed")]
-is_key_pressed :: Int -> Bool need ffi need ffi;
-
-
-
-@[extern(c, name: "shim_get_random_value")]
-get_random_value :: Int -> Int -> Int need ffi need ffi;
+@[extern(c, library: "snake_shim", name: "shim_get_random_value")]
+get_random_value :: Int -> Int -> Int need ffi;
 
 
 
@@ -74,14 +62,14 @@ get_random_value :: Int -> Int -> Int need ffi need ffi;
 arr_set :: RawPtr -> Int -> Int -> Unit need ffi
 {
     (arr, i, v) => {
-        ptr_store_int(ptr_add(arr, i * 8), v)
+        Ffi.store[Int](Ffi.offset_bytes(arr, i * 8), v)
     }
 }
 
 arr_get :: RawPtr -> Int -> Int need ffi
 {
     (arr, i) => {
-        ptr_load_int(ptr_add(arr, i * 8))
+        Ffi.load[Int](Ffi.offset_bytes(arr, i * 8))
     }
 }
 
@@ -156,9 +144,9 @@ main :: Int -> Int need ffi, io
 {
     _ => {
         // Allocate game state in raw memory
-        xs := malloc(3200);
-        ys := malloc(3200);
-        state := malloc(64);
+        xs := Ffi.malloc(3200);
+        ys := Ffi.malloc(3200);
+        state := Ffi.malloc(64);
 
         // State layout: [0]=len, [1]=dir, [2]=score, [3]=timer, [4]=speed
         // [5]=food_x, [6]=food_y
@@ -171,15 +159,15 @@ main :: Int -> Int need ffi, io
         arr_set(xs, 2, 8);
         arr_set(ys, 2, 10);
 
-        ptr_store_int(state, 3);       // len
-        ptr_store_int(ptr_add(state, 8), 0);   // dir
-        ptr_store_int(ptr_add(state, 16), 0);  // score
-        ptr_store_int(ptr_add(state, 24), 0);  // timer
-        ptr_store_int(ptr_add(state, 32), 8);  // speed
-        ptr_store_int(ptr_add(state, 40), get_random_value(0, 19));  // food_x
-        ptr_store_int(ptr_add(state, 48), get_random_value(0, 19));  // food_y
+        Ffi.store[Int](state, 3);       // len
+        Ffi.store[Int](Ffi.offset_bytes(state, 8), 0);   // dir
+        Ffi.store[Int](Ffi.offset_bytes(state, 16), 0);  // score
+        Ffi.store[Int](Ffi.offset_bytes(state, 24), 0);  // timer
+        Ffi.store[Int](Ffi.offset_bytes(state, 32), 8);  // speed
+        Ffi.store[Int](Ffi.offset_bytes(state, 40), get_random_value(0, 19));  // food_x
+        Ffi.store[Int](Ffi.offset_bytes(state, 48), get_random_value(0, 19));  // food_y
 
-        title := string_to_cstr("Snake - Eidos raylib");
+        title := Ffi.to_c_string("Snake - Eidos raylib");
         init_window(500, 500, title);
         set_target_fps(60);
 
@@ -189,23 +177,23 @@ main :: Int -> Int need ffi, io
             };
 
             // Read current state
-            cur_dir := ptr_load_int(ptr_add(state, 8));
-            cur_timer := ptr_load_int(ptr_add(state, 24));
-            cur_speed := ptr_load_int(ptr_add(state, 32));
+            cur_dir := Ffi.load[Int](Ffi.offset_bytes(state, 8));
+            cur_timer := Ffi.load[Int](Ffi.offset_bytes(state, 24));
+            cur_speed := Ffi.load[Int](Ffi.offset_bytes(state, 32));
 
             // Update direction
             next_dir := check_input(cur_dir);
-            ptr_store_int(ptr_add(state, 8), next_dir);
+            Ffi.store[Int](Ffi.offset_bytes(state, 8), next_dir);
 
             // Update timer
             next_timer := cur_timer + 1;
-            ptr_store_int(ptr_add(state, 24), next_timer);
+            Ffi.store[Int](Ffi.offset_bytes(state, 24), next_timer);
 
             if next_timer >= cur_speed then {
-                ptr_store_int(ptr_add(state, 24), 0);
+                Ffi.store[Int](Ffi.offset_bytes(state, 24), 0);
 
                 // Move snake
-                len := ptr_load_int(state);
+                len := Ffi.load[Int](state);
                 hx := arr_get(xs, 0);
                 hy := arr_get(ys, 0);
                 nx := hx + dx(next_dir);
@@ -230,19 +218,19 @@ main :: Int -> Int need ffi, io
                 arr_set(ys, 0, ny);
 
                 // Check food
-                fx := ptr_load_int(ptr_add(state, 40));
-                fy := ptr_load_int(ptr_add(state, 48));
+                fx := Ffi.load[Int](Ffi.offset_bytes(state, 40));
+                fy := Ffi.load[Int](Ffi.offset_bytes(state, 48));
                 if nx == fx then {
                     if ny == fy then {
-                        cur_score := ptr_load_int(ptr_add(state, 16));
-                        ptr_store_int(ptr_add(state, 16), cur_score + 10);
-                        ptr_store_int(state, len + 1);
-                        sp := ptr_load_int(ptr_add(state, 32));
+                        cur_score := Ffi.load[Int](Ffi.offset_bytes(state, 16));
+                        Ffi.store[Int](Ffi.offset_bytes(state, 16), cur_score + 10);
+                        Ffi.store[Int](state, len + 1);
+                        sp := Ffi.load[Int](Ffi.offset_bytes(state, 32));
                         if sp > 3 then {
-                            ptr_store_int(ptr_add(state, 32), sp - 1);
+                            Ffi.store[Int](Ffi.offset_bytes(state, 32), sp - 1);
                         };
-                        ptr_store_int(ptr_add(state, 40), get_random_value(0, 19));
-                        ptr_store_int(ptr_add(state, 48), get_random_value(0, 19));
+                        Ffi.store[Int](Ffi.offset_bytes(state, 40), get_random_value(0, 19));
+                        Ffi.store[Int](Ffi.offset_bytes(state, 48), get_random_value(0, 19));
                     }
                 }
             };
@@ -251,7 +239,7 @@ main :: Int -> Int need ffi, io
             begin_drawing();
             clear_background(40, 40, 40, 255);
 
-            draw_len := ptr_load_int(state);
+            draw_len := Ffi.load[Int](state);
             mut k := 0;
             while let 0 = k - draw_len then {
                 sx := arr_get(xs, k);
@@ -264,11 +252,11 @@ main :: Int -> Int need ffi, io
                 k = k + 1;
             };
 
-            fdx := ptr_load_int(ptr_add(state, 40));
-            fdy := ptr_load_int(ptr_add(state, 48));
+            fdx := Ffi.load[Int](Ffi.offset_bytes(state, 40));
+            fdy := Ffi.load[Int](Ffi.offset_bytes(state, 48));
             draw_rectangle(fdx * 25, fdy * 25, 24, 24, 220, 0, 0, 255);
 
-            st := string_to_cstr("Score:");
+            st := Ffi.to_c_string("Score:");
             draw_text(st, 10, 10, 20, 255, 255, 255, 255);
 
             end_drawing()
@@ -276,13 +264,12 @@ main :: Int -> Int need ffi, io
 
         close_window();
 
-        final_score := ptr_load_int(ptr_add(state, 16));
-        print_int(final_score);
-        print_newline();
+        final_score := Ffi.load[Int](Ffi.offset_bytes(state, 16));
+        println(final_score);
 
-        free(xs);
-        free(ys);
-        free(state);
+        Ffi.free(xs);
+        Ffi.free(ys);
+        Ffi.free(state);
 
         0
     }

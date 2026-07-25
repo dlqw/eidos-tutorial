@@ -1,6 +1,6 @@
 # Eidos 教程（中文）
 
-> 语言基线：本教程以 Eidos 0.7.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`、点号 Namespace 与逗号分隔的 ADT 构造器；旧源码只通过显式迁移命令处理。
+> 语言基线：本教程以 Eidos 0.8.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`、点号 Namespace 与逗号分隔的 ADT 构造器；旧源码只通过显式迁移命令处理。
 
 ## 1. 教程范围与验证基线
 本教程只描述当前仓库中已经实现并可复现的功能。所有可运行的示例均在 [`docs/tutorial/examples/`](examples/) 目录下。
@@ -26,7 +26,7 @@ powershell -ExecutionPolicy Bypass -File docs/tutorial/verify-examples.ps1
 manifestSchema = 3
 
 [language]
-version = "0.7.0-alpha.1"
+version = "0.8.0-alpha.1"
 
 [package]
 name = "dev.eidos.app"
@@ -58,10 +58,10 @@ let mut counter = 1;
 Eidos 0.7 保持统一的一套成员选择表面：
 
 ```eidos
-import Std.Option
+import std.Option
 
 Info :: comptime meta.shape_of(User);
-fallback := Std.Option.unwrap_or(input)(0);
+fallback := std.Option.unwrap_or(input)(0);
 name := user.profile.display_name;
 ```
 
@@ -71,7 +71,7 @@ name := user.profile.display_name;
 4. 依赖 alias 可以保持 `lower_snake_case`；其下一段必须是大写 module，例如 `crypto_a.Hash.Sha256.digest(bytes)`。
 5. 小写根后继续小写段表示普通运行时成员链，例如 `user.profile.display_name`；大写根，或“小写 package alias + 大写 module”，开始一条 Namespace 路径。
 
-补充（2026-03-16）：内置 I/O 新增 `print_char: Int -> Unit`，按字符码输出单字符（例如 `34` 为 `"`，`39` 为 `'`）。
+Eidos 0.8 使用 `Display` 驱动的 `print` / `println`；按字符码输出使用显式边界 API `Console.write_char_code`（例如 `34` 为 `"`，`39` 为 `'`）。底层带类型后缀的输出 intrinsic 不属于用户 API。
 
 ### 3.1.1 `let` 模式绑定（块级）
 示例文件：`examples/12_let_pattern.eidos`、`examples/15_pattern_binding_modes.eidos`  
@@ -193,6 +193,32 @@ e :: 1 `add` 2;
 ```
 
 对柯里化函数，逗号分隔的调用参数会从左到右逐个应用：`add(1, 2)` 等价于 `add(1)(2)`，`sum3(1, 2)` 仍可返回等待最后一个参数的函数。反引号中缀调用沿用同一规则：``left `add` right`` 等价于 `add(left)(right)`。
+
+#### 隐式 `Unit` body 与 `then` / `else` selection（0.8.0-alpha.1）
+
+首个运行时参数规范化为 `Unit` 时，普通 block 隐式等价于唯一的 `_ => block` 分支；显式写法仍然合法：
+
+```eidos
+main :: Unit -> Int
+{
+    initialize();
+    run()
+}
+```
+
+`then` / `else` 对 `Bool`、`Option`、`Result` 和 right-biased `Either` 提供固定二分支选择。`_0`、`_1` 是当前 arm 的 payload 占位符；单臂缺失侧为 `Unit`。多个 subject 写成括号 tuple，全部从左到右求值一次，group `else` 不提供占位符：
+
+```eidos
+result
+    then render(_0)
+    else render_error(_0);
+
+(ready, maybe_user, parse_result)
+    then continue_with(_0, _1)
+    else show_unavailable();
+```
+
+formatter 不为单表达式 arm 添加花括号；只有含绑定、赋值或多条语句的 arm 使用 block。`if`、`if let`、`while let` 和完整 `match` 均继续保留。
 
 #### 值级 const generic（0.5.0-alpha.1）
 
@@ -579,8 +605,8 @@ named instance 会先做 alias canonicalization，再比较 impl 头的结构特
 这一点现在也适用于递归 traversable：`Seq.traverse([1, 2])(produce_keep_edges)` 会在重复特化 `map2_applicative(cons)(...)` 的过程中持续保留用户自定义 open alias / deep alias `Applicative` impl；可参考 `examples/45_std_list_traversable_alias_applicative.eidos`。
 这同样适用于短路/空输入分支：`Option.traverse(None())(...)` 与 `Seq.traverse([])(...)` 现在也会通过用户自定义 alias-backed `Applicative` 的 `pure` 正确完成特化，而不再只在回调被真正调用时才可达；可参考 `examples/46_traversable_alias_applicative_empty_cases.eidos`。
 `Option`、`Seq`、`Result` 现在也分别提供公开的 `sequence` helper，可把 `Option[G[A]]`、`Seq[G[A]]`、`Result[G[A], E]` 稳定翻转成 `G[Option[A]]`、`G[Seq[A]]`、`G[Result[A, E]]`；当前 alias-backed 覆盖已通过 `KeepEdges[String, Bool]` 这类开放别名锁定，而且内建 `ResultWith[E]` 的同构嵌套现在也能稳定通过 `Option.sequence(Some(Ok(...)))`、`Seq.sequence([Ok(...), ...])`、`Result.sequence(Ok(Ok(...)))`；可参考 `examples/47_traversable_sequence_alias_applicative.eidos` 与 `examples/48_sequence_result_applicative.eidos`。
-`Std.Traversable` 现在也公开提供泛型 `Traversable.sequence`，因此调用方不必再先选定外层容器专用 helper。这个泛型入口现在也能在 `Option`、`List`、`Result` 上同时穿过用户自定义 alias-backed applicative 和内建 `ResultWith[E]` 同构嵌套；可参考 `examples/49_generic_traversable_sequence.eidos`。
-限定 trait 方法路径现在也已经成为一等可调用值路径。泛型代码里既可以通过导入模块别名直接写 `Applicative.pure`、`Traversable.traverse`，也可以写导入模块下的嵌套 owner 路径（如 `Trait.Eq.eq`），还可以写完整根路径 `Std.Applicative.pure`、`Std.Traversable.traverse`，以及在当前模块内部直接写同名 trait 的相对路径，例如 `Demo.Show :: module { ... }` 内部直接写 `Show.show`；预编译 `Std.Traversable` helper 现在内部就依赖这类模块内相对路径，而 `examples/50_qualified_trait_method_paths.eidos` 现在同时覆盖 alias/root/nested-import 这几种外部调用形态。
+`std.Traversable` 现在也公开提供泛型 `Traversable.sequence`，因此调用方不必再先选定外层容器专用 helper。这个泛型入口现在也能在 `Option`、`List`、`Result` 上同时穿过用户自定义 alias-backed applicative 和内建 `ResultWith[E]` 同构嵌套；可参考 `examples/49_generic_traversable_sequence.eidos`。
+限定 trait 方法路径现在也已经成为一等可调用值路径。泛型代码里既可以通过导入模块别名直接写 `Applicative.pure`、`Traversable.traverse`，也可以写导入模块下的嵌套 owner 路径（如 `Trait.Eq.eq`），还可以写完整根路径 `std.Applicative.pure`、`std.Traversable.traverse`，以及在当前模块内部直接写同名 trait 的相对路径，例如 `Demo.Show :: module { ... }` 内部直接写 `Show.show`；预编译 `std.Traversable` helper 现在内部就依赖这类模块内相对路径，而 `examples/50_qualified_trait_method_paths.eidos` 现在同时覆盖 alias/root/nested-import 这几种外部调用形态。
 限定 effect 路径与普通函数路径独立解析。在 `need` 中使用 `Logger.Logger`、`Io.Writer` 或 `Cap.Io.Writer`；普通函数调用写作 `Logger.log(...)`、`Io.write(...)` 或 `Cap.Io.write(...)`。参见 `examples/51_qualified_effect_paths.eidos` 与 `examples/52_nested_qualified_effect_paths.eidos`。
 
 说明（2026-06-18）：当前分支不再把 `proof` / lawful 相关内容作为教程基线的一部分；相关实验内容移至单独的 proof 分支维护。
@@ -690,7 +716,7 @@ write :: String -> Unit need Writer
 1. 调用方必须在 `need` 中声明所调用函数需要的全部 effect；缺少授权会报告 `E3003`。
 2. Effect 不拥有函数。`Io.Writer` 等限定 effect 路径只用于 `need`；普通函数按模块路径调用，例如 `Io.write(text)`。
 3. 高阶 API 使用 `E: effects` 行参数：`apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E`。
-4. 固定行与多态行可组合，例如 `need FFI, E`。Effect 变量会参与泛化，并保存在跨模块摘要和编译缓存状态中。
+4. 固定行与多态行可组合，例如 `need ffi, E`。Effect 变量会参与泛化，并保存在跨模块摘要和编译缓存状态中。
 5. Effect 在运行前擦除；语言不提供 handler、`with`、`resume`、CPS 重写或运行时 effect dispatch。
 6. Borrow 检查与 effect 授权独立；旧 `@borrow(...)` 即使仍作为迁移输入被识别，也不会授予 read、write 或 move 权限。
 
@@ -926,37 +952,46 @@ head_or_zero :: Int -> Int
 21. 对“仅由 uncertain view 备选组成”的 guarded 列表覆盖来源（缺少可证明命中的 non-view 路径），covered 型 `W4201` 现在会保守抑制，避免 `[((normalize -> (1..2)) | (normalize -> 3))]` 这类分支错误吞掉后续 `[3]`。若同一来源存在可证明命中的 deterministic non-view 路径，或 `view-inner` 在有限域可证明 always/never，则仍保留精确 covered 诊断（见 `examples/26_view_guard_uncertain_only_conservative.eidos`）。
 22. 对 deep `not` mixed uncertain-view（如 `[!((normalize -> (2..3)) & 2)]`）的 covered 诊断边界已与 ADT 对齐：目标 token 可由内层 non-view 子约束证明 `no-match` 时恢复 `W4201 covered`（如目标 `[3]`），否则保持保守（如目标 `[2]`）。
 
-### 3.13 预编译标准库（正式可用）
+### 3.13 Prelude Core Image 与显式 `std` package
+
 示例文件：`examples/29_precompiled_stdlib.eidos`、`examples/42_stdlib_safe_and_traits.eidos`
 
-编译器现在以内嵌资源形式提供预编译标准库模块，并且 CLI 会按“能力”而不是按源码目录平铺显示：
+Eidosc 把预编译的 **Prelude Core Image** 与普通 `std` package 严格分开。Prelude 不是 package，会自动 open，承载语言 elaboration 所需的核心函数式契约和类型：`Display`、`Option`、`Result`、`Either`、`Ordering`、`Seq`、`Functor`、`Applicative`、`Monad`、`Foldable`、`Traversable`、`Semigroup`、`Monoid`、`Alternative`。
 
-| 能力分类 | 模块 | 这类模块能做什么 | 代表接口 |
-| --- | --- | --- | --- |
-| 函数式能力 | `Std.Fn`、`Std.Prelude`、`Std.Functor`、`Std.Applicative`、`Std.Foldable`、`Std.Traversable`、`Std.Monad`、`Std.Option`、`Std.Result`、`Std.Ordering`、`Std.Trait`、`Std.TraitInvoke` | `Std.Fn` 提供函数工具，`Std.Prelude` 提供常用 Text 安全 helper 与基础 File 文本 I/O fallback，再配合 `Option/Result`、trait 与 `Functor/Applicative/Foldable/Traversable/Monad` 抽象；当前 `Option/Result/Seq` 都已具备 `fmap/pure/apply/traverse/bind` 使用面，并共享 `fold_left/fold_right` 折叠入口；`Option/Result/Ordering` 也都已具备 `Eq` / `Ord` / `Show` 这组基础值类型能力；`T?` 可作为 `Std.Option.Option[T]` 类型糖，`??` 可作为 `Option.unwrap_or` fallback 运算符，`let?` 可作为 `Option/Result` 早返回绑定语法；教程风格优先展示 `|>`、`>>>`、`<<<`、`<$>`、`<*>`、`>>=`、`<>`、`??`、`let?` 与链式调用 | `value |> f |> g`、`f >>> g`、`inc <$> Some(1)`、`Some(f) <*> Some(x)`、`Some(x) >>= f`、`maybe_count ?? 0`、`let? value = maybe_value`、`xs.map(f).filter(p)`、`Fn.compose`、`Option.traverse`、`Seq.traverse`、`Result.and_then` |
-| 数学能力 | `Std.Math`、`Std.FloatMath`、`Std.GameMath` | 标量数学、角度/插值辅助，以及 `IVec2/Vec2/IRect/Rect` 这类游戏数学类型与网格/几何 helper | `Math.wrap`、`FloatMath.smoothstep`、`FloatMath.angle_delta_degrees`、`GameMath.ivec2`、`GameMath.grid_cell_rect` |
-| 容器能力 | `Std.Seq`、`Std.SeqBuilder` | 只读序列的查询、变换、过滤、折叠、拼接、拉链组合，以及显式 builder 阶段的 push/set/swap/freeze 工作流 | `Seq.head`、`Seq.tail`、`Seq.find`、`Seq.map`、`Seq.filter`、`Seq.fold_left`、`SeqBuilder.push`、`SeqBuilder.freeze` |
-| 文件 IO 能力 | `Std.File` | 判断文件是否存在、整文件读写、fallback 读取与最后一次 IO 状态 | `File.exists`、`File.read_text_or`、`File.last_error`、`File.write_text` |
-| 控制台 IO 能力 | `Std.Console` | 输出文本/整数/浮点/字符/布尔值，支持前缀+值的单行输出，读取一行输入 | `Console.write_line`、`Console.write_int`、`Console.write_text_int_line`、`Console.read_line_text` |
-| 网络能力 | `Std.Network` | 发起最基础的 HTTP GET 文本请求 | `Network.http_get_text_or_empty` |
-| 序列化能力 | `Std.Binary`、`Std.Json` | 做基础二进制编码/解码，以及 JSON 字符串、数组、对象拼装 | `Binary.encode_u32_le`、`Binary.bytes_to_string`、`Json.array`、`Json.object` |
-| 其他基础能力 | `Std.Text` | 文本长度、判空、基础值转文本、裁剪空白、切片、字符/码点安全读取、子串查询；安全读取/查询现在同时提供 `*_opt` 与 `*_or` 两类入口 | `Text.len`、`Text.from_int`、`Text.from_bool`、`Text.trim`、`Text.slice`、`Text.char_code_at_opt`、`Text.char_code_at_or`、`Text.char_at_opt`、`Text.index_of_or` |
-
-如果只想看“现在到底有哪些模块、每个模块导出了什么”，直接用 CLI：
-
-可通过 CLI 查看当前可用模块及导出函数：
-
-```powershell
-dotnet run --project src/Eidosc/Eidosc.Cli -- info --stdlib
+```eidos
+main :: Unit -> Int need io {
+    print(Some(42));
+    println();
+    0
+}
 ```
 
-当前验证口径（2026-04-11）：
-1. `examples/29_precompiled_stdlib.eidos` 继续覆盖核心函数式模块，并已通过 LLVM 阶段验证；当前样例已显式使用 `Option/Result/Seq/Text/Ordering` 的组合路径、Prelude wildcard 暴露的 Text/File helper、Text 空白裁剪、safe fallback helper，以及一部分 trait 驱动接口。
-2. `examples/42_stdlib_safe_and_traits.eidos` 提供一个更短的综合入口，现已同时演示 `Option/Result/Seq` 的 `Functor/Applicative/Foldable/Traversable/Monad` 使用面、`Option/Result/Ordering` 的 `Eq/Ord/Show`、以及 `Text` 的 `*_opt` / `*_or` helper；当前基线也已包含 `Result.traverse` 对 `ResultWith[E]` applicative 的自动推断。
-3. `Std.Option`、`Std.Result`、`Std.Ordering`、`Std.Seq`、`Std.Text` 均已有独立导入样例与 LLVM 集成断言；其中 `Option/Result/Seq` 现已覆盖 `fmap/pure/apply/bind`，并补齐 `fold_left/fold_right` 折叠路径；`let?` 的 `Option/Result` 绑定糖另由 `examples/63_let_question_option_result.eidos` 与 `projects/test/src/stdlib/std_let_question_binding.eidos` 覆盖。
-4. `Std.Math`、`Std.FloatMath`、`Std.GameMath`、`Std.Console`、`Std.File`、`Std.Network`、`Std.Binary`、`Std.Json` 已有独立导入样例与定向测试；`Std.Prelude.*` 另有 `projects/test/src/stdlib/std_prelude_core_import.eidos` 覆盖 Text/File 核心 helper 的直接导入；`Std.Functor`、`Std.Applicative`、`Std.Foldable`、`Std.Traversable`、`Std.Monad`、`Std.TraitInvoke` 目前通过导出表与 CLI 分组可见性校验覆盖。
-5. 当前 `Std.Network` 仍是最小实现：底层为 best-effort 文本抓取；失败时返回空字符串，不做完整 HTTP 协议抽象。
-6. 当前 `Std.Json` 偏向“拼 JSON 文本”，还不是完整 JSON 解析器；`Std.Binary` 目前也只覆盖基础布尔、整数和字符串编码工具。
+`print` / `println` 是普通的 `Display` trait 约束重载，并非编译器特判；基础类型和核心 ADT 都提供 `Display` instance。operator 与 `do` elaboration 按 Prelude 声明注册的 compiler-owned semantic role 查找符号，不再依赖硬编码 `std.Module.function` 路径。
+
+非核心能力仍属于显式 `std` package：
+
+```toml
+[dependencies]
+std = "0.1.0-alpha.1"
+```
+
+| 能力 | 显式模块 | 代表接口 |
+| --- | --- | --- |
+| 数学与几何 | `std.Math`、`std.FloatMath`、`std.GameMath` | 重载的 `Math.abs`、`GameMath.add`、`GameMath.scale` |
+| 控制台 IO | `std.Console` | 泛型 `Console.write`、`Console.write_line`、`Console.read_line`、`Console.write_char_code` |
+| 文本与文件 | `std.Text`、`std.File` | `Text.trim`、`File.read_text`、`File.write_text` |
+| 容器 | `std.SeqBuilder`、map、set、queue、stack | builder 与专用容器操作 |
+| 网络与序列化 | `std.Network`、`std.Binary`、`std.Json`、`std.JsonParser`、`std.JsonValue` | HTTP、二进制 codec、JSON 构造与解析 |
+
+声明默认私有，只有 `export` 才形成跨模块 API，`compiler(internal)` 永不泄漏。`[language].noImplicitPrelude = true` 可关闭自动 core-image open；已移除的 `noImplicitStdlib` 会直接报错。
+
+参数类型可区分的接口统一使用重载而非类型后缀，例如 `Ordering.compare`、`Hash.hash`、`Hash.mix_value`、`Console.write`。只靠返回类型区分、转换、带单位、字符码点以及 raw/safe FFI 边界继续使用语义名，避免歧义和安全含义丢失。
+
+可用下列命令查看显式 package 的实时导出面：
+
+```powershell
+dotnet run --project Eidosc/src/Eidosc.Cli -- info --stdlib
+```
 
 ### 3.14 FFI：与 C 的互操作（已验证 2026-05-01）
 
@@ -965,11 +1000,11 @@ dotnet run --project src/Eidosc/Eidosc.Cli -- info --stdlib
 已验证能力：
 1. `@[extern(c, ...)]` 声明外部 C 函数（支持自定义符号名）。
    样例：`examples/55_ffi_basic.eidos`。
-2. 指针操作：`ptr_null`、`ptr_is_null`、`ptr_add`、`ptr_load_int`、`ptr_store_int`。  
+2. 指针操作：显式 `import std.Ffi`，使用 `Ffi.null_pointer`、`Ffi.is_null`、`Ffi.offset_bytes`、`Ffi.load[T]`、`Ffi.store[T]`。
    样例：`examples/56_ffi_pointer_ops.eidos`。
-3. 函数指针回调：`cfn_from` 将 Eidos 函数转为 C 函数指针，`cfn_call` 通过指针间接调用。  
+3. 函数指针回调：`Ffi.cfn_from` 将 Eidos 函数转为 C 函数指针，`Ffi.cfn_call` 通过指针间接调用。
    样例：`examples/57_ffi_callback.eidos`。
-4. 端到端 `qsort` 回调集成：Eidos 比较函数通过 `cfn_from` 传给 C `qsort`，排序结果正确。  
+4. 端到端 `qsort` 回调集成：Eidos 比较函数通过 `Ffi.cfn_from` 传给 C `qsort`，排序结果正确。
    样例：`examples/58_ffi_qsort.eidos`。
 
 FFI 安全类型集合：`Int`、`Int32`、`Float`、`Bool`、`Unit`、`RawPtr`、`Ptr[T]`、`Cfn`；函数类型参数可作为 Eidos closure 对象指针传给理解该 ABI 的 native 函数。

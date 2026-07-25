@@ -1,0 +1,20 @@
+import std.Option
+import std.Result
+import std.Either
+
+render_result :: Result[Int, String] -> Int
+{
+    result => result
+        then _0
+        else 0
+}
+
+main :: Unit -> Int
+{
+    maybe: Option[Int] := Some(20);
+    parsed: Result[Int, String] := Ok(21);
+    choice: Either[String, Int] := Right(1);
+    (maybe, parsed, choice)
+        then _0 + _1 + _2
+        else 0
+}

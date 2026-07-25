@@ -100,7 +100,7 @@ main :: Unit -> Int
         };
         result_compare := if is_lt(compare(Err("a"))(Ok(1))) then { 1 } else { 0 };
         result_shown := show(Ok(7));
-        ordering_shown := Ordering.show(compare_int(1)(2));
+        ordering_shown := Ordering.show(compare(1)(2));
         list_traversed := match traverse([1, 2])(positive_opt)
         {
             Some(values) => unwrap_or(head(values))(0),

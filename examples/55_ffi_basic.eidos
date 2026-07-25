@@ -3,25 +3,21 @@
 // @[extern(c, ...)] 声明外部 C 函数，无函数体
 // 编译器自动使用函数名作为 C 符号名
 
+import std.Ffi
+
 @[extern(c, name: "puts")]
-puts :: RawPtr -> Int need ffi;
-
-
-// 显式指定 C 符号名（当 Eidos 名 != C 名时使用）
-
-@[extern(c, name: "malloc")]
-alloc :: Int -> RawPtr need ffi;
+write_c_string :: RawPtr -> Int need ffi;
 
 
 main :: Int -> Int need ffi
 {
     _ => {
         // 将 Eidos String 转为 C 字符串 (char*)
-        msg := string_to_cstr("Hello from Eidos!");
-        puts(msg);
+        msg := Ffi.to_c_string("Hello from Eidos!");
+        write_c_string(msg);
 
         // 反向转换：C 字符串 → Eidos String
-        // cstr_to_string(ptr) → String
+        // Ffi.from_c_string(ptr) → String
 
         0
     }

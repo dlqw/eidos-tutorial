@@ -1,11 +1,14 @@
 manifestSchema = 3
 
 [language]
-version = "0.7.0-alpha.1"
+version = "0.8.0-alpha.1"
 
 [package]
 name = "dev.eidos.tutorial.build-host"
 version = "0.1.0"
+
+[dependencies]
+std = "0.1.0-alpha.1"
 
 [build]
 program = "build.eidos"

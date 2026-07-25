@@ -46,12 +46,12 @@ import_item  ::= (lower_identifier | upper_identifier)
                  ("as" (lower_identifier | upper_identifier))?
 operator_identifier ::= 一个或多个符号运算符字符，排除保留 token
 ```
-说明：模块内一旦出现任意 `export` 声明，外部可见性即切换到显式导出模式；`export import ...` 会把导入绑定作为真实模块公开成员继续转发。
+说明：声明默认私有，只有显式标记 `export` 才能跨模块使用；`compiler(internal)` 无论包或模块关系如何都保持私有。`export import ...` 只会把已导入的公开绑定作为真实模块公开成员继续转发。
 说明：模块导入别名是编译期模块名，必须使用大写开头。Selective import 的成员 alias 按目标符号分层：运行时 value alias 小写，类型、构造器、trait、effect 等编译期符号 alias 大写。
-说明：依赖包中的模块使用 `packageAlias.Module.Path` 导入，其中 `packageAlias` 是当前项目 `eidos.toml` 中的依赖键。标准库内置 package alias 为 `Std`，因此标准库序列模块写作 `Std.Seq`，其中 `Std` 是包名，`Seq` 是模块名；标准库序列类型全名写作 `Std.Seq.Seq[Int]`。类型、函数、trait、effect、构造器等最终符号可写成 `packageAlias.Module.Path.Item`；当前包或已导入模块仍可使用 `Module.Path.Item` 或模块别名形式。未写 package 的模块路径会同时从当前 package、`Std` 和依赖 package 中收集候选；唯一候选通过，多个候选报错并要求写 package-qualified 路径。显式 package-qualified 路径不会回退到其他 package。
-说明：Eidos 0.7 保持一套 Namespace 表面。package、module、type、trait、effect、constructor、编译期值及其成员统一使用 `.` 选择，例如 `Std.Option.Option[Int]`、`meta.shape_of(User)` 和 `Parser :: import Compiler.Parser;`。`::` 只保留为声明绑定符。显式的 Eidos 0.5 migration 会把已移除的 `::` 限定符与 slash module path 改为点号。
-说明：标准库 `Std.Prelude.*` 现在会通过上述 re-export 语义直接暴露常用 Text 安全 helper（如 `trim`、`char_code_at_or`、`last_index_of_or`）与基础 File 文本 I/O fallback（如 `read_text_or`、`write_text_result`）；完整模块仍可通过 `Std.Text`、`Std.File` 显式导入。
-说明：无别名的模块导入会同时引入模块别名和该模块公开 value / constructor 的裸名；例如 `import Std.Seq` 后可写 `Seq.append(xs)(ys)` 或 `append(xs)(ys)`。name-first 模块别名绑定 `M :: import A;` 仍只引入别名，effect 也不会通过模块导入变成裸名可见。旧 `import A as M` keyword 形式只在 `legacy` 语法模式中接受；在 `0.4.0-alpha.1` 中会被拒绝并给出迁移诊断。
+说明：依赖包中的模块使用 `packageAlias.Module.Path`，其中 `packageAlias` 是当前项目 `eidos.toml` 中的依赖键。普通标准库必须显式声明依赖（惯例为 `std = "0.1.0-alpha.1"`），并写作 `std.Seq`、`std.Console` 等。编译器分发的 Prelude Core Image 不是 package，会自动 open，通常直接使用其中的裸符号；`[language].noImplicitPrelude = true` 可关闭自动 open，已移除的 `noImplicitStdlib` 会被拒绝。
+说明：Eidos 0.7 保持一套 Namespace 表面。package、module、type、trait、effect、constructor、编译期值及其成员统一使用 `.` 选择，例如 `std.Option.Option[Int]`、`meta.shape_of(User)` 和 `Parser :: import Compiler.Parser;`。`::` 只保留为声明绑定符。显式的 Eidos 0.5 migration 会把已移除的 `::` 限定符与 slash module path 改为点号。
+说明：隐式 Prelude Core Image 只承载 `Display`、`Option`、`Result`、`Either`、`Seq`、`Functor`、`Monad`、`Foldable`、`Traversable` 等核心类型与函数式契约；`Text`、`File`、`Console`、`Math` 等非核心模块需要显式 `std` 依赖和 import。
+说明：无别名的模块导入会同时引入模块别名和该模块公开 value / constructor 的裸名；例如 `import std.Seq` 后可写 `Seq.append(xs)(ys)` 或 `append(xs)(ys)`。name-first 模块别名绑定 `M :: import A;` 仍只引入别名，effect 也不会通过模块导入变成裸名可见。旧 `import A as M` keyword 形式只在 `legacy` 语法模式中接受；在 `0.4.0-alpha.1` 中会被拒绝并给出迁移诊断。
 说明：自定义符号运算符可使用 `! $ % & * + / < = > ? ^ | - ~ :` 这组字符；`->`、`=>`、`:`、`::`、`=`、`<-`、`<$>`、`<*>`、`|>`、`?`、`??` 等保留 token 仍保持内建语法含义。
 说明：用户声明或绑定名不得以 `__` 开头，也不得包含 `__spec_`；这些形式属于编译器保留内部命名空间，违反时报告 `E3055`。
 说明：Eidos 采用命名分层：运行时值使用小写开头标识符；编译期值使用大写开头标识符。类型是一等编译期值，因此类型、trait、effect、构造器、模块路径和表示类型的泛型参数属于大写命名空间。构造器调用会产生运行时值，但构造器符号本身仍是编译期值。
@@ -84,7 +84,9 @@ func_name    ::= lower_identifier | "(" operator_identifier ")"
 func_def     ::= attribute* "func" func_name type_params? ":" signature need_clause? func_body
 name_first_func_def  ::= attribute* func_name type_params? "::" signature need_clause? generic_where? func_body
 name_first_func_decl ::= attribute* func_name type_params? "::" signature need_clause? generic_where? ";"
-func_body    ::= "{" pattern_branch ("," pattern_branch)* "}"
+func_body    ::= explicit_func_body | implicit_unit_body
+explicit_func_body ::= "{" pattern_branch ("," pattern_branch)* "}"
+implicit_unit_body ::= block_expr
 pattern_branch ::= pattern ("when" (pattern "<-" expr | expr))? "=>" expr
                  | pattern "=>" curried_branch_rhs
 curried_branch_rhs ::= expr
@@ -113,7 +115,7 @@ type         ::= function_type_head ("->" type)?
 function_type_head ::= tuple_type | postfix_type
 postfix_type ::= primary_type ("?" | "??" | "." upper_identifier)*
 ```
-说明：结构化 foreign declaration 使用 `@[extern(c, name: "malloc")] malloc :: Int -> RawPtr need ffi;`，且不能包含 Eidos 函数体。name-first 入口函数不再获得 legacy 隐式根 `FFI`/`IO` 能力；从 `main` 或其他入口函数调用 FFI/native 声明时，必须由显式 `need FFI` 或等价 effect tag 覆盖。
+说明：结构化 foreign declaration 使用 `@[extern(c, name: "malloc")] malloc :: Int -> RawPtr need ffi;`，且不能包含 Eidos 函数体。name-first 入口函数不再获得 legacy 隐式根能力；从 `main` 或其他入口函数调用 FFI/native 声明时，必须由显式 `need ffi` / `need io` effect tag 覆盖。
 说明：类型后缀 `?` 是 `Std.Option.Option[...]` 的语法糖，例如 `Int?` 等价于 `Std.Option.Option[Int]`；连续后缀可嵌套，`Int??` 等价于 `Option[Option[Int]]`。
 说明：在 0.4.0-alpha.1 模式中，`Iterator[I].Item` 这类类型后缀投影表示目标 trait 声明的 associated type，并可在存在具体 named instance 时归约到对应实现类型。
 
@@ -172,7 +174,10 @@ typed_tag    ::= lower_identifier ("(" arg_list? ")")?
 
 ## 5. 表达式优先级（从低到高）
 ```bnf
-expr                 ::= pipe_expr
+expr                 ::= selection_expr
+selection_expr       ::= pipe_expr ("then" selection_arm ("else" selection_arm)?)?
+                       | pipe_expr "else" selection_arm
+selection_arm        ::= pipe_expr | block_expr | "(" selection_expr ")"
 pipe_expr            ::= coalesce_expr (("|>" | ">>=") coalesce_expr)*
 coalesce_expr        ::= or_expr ("??" coalesce_expr)?
 or_expr              ::= and_expr ("||" and_expr)*
@@ -220,6 +225,8 @@ primary_expr         ::= ...
 7. 混合后缀：`arr[0].m()(x)`
 
 空实参调用说明：`f()` 是零个显式实参的调用，不是 `Unit` 字面量；显式传递 `Unit` 仍写作 `f(())`。当目标是普通 Eidos `Unit -> T` 时，`f()` 降糖为 `f(())`，且只消耗一层 `Unit` 参数；`Unit -> Unit -> T` 的 `f()` 结果仍是 `Unit -> T`。当目标是 external/bodyless FFI C ABI 声明，且源码签名用 `Unit -> T` 表示 C 零参数函数时，`f()` 降低为真实 C 零参数调用。
+
+说明：`compiler(internal, intrinsic: "...", llvm_abi: "...", role: "...")` 是只允许精确 toolchain-owned 源码使用的类型化声明 clause。`role` 仅能用于函数，用于注册 typed elaboration 所需的编译器语义角色；普通用户源码和生成源码不能取得该权限。
 
 ## 7. primary_expr 与 pattern（常用）
 ```bnf
@@ -313,12 +320,21 @@ if_expr              ::= "if" expr "then" expr else_clause?
 if_let_expr          ::= "if" "let" pattern "=" expr "then" expr else_clause?
 while_let_expr       ::= "while" "let" pattern "=" expr "then" block_expr
 else_clause          ::= "else" expr
+branch_placeholder   ::= "_" ("0" | [1-9] [0-9]*)
 decision_expr        ::= "decide" expr "{" decision_group ("," decision_group)* ","? "}"
 decision_group       ::= expr ":" decision_row ("," decision_row)* ","?
 decision_row         ::= expr ("|" expr)* ("when" expr)? "=>" expr
 ```
 
 省略 `else_clause` 时，缺失分支为 `Unit`。这让只为副作用执行的条件块可以自然写成 `if cond then { ... }`；返回非 `Unit` 值的条件表达式仍必须写出 `else`。
+
+`implicit_unit_body` 只在函数第一个规范化运行时参数为 `Unit` 时合法；它等价于现有的 `_ => block`，显式 branch 写法继续有效。`then` / `else` selection 支持 `Bool`、canonical `Std.Option.Option`、`Std.Result.Result` 和 right-biased `Std.Either.Either`。`_0`、`_1` 是 arm-local payload 占位符；`(a, b) then ...` 的 positive payload 按 subject 顺序连续编号，group `else` 不提供占位符。单臂缺失侧固定为 `Unit`，所以执行 arm 必须返回 `Unit` 或 `Never`。formatter 对单表达式 arm 不添加花括号，规范布局为：
+
+```eidos
+result
+    then render(_0)
+    else render_error(_0);
+```
 
 `decision_expr` 用于同一 predicate/template 只改变参数的表驱动条件。`decide fallback { Input.key_down(_) != 0: 87 | 265 => North() }` 按源码顺序测试每个 key，命中第一个 row 时返回 row result，否则返回 fallback。表头表达式必须包含 `_` hole；多 hole 表头使用 tuple key。
 

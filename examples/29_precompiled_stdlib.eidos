@@ -2,8 +2,6 @@ import std.Functions
 import std.File
 import std.Option
 import std.Ordering
-import std.Prelude
-import std.Prelude.*
 import std.Seq
 import std.Result
 import std.Traits
@@ -77,8 +75,8 @@ main :: Unit -> Int need io
         via_file_status := File.last_success(());
         via_file_error := File.last_error(());
         via_text := char_code_at_or(src_for_opt)(1)(0) + via_text_char + via_text_fallback + via_text_index + via_text_last_index + Text.len(src_for_len);
-        via_ordering := then_compare_int(compare_int(via_head)(1))(0)(1);
-        trait_ordering := Ordering.show(compare_int(1)(2));
+        via_ordering := then_compare(compare(via_head)(1))(0)(1);
+        trait_ordering := Ordering.show(compare(1)(2));
         trait_text := show("ok");
         if !Text.empty(src_for_empty) &&
            is_ok(Ok(1)) &&
