@@ -717,12 +717,14 @@ write :: String -> Unit need Writer
 }
 ```
 
-1. A caller must declare every effect required by the functions it invokes. Missing authorization is reported as `E3003`.
-2. Effects do not own functions. Qualified effect paths such as `Io.Writer` are used only in `need`; ordinary functions are called through their module path, for example `Io.write(text)`.
-3. Higher-order APIs use row parameters such as `E: effects`: `apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E`.
-4. Fixed and polymorphic rows can be combined, for example `need ffi, E`. Effect variables are generalized and preserved across module summaries and cached compilation state.
-5. Effects are erased before runtime. There are no handlers, `with`, `resume`, CPS rewriting, or runtime effect dispatch.
-6. Borrow checking is independent from effect authorization; even when legacy `@borrow(...)` is recognized as migration input, it does not grant read, write, or move permission.
+1. When a function has a body and omits `need`, the compiler infers an exact effect row from the body and recursive call graph and makes it the function's effective effect type; callers do not repeat the clause manually.
+2. An explicit `need` is a checked public upper bound. Use one on exported APIs and low-level wrappers that introduce a domain effect to freeze the contract and prevent accidental effect growth. Trait methods and external/FFI declarations have no body to infer from and therefore require an explicit clause.
+3. Effects do not own functions. Qualified effect paths such as `Io.Writer` are used only in `need`; ordinary functions are called through their module path. A custom effect distinguishes a domain capability above `io`, for example a keyboard wrapper with `need io, Input`; a declaration that is attached to no boundary function has no semantic effect.
+4. LSP renders an omitted row as a virtual gray `need ...` hint and offers a materialize code action; source remains unchanged until that action is selected.
+5. Higher-order APIs use row parameters such as `E: effects`: `apply[A, B, E: effects] :: (A -> B need E) -> A -> B need E`. Fixed and polymorphic rows can be combined, for example `need ffi, E`.
+6. Effect variables and inferred rows participate in types, cross-module summaries, incremental fingerprints, and cached compilation state.
+7. Effects are erased before runtime. There are no handlers, `with`, `resume`, CPS rewriting, or runtime effect dispatch.
+8. Borrow checking is independent from effect authorization; even when legacy `@borrow(...)` is recognized as migration input, it does not grant read, write, or move permission.
 
 ### 3.10 `match when` Branch Guards (Lowered Through MIR)
 Example files: `examples/10_match_guard.eidos`, `examples/27_pattern_guard_binding.eidos`  

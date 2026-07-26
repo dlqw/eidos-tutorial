@@ -115,7 +115,7 @@ type         ::= function_type_head ("->" type)?
 function_type_head ::= tuple_type | postfix_type
 postfix_type ::= primary_type ("?" | "??" | "." upper_identifier)*
 ```
-说明：结构化 foreign declaration 使用 `@[extern(c, name: "malloc")] malloc :: Int -> RawPtr need ffi;`，且不能包含 Eidos 函数体。name-first 入口函数不再获得 legacy 隐式根能力；从 `main` 或其他入口函数调用 FFI/native 声明时，必须由显式 `need ffi` / `need io` effect tag 覆盖。
+说明：结构化 foreign declaration 使用 `@[extern(c, name: "malloc")] malloc :: Int -> RawPtr need ffi;`，且不能包含 Eidos 函数体，所以其 `need` 必须显式。具有函数体的 name-first 函数省略 `need` 时会从函数体和调用图推断有效 effect row；显式 `need` 仍作为受检查的上界。
 说明：类型后缀 `?` 是 `Std.Option.Option[...]` 的语法糖，例如 `Int?` 等价于 `Std.Option.Option[Int]`；连续后缀可嵌套，`Int??` 等价于 `Option[Option[Int]]`。
 说明：在 0.4.0-alpha.1 模式中，`Iterator[I].Item` 这类类型后缀投影表示目标 trait 声明的 associated type，并可在存在具体 named instance 时归约到对应实现类型。
 
