@@ -1,7 +1,7 @@
 
-legacy_borrow_tag :: effect;
+LegacyBorrowTag :: effect;
 
-keep :: Int -> Int need legacy_borrow_tag
+keep :: Int -> Int need LegacyBorrowTag
 {
     x => x
 }
@@ -13,7 +13,7 @@ keep_ref :: Ref[Int] -> Ref[Int]
 
 // Ownership is fixed by typed signatures: Int is ByValue and Ref[Int] is a
 // SharedBorrow. Effect labels and legacy @borrow metadata cannot change either.
-main :: Unit -> Int need legacy_borrow_tag
+main :: Unit -> Int need LegacyBorrowTag
 {
     _ => keep(1)
 }
