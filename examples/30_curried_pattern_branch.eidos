@@ -1,10 +1,10 @@
 OptionString :: type { SomeString:: type(String), NoneString :: type {} }
 OptionInt :: type { SomeInt:: type(Int), NoneInt :: type {} }
 
-option_string_map_tuple :: OptionString -> (String -> String) -> OptionString
+option_string_map_list :: OptionString -> (String -> String) -> OptionString
 {
-    (SomeString(value), mapper) => SomeString(mapper(value)),
-    (NoneString(), _) => NoneString()
+    SomeString(value), mapper => SomeString(mapper(value)),
+    NoneString(), _           => NoneString()
 }
 
 option_string_map_curried :: OptionString -> (String -> String) -> OptionString
@@ -15,15 +15,25 @@ option_string_map_curried :: OptionString -> (String -> String) -> OptionString
 
 pick_positive :: Int -> Int -> Int
 {
-    n => i when i > 0 => i,
-    _ => _ => 0
+    n, i when i > 0 => i,
+    _, _             => 0
 }
 
 zip_left :: OptionInt -> OptionInt -> OptionInt
 {
-    SomeInt(left) => SomeInt(right) => SomeInt(left),
-    SomeInt(_) => NoneInt() => NoneInt(),
-    NoneInt() => _ => NoneInt()
+    SomeInt(left), SomeInt(right) => SomeInt(left),
+    SomeInt(_), NoneInt()         => NoneInt(),
+    NoneInt(), _                  => NoneInt()
+}
+
+pair_sum :: (Int, Int) -> Int
+{
+    (left, right) => left + right
+}
+
+pair_pair_sum :: (Int, Int) -> (Int, Int) -> Int
+{
+    (left_a, left_b), (right_a, right_b) => left_a + left_b + right_a + right_b
 }
 
 picked :: pick_positive(1, 7);

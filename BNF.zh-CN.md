@@ -87,8 +87,10 @@ name_first_func_decl ::= attribute* func_name type_params? "::" signature need_c
 func_body    ::= explicit_func_body | implicit_unit_body
 explicit_func_body ::= "{" pattern_branch ("," pattern_branch)* "}"
 implicit_unit_body ::= block_expr
-pattern_branch ::= pattern ("when" (pattern "<-" expr | expr))? "=>" expr
+pattern_branch ::= branch_binder ("when" (pattern "<-" expr | expr))? "=>" expr
                  | pattern "=>" curried_branch_rhs
+branch_binder ::= pattern | curried_binder_list
+curried_binder_list ::= pattern "," pattern ("," pattern)*
 curried_branch_rhs ::= expr
                      | "_"
                      | pattern ("when" (pattern "<-" expr | expr))? "=>" curried_branch_rhs
@@ -115,6 +117,8 @@ type         ::= function_type_head ("->" type)?
 function_type_head ::= tuple_type | postfix_type
 postfix_type ::= primary_type ("?" | "??" | "." upper_identifier)*
 ```
+无外层括号的 binder list 表示柯里化参数：`left, right => body` 严格等价于 `left => right => body`，`=>` 仍保持右结合。括号保留普通 pattern 分组语义，因此 `(left, right) => body` 接收一个 tuple 参数，而不是两个柯里化参数。两个 tuple 参数应写成 `(left_a, left_b), (right_a, right_b) => body`。binder list 后的 guard 会在列表中所有绑定建立后执行；`left when ready(left) => right => body` 这类分阶段 guard 链不能展平，否则会改变 guard 的求值阶段。显式函数体与花括号 lambda 使用相同规则。
+
 说明：结构化 foreign declaration 使用 `@[extern(c, name: "malloc")] malloc :: Int -> RawPtr need ffi;`，且不能包含 Eidos 函数体，所以其 `need` 必须显式。具有函数体的 name-first 函数省略 `need` 时会从函数体和调用图推断有效 effect row；显式 `need` 仍作为受检查的上界。
 说明：类型后缀 `?` 是 `Std.Option.Option[...]` 的语法糖，例如 `Int?` 等价于 `Std.Option.Option[Int]`；连续后缀可嵌套，`Int??` 等价于 `Option[Option[Int]]`。
 说明：在 0.4.0-alpha.1 模式中，`Iterator[I].Item` 这类类型后缀投影表示目标 trait 声明的 associated type，并可在存在具体 named instance 时归约到对应实现类型。

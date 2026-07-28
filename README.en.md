@@ -433,17 +433,21 @@ Current semantics:
 12. Full value-category semantics are still being stabilized; this is not the final memory model yet.  
 Example files: `examples/39_unary_deref.eidos`, `examples/40_unary_ref.eidos`, `examples/41_adt_ref_fields.eidos`, `examples/54_return_borrow_param_alias.eidos`.
 
-### 3.2.1 Two First-Class Function-Body Branch Forms
+### 3.2.1 Curried Binder Lists and Tuple Parameters
 Example file: `examples/30_curried_pattern_branch.eidos`
 
-1. Tuple-head form: `(p1, p2) => expr`
-2. Curried-head form: `p1 => p2 => expr`
+1. Canonical curried binder list: `p1, p2 => expr`
+2. Equivalent right-associated chain: `p1 => p2 => expr`
+3. One tuple parameter: `(p1, p2) => expr`
+4. Two curried tuple parameters: `(a1, a2), (b1, b2) => expr`
 
-Both forms are semantically equivalent. The compiler normalizes the curried head to the same branch-pattern representation; `_` is valid in curried segments (for example `NoneString() => _ => NoneString()`).
+The first two forms are semantically equivalent. Parenthesized tuple syntax is deliberately different and always binds one tuple value. `_` and constructor patterns are valid in binder lists, and the same syntax works in braced lambdas. The formatter canonicalizes a simple chain to a binder list while preserving chains with staged guards.
 Update (2026-04-10):
 1. Later curried segments can now carry their own `when` guard directly, for example `n => i when i > 0 => i`.
 2. Constructor patterns in later curried segments are preserved as whole patterns; `Some(v) => Some(w) => ...` no longer degrades into a plain variable binding.
 3. Function-body pattern branches still share the same coverage analysis as `match`, so forms such as `Some(v) => f => ...` keep participating in stable ADT-constructor `W4200/W4201` reasoning.
+
+Update (2026-07-28): a guard after `p1, p2` can reference both binders and runs only after both have matched. A staged form such as `p1 when guard1 => p2 => expr` retains its chain because flattening it would move the guard.
 
 ### 3.3 Chained Calls (Auto-desugared)
 Example file: `examples/03_chain_method_calls.eidos`  

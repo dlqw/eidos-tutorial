@@ -87,8 +87,10 @@ name_first_func_decl ::= attribute* func_name type_params? "::" signature need_c
 func_body    ::= explicit_func_body | implicit_unit_body
 explicit_func_body ::= "{" pattern_branch ("," pattern_branch)* "}"
 implicit_unit_body ::= block_expr
-pattern_branch ::= pattern ("when" (pattern "<-" expr | expr))? "=>" expr
+pattern_branch ::= branch_binder ("when" (pattern "<-" expr | expr))? "=>" expr
                  | pattern "=>" curried_branch_rhs
+branch_binder ::= pattern | curried_binder_list
+curried_binder_list ::= pattern "," pattern ("," pattern)*
 curried_branch_rhs ::= expr
                      | "_"
                      | pattern ("when" (pattern "<-" expr | expr))? "=>" curried_branch_rhs
@@ -115,6 +117,8 @@ type         ::= function_type_head ("->" type)?
 function_type_head ::= tuple_type | postfix_type
 postfix_type ::= primary_type ("?" | "??" | "." upper_identifier)*
 ```
+An unparenthesized binder list is curried syntax: `left, right => body` is exactly equivalent to `left => right => body`, and `=>` remains right-associative. Parentheses preserve ordinary pattern grouping, so `(left, right) => body` accepts one tuple argument rather than two curried arguments. Two curried tuple arguments are written `(left_a, left_b), (right_a, right_b) => body`. A guard after a binder list runs after every binder in that list has been established; a staged chain such as `left when ready(left) => right => body` is not flattened because moving the guard would change its evaluation stage. The same binder-list rule applies to explicit function bodies and braced lambdas.
+
 Note: a structured foreign declaration uses `@[extern(c, name: "malloc")] malloc :: Int -> RawPtr need ffi;` and cannot have an Eidos body, so its `need` must be explicit. A name-first function with a body infers its effective effect row from the body and call graph when `need` is omitted; an explicit `need` remains a checked upper bound.
 Note: postfix `?` on a type is sugar for `Std.Option.Option[...]`; for example, `Int?` is equivalent to `Std.Option.Option[Int]`. Repeated suffixes nest, so `Int??` is equivalent to `Option[Option[Int]]`.
 Note: in 0.4.0-alpha.1 mode, type postfix projection such as `Iterator[I].Item` names an associated type declared by the target trait and reduced through a concrete named instance when available.

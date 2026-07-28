@@ -429,17 +429,21 @@ asFunction :: (|+|)(3, 4);
 12. 更完整的值类别语义仍在后续收口中，当前还不是最终版内存模型。  
 示例文件：`examples/39_unary_deref.eidos`、`examples/40_unary_ref.eidos`、`examples/41_adt_ref_fields.eidos`、`examples/54_return_borrow_param_alias.eidos`。
 
-### 3.2.1 函数体模式分支的两种一等写法
+### 3.2.1 柯里化 binder list 与 tuple 参数
 示例文件：`examples/30_curried_pattern_branch.eidos`
 
-1. 元组头写法：`(p1, p2) => expr`
-2. 柯里化头写法：`p1 => p2 => expr`
+1. 规范柯里化 binder list：`p1, p2 => expr`
+2. 等价的右结合链：`p1 => p2 => expr`
+3. 单个 tuple 参数：`(p1, p2) => expr`
+4. 两个柯里化 tuple 参数：`(a1, a2), (b1, b2) => expr`
 
-两者语义等价，编译器会把柯里化头归一为同一分支模式表示；`_` 可用于柯里化段（例如 `NoneString() => _ => NoneString()`）。
+前两种写法语义等价；带外层括号的 tuple 写法有意保持不同语义，并始终只绑定一个 tuple 值。binder list 可以使用 `_` 和构造器 pattern，也可用于花括号 lambda。formatter 会把简单箭头链规范化成 binder list，但会保留带分阶段 guard 的链。
 补充（2026-04-10）：
 1. 柯里化写法里的后续参数现在也能直接带 `when`，例如 `n => i when i > 0 => i`。
 2. 后续参数里的构造器模式会按整段保留；`Some(v) => Some(w) => ...` 不会再被错认成普通变量绑定。
 3. 函数体模式分支继续和 `match` 共用同一套覆盖分析；像 `Some(v) => f => ...` 这类写法会按 ADT 构造器稳定参与 `W4200/W4201` 推理，stdlib 可直接统一成该风格。
+
+补充（2026-07-28）：`p1, p2` 后的 guard 可以引用两个绑定，并在两者均匹配后执行；`p1 when guard1 => p2 => expr` 这类分阶段写法会保留箭头链，因为展平会移动 guard 的求值阶段。
 
 ### 3.3 链式调用（自动降级为普通调用）
 示例文件：`examples/03_chain_method_calls.eidos`  
