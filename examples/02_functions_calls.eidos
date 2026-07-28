@@ -10,12 +10,12 @@ identity[T] :: T -> T
 
 add :: Int -> Int -> Int
 {
-    left => right => left + right
+    left, right => left + right
 }
 
 sum3 :: Int -> Int -> Int -> Int
 {
-    a => b => c => a + b + c
+    a, b, c => a + b + c
 }
 
 a :: inc(1);
