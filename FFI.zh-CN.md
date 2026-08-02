@@ -108,7 +108,7 @@ qsort(arr)(5)(8)(cmp_fn)
 qsort(arr, 5, 8, cmp_fn)
 ```
 
-> 示例文件：[`examples/55_ffi_basic.eidos`](examples/55_ffi_basic.eidos)
+> 示例文件：[`examples/ffi/55_ffi_basic.eidos`](examples/ffi/55_ffi_basic.eidos)
 
 ---
 
@@ -210,7 +210,7 @@ Ffi.store[Int](ptr, value) -> Unit  // 按类型写入
 Ffi.load[Int](ptr) -> Int           // 按类型读取
 ```
 
-> 示例文件：[`examples/56_ffi_pointer_ops.eidos`](examples/56_ffi_pointer_ops.eidos)
+> 示例文件：[`examples/ffi/56_ffi_pointer_ops.eidos`](examples/ffi/56_ffi_pointer_ops.eidos)
 
 `Ffi.load[T]` / `Ffi.store[T]` 使用统一泛型 API；用户代码不直接调用按类型后缀拆分的编译器内部 intrinsic。
 
@@ -266,7 +266,7 @@ my_cmp :: Int -> Int -> Int
 }
 ```
 
-> 示例文件：[`examples/57_ffi_callback.eidos`](examples/57_ffi_callback.eidos)
+> 示例文件：[`examples/ffi/57_ffi_callback.eidos`](examples/ffi/57_ffi_callback.eidos)
 
 ---
 
@@ -311,7 +311,7 @@ main :: Int -> Int need ffi
 }
 ```
 
-> 示例文件：[`examples/58_ffi_qsort.eidos`](examples/58_ffi_qsort.eidos)
+> 示例文件：[`examples/ffi/58_ffi_qsort.eidos`](examples/ffi/58_ffi_qsort.eidos)
 
 ---
 

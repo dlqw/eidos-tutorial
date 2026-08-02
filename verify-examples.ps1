@@ -58,8 +58,12 @@ try
         "36_hkt_trait_constraint_kind_mismatch.eidos" = "kind"
     }
 
-    $cases = Get-ChildItem $examplesRoot -Filter "*.eidos" |
-        Sort-Object Name |
+    $buildHostDir = Join-Path $examplesRoot "build_host"
+
+    # 递归扫描示例（按主题子目录组织）；build_host 是独立 BuildGraph 项目，走下方单独验证。
+    $cases = Get-ChildItem $examplesRoot -Recurse -Filter "*.eidos" |
+        Where-Object { $_.FullName -notlike "$buildHostDir*" } |
+        Sort-Object FullName |
         ForEach-Object {
             $casePhase = if ($phaseOverrides.ContainsKey($_.Name)) { $phaseOverrides[$_.Name] } else { $Phase }
             [pscustomobject]@{

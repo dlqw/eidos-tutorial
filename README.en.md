@@ -1,5 +1,7 @@
 # Eidos Tutorial (English)
 
+> **Sync notice**: The tutorial is being restructured (2026-08-02). Chinese is the active maintenance language; this English mirror is pending synchronization. See [`README.zh-CN.md`](README.zh-CN.md) for the current learning path and chapter structure.
+
 > Language baseline: this tutorial targets Eidos 0.9.0-alpha.1. New code uses `name :: Type { ... }`, `name :: expr;`, local `name := expr;` / `mut name := expr;`, dot-qualified Namespaces, and comma-separated ADT constructors. Older source is handled only by the explicit migration command.
 
 ## 1. Scope and Validation Baseline
@@ -39,7 +41,7 @@ Meaning:
 
 ## 3. Core Language Flow (Validated)
 ### 3.1 Literals and Bindings
-Example file: `examples/01_literals_bindings.eidos`  
+Example file: `examples/getting_started/01_literals_bindings.eidos`  
 Covers `let`, `let mut`, and literal forms.
 
 ```eidos
@@ -74,7 +76,7 @@ name := user.profile.display_name;
 Eidos 0.8 uses `Display`-driven `print` / `println`. Use the explicit boundary API `Console.write_char_code` for code-point output (for example, `34` for `"` and `39` for `'`). Typed low-level output intrinsics are not user APIs.
 
 ### 3.1.1 `let` Pattern Binding (Block Scope)
-Example files: `examples/12_let_pattern.eidos`, `examples/15_pattern_binding_modes.eidos`  
+Example files: `examples/basics/12_let_pattern.eidos`, `examples/pattern/15_pattern_binding_modes.eidos`  
 `let <pattern> = <expr>;` is now supported in block scope and wired through NameResolver/Types/HIR/MIR.
 
 ```eidos
@@ -96,7 +98,7 @@ Update (2026-04-04 / 2026-06-19): pattern binding modes and mutable bindings are
 4. In `or-pattern`, the same binding name must use the same binding mode across alternatives; otherwise `E3000` is emitted.
 
 ### 3.1.2 `if let` Pattern Branching
-Example file: `examples/13_if_let_pattern.eidos`  
+Example file: `examples/pattern/13_if_let_pattern.eidos`  
 Supported form: `if let <pattern> = <expr> then <expr> else <expr>`; block branches are still valid because blocks are expressions. It is lowered with `match` semantics:
 
 ```text
@@ -112,7 +114,7 @@ Binding scope rules:
 3. Without `else`, the fallback branch value defaults to `Unit`.
 
 ### 3.1.3 `while let` Pattern Looping
-Example file: `examples/14_while_let_pattern.eidos`  
+Example file: `examples/pattern/14_while_let_pattern.eidos`  
 Supported form: `while let <pattern> = <expr> then <block>`. It is lowered as a looped pattern check:
 
 ```text
@@ -127,7 +129,7 @@ Current behavior:
 4. A block can still end with an unsuffixed tail expression after `if/if let/while let` statements (for example `...; total`).
 
 ### 3.1.4 `let?` Option / Result Binding
-Example file: `examples/63_let_question_option_result.eidos`
+Example file: `examples/basics/63_let_question_option_result.eidos`
 Block-level `let? <pattern> = <expr>;` is supported for unwrapping the success value of `Option` / `Result` and returning early from the enclosing function or lambda on the failure branch.
 
 ```eidos
@@ -161,7 +163,7 @@ Rules:
 Lowering rule: `let?` exists only through Parser/AST/NameResolver/Types. HIR construction eliminates it into ordinary `match` + `return`; HIR/MIR/LLVM have no dedicated `let?` nodes.
 
 ### 3.2 Functions, Generics, and Direct Calls
-Example file: `examples/02_functions_calls.eidos`  
+Example file: `examples/basics/02_functions_calls.eidos`  
 Covers function signatures, type parameters, and direct calls.
 
 ```eidos
@@ -244,7 +246,7 @@ use :: Unit -> Int
 
 A value argument must be compile-time evaluable at the instantiation site and must match its declared type. A value parameter that is not constrained by ordinary parameter types must be supplied explicitly; it may be omitted when it can be inferred through a type such as `Buffer[N, T]`. Values participate in nominal type identity, layout, name mangling, generic specialization, trait coherence, and incremental cache keys, so `Buffer[4, Int]` and `Buffer[5, Int]` are distinct types. Floating-point values are not specialization keys in alpha.1. References, pointers, closures, and other values with runtime resource identity cannot cross the comptime/type-identity boundary.
 
-ADTs, type aliases, functions, traits, and named-instance trait references use the same ordered generic-argument rules. For example, an implementation of `Sized[comptime N: Int] :: trait { ... }` explicitly names the value in a head such as `SizedHolder :: instance Sized[4]`; `N` is substituted through the trait method signature and coherence compares the structured value key. See `examples/68_const_generics.eidos` for the complete example.
+ADTs, type aliases, functions, traits, and named-instance trait references use the same ordered generic-argument rules. For example, an implementation of `Sized[comptime N: Int] :: trait { ... }` explicitly names the value in a head such as `SizedHolder :: instance Sized[4]`; `N` is substituted through the trait method signature and coherence compares the structured value key. See `examples/generics/68_const_generics.eidos` for the complete example.
 
 #### Read-only reflection, user derives, and structured generation (0.5.0-alpha.3)
 
@@ -289,7 +291,7 @@ User :: type {
 
 `meta.Items` contains structured generated declarations. `meta.Function -> meta.Function` is the body transformation protocol, while `meta.Syntax[K] -> meta.Syntax[K]` is used for syntax-site expansion. Generated declarations participate in ordinary name resolution, type checking, trait coherence, completion, hover, definition, and references, with stable `eidos-generated://` origins.
 
-Current boundaries: there is no string source insertion, arbitrary AST replacement, public scheduling clause, or public ownership attribute. Pure comptime cannot access files, environment variables, processes, networks, or FFI. The compiler derives dependency order, fixed-point execution, identity, cache, diagnostics, and provenance from the typed protocol and declaration tags. See `examples/69_meta_reflection_derive.eidos` for the complete example.
+Current boundaries: there is no string source insertion, arbitrary AST replacement, public scheduling clause, or public ownership attribute. Pure comptime cannot access files, environment variables, processes, networks, or FFI. The compiler derives dependency order, fixed-point execution, identity, cache, diagnostics, and provenance from the typed protocol and declaration tags. See `examples/meta/69_meta_reflection_derive.eidos` for the complete example.
 
 CLI surfaces:
 
@@ -413,7 +415,7 @@ Update (2026-03-27): Higher-kinded type parameter annotations are supported in s
 11. Type-parameter trait constraints support module-qualified trait refs with type arguments (`T: Core.Functor[Box]`); trait-argument arity and kind are checked in Types phase.
 12. Type-parameter trait constraints accept traits only. Effect authorization belongs in function `need` clauses instead (for example `String -> Unit need Writer`).
 13. Generic constraints support lightweight `where` clauses, so complex kind/trait constraints can move out of the parameter list; for example, `lift[A, G] :: A -> G[A] where G: kind2, G: Applicative[G]`.
-Example files: `examples/31_hkt_parenthesized_kind.eidos`, `examples/32_hkt_adt_inferred_kind.eidos`, `examples/33_hkt_effect_polymorphism.eidos`, `examples/34_hkt_trait_inferred_kind.eidos`, `examples/35_hkt_trait_constraint_type_args.eidos`, `examples/36_hkt_trait_constraint_kind_mismatch.eidos`.
+Example files: `examples/generics/31_hkt_parenthesized_kind.eidos`, `examples/generics/32_hkt_adt_inferred_kind.eidos`, `examples/generics/33_hkt_effect_polymorphism.eidos`, `examples/generics/34_hkt_trait_inferred_kind.eidos`, `examples/generics/35_hkt_trait_constraint_type_args.eidos`, `examples/generics/36_hkt_trait_constraint_kind_mismatch.eidos`.
 
 Update (2026-03-22): `return <expr>` now unifies `<expr>` with the current function/lambda declared result type (instead of degrading to `Unit`). This removes false `Int` vs `()` mismatches in valid early-return code paths.
 
@@ -431,10 +433,10 @@ Current semantics:
 10. Record-style ADT field types can now mention `Ref[T]` / `MRef[T]` directly, so chained read-only method style such as `box.reader.read` and `box.writer.read` is also supported.
 11. Returning `Ref[T]` / `MRef[T]` now has a first-stage hard rule: the returned reference must be traceable to an input parameter; directly returning a parameter or returning a local alias of a parameter reference is allowed, but forms like `ref local`, borrowing from a local/temp and returning that borrow, or overwriting a parameter alias with a local borrow before returning it now fail in Borrow with `E1004`.  
 12. Full value-category semantics are still being stabilized; this is not the final memory model yet.  
-Example files: `examples/39_unary_deref.eidos`, `examples/40_unary_ref.eidos`, `examples/41_adt_ref_fields.eidos`, `examples/54_return_borrow_param_alias.eidos`.
+Example files: `examples/ownership/39_unary_deref.eidos`, `examples/ownership/40_unary_ref.eidos`, `examples/ownership/41_adt_ref_fields.eidos`, `examples/ownership/54_return_borrow_param_alias.eidos`.
 
 ### 3.2.1 Curried Binder Lists and Tuple Parameters
-Example file: `examples/30_curried_pattern_branch.eidos`
+Example file: `examples/basics/30_curried_pattern_branch.eidos`
 
 1. Canonical curried binder list: `p1, p2 => expr`
 2. Equivalent right-associated chain: `p1 => p2 => expr`
@@ -450,7 +452,7 @@ Update (2026-04-10):
 Update (2026-07-28): a guard after `p1, p2` can reference both binders and runs only after both have matched. A staged form such as `p1 when guard1 => p2 => expr` retains its chain because flattening it would move the guard.
 
 ### 3.3 Chained Calls (Auto-desugared)
-Example file: `examples/03_chain_method_calls.eidos`  
+Example file: `examples/basics/03_chain_method_calls.eidos`  
 Chained calls are supported and desugared during compilation. Equivalent forms:
 
 ```text
@@ -471,7 +473,7 @@ chain3 :: 3.inc.double;
 ```
 
 ### 3.4 ADT and Type Alias
-Example file: `examples/04_adt_type_alias.eidos`
+Example file: `examples/basics/04_adt_type_alias.eidos`
 
 The Eidos 0.7 development line also supports lexically sealed closed-case hierarchies. Each nested `Case :: type` is both an exact nominal subtype and a constructor-bearing type:
 
@@ -600,7 +602,7 @@ Update (2026-03-16): backend constructor-pattern lowering now takes the real mat
    - unresolved LLVM field offset now reports `E3301` (no silent fallback).
 
 ### 3.5 Traits and named instances
-Example file: `examples/05_trait_impl_declaration.eidos`  
+Example file: `examples/traits/05_trait_impl_declaration.eidos`  
 Use name-first `instance` declarations for trait evidence. Function-level `@impl(Trait)` is removed from the 0.7 authoring surface and is accepted only as explicit migration input.
 Instance member names and signatures must match the target trait methods and stay in the same module.
 For generic traits, `instance` supports explicit trait type arguments (for example `FunctorBox :: instance Functor[Box]`), and arity mismatch is reported during naming.
@@ -608,14 +610,14 @@ Convention-based impl registration does not infer generic trait arguments; use e
 `instance` registration canonicalizes aliases before overlap checking. Strictly more specific heads may coexist with broader heads, but equivalent or incomparable canonical shapes still fail with `E3004`.
 `expr given InstanceName` can explicitly select a named evidence value.
 Impl heads are compared after alias canonicalization. Strict specialization is allowed when one head is structurally narrower than the other (for example `Option[Int]` over `Option[T]`), but equivalent or incomparable overlaps are still rejected during naming with `E3004` (`overlapping impl registration`). Alias-only rewrites do not create specialization, so overlaps introduced purely through equivalent aliases on either the trait-argument side or the implementing-type side are still rejected.
-Open alias heads used as higher-kinded trait arguments now also participate in reverse matching during type inference and MIR specialization. For example, `ApplicativeKeepEdgesStringBool :: instance Applicative[KeepEdges[String, Bool]]` can satisfy `G[A]` when the surrounding context expects `Triple[String, A, Bool]`; see `examples/43_open_alias_trait_impl.eidos`.
-The same reverse matching now survives precompiled stdlib generic combinators as well: `Result.traverse(Ok(2))(produce_keep_edges)` can infer `G = KeepEdges[String, Bool]` even when the callback returns the underlying `Triple[String, Int, Bool]`, and deep alias chains such as `DeepBoxedResult[String]` continue to specialize correctly through both direct and helper-wrapped traversal; see `examples/44_std_traversable_alias_applicative.eidos`.
-This now also holds for recursive traversables: `Seq.traverse([1, 2])(produce_keep_edges)` can thread a user-defined alias-backed `Applicative` through repeated `map2_applicative(cons)(...)` specialization without losing the open-alias or deep-alias impl; see `examples/45_std_list_traversable_alias_applicative.eidos`.
-Short-circuit traversable branches now behave the same way. `Option.traverse(None())(...)` and `Seq.traverse([])(...)` still specialize `lift_pure`/`pure` through the user-defined alias-backed `Applicative`, so empty inputs no longer depend on the callback path to keep the impl reachable; see `examples/46_traversable_alias_applicative_empty_cases.eidos`.
-`Option`, `Seq`, and `Result` now also expose public `sequence` helpers built on top of their traversable implementations. This gives a stable stdlib path for flipping `Option[G[A]]`, `Seq[G[A]]`, or `Result[G[A], E]` into `G[Option[A]]`, `G[Seq[A]]`, or `G[Result[A, E]]`; the current alias-backed coverage is locked through open aliases such as `KeepEdges[String, Bool]`, and built-in `ResultWith[E]` nesting now also works through `Option.sequence(Some(Ok(...)))`, `Seq.sequence([Ok(...), ...])`, and `Result.sequence(Ok(Ok(...)))`; see `examples/47_traversable_sequence_alias_applicative.eidos` and `examples/48_sequence_result_applicative.eidos`.
-`std.Traversable` now also exposes a public generic `Traversable.sequence`, so callers no longer need to choose the outer container-specific helper up front. The generic form now specializes through both user-defined alias-backed applicatives and built-in `ResultWith[E]` nesting for `Option`, `List`, and `Result`; see `examples/49_generic_traversable_sequence.eidos`.
-Qualified trait-method paths are now first-class callable value paths as well. In generic code you can call methods through the imported module alias (`Applicative.pure`, `Traversable.traverse`), nested imported-module owner paths (`Trait.Eq.eq`), the fully qualified stdlib root (`std.Applicative.pure`, `std.Traversable.traverse`), or the current module's own same-named trait path (for example `Show.show` inside `Demo.Show :: module { ... }`); the precompiled `std.Traversable` helpers now rely on that module-relative form internally, while `examples/50_qualified_trait_method_paths.eidos` now covers alias/root/nested-import forms together.
-Qualified effect paths and ordinary function paths resolve independently. Use `Logger.Logger`, `Io.Writer`, or `Cap.Io.Writer` in `need`, and call ordinary module functions as `Logger.log(...)`, `Io.write(...)`, or `Cap.Io.write(...)`. See `examples/51_qualified_effect_paths.eidos` and `examples/52_nested_qualified_effect_paths.eidos`.
+Open alias heads used as higher-kinded trait arguments now also participate in reverse matching during type inference and MIR specialization. For example, `ApplicativeKeepEdgesStringBool :: instance Applicative[KeepEdges[String, Bool]]` can satisfy `G[A]` when the surrounding context expects `Triple[String, A, Bool]`; see `examples/functional/43_open_alias_trait_impl.eidos`.
+The same reverse matching now survives precompiled stdlib generic combinators as well: `Result.traverse(Ok(2))(produce_keep_edges)` can infer `G = KeepEdges[String, Bool]` even when the callback returns the underlying `Triple[String, Int, Bool]`, and deep alias chains such as `DeepBoxedResult[String]` continue to specialize correctly through both direct and helper-wrapped traversal; see `examples/functional/44_std_traversable_alias_applicative.eidos`.
+This now also holds for recursive traversables: `Seq.traverse([1, 2])(produce_keep_edges)` can thread a user-defined alias-backed `Applicative` through repeated `map2_applicative(cons)(...)` specialization without losing the open-alias or deep-alias impl; see `examples/functional/45_std_list_traversable_alias_applicative.eidos`.
+Short-circuit traversable branches now behave the same way. `Option.traverse(None())(...)` and `Seq.traverse([])(...)` still specialize `lift_pure`/`pure` through the user-defined alias-backed `Applicative`, so empty inputs no longer depend on the callback path to keep the impl reachable; see `examples/functional/46_traversable_alias_applicative_empty_cases.eidos`.
+`Option`, `Seq`, and `Result` now also expose public `sequence` helpers built on top of their traversable implementations. This gives a stable stdlib path for flipping `Option[G[A]]`, `Seq[G[A]]`, or `Result[G[A], E]` into `G[Option[A]]`, `G[Seq[A]]`, or `G[Result[A, E]]`; the current alias-backed coverage is locked through open aliases such as `KeepEdges[String, Bool]`, and built-in `ResultWith[E]` nesting now also works through `Option.sequence(Some(Ok(...)))`, `Seq.sequence([Ok(...), ...])`, and `Result.sequence(Ok(Ok(...)))`; see `examples/functional/47_traversable_sequence_alias_applicative.eidos` and `examples/functional/48_sequence_result_applicative.eidos`.
+`std.Traversable` now also exposes a public generic `Traversable.sequence`, so callers no longer need to choose the outer container-specific helper up front. The generic form now specializes through both user-defined alias-backed applicatives and built-in `ResultWith[E]` nesting for `Option`, `List`, and `Result`; see `examples/functional/49_generic_traversable_sequence.eidos`.
+Qualified trait-method paths are now first-class callable value paths as well. In generic code you can call methods through the imported module alias (`Applicative.pure`, `Traversable.traverse`), nested imported-module owner paths (`Trait.Eq.eq`), the fully qualified stdlib root (`std.Applicative.pure`, `std.Traversable.traverse`), or the current module's own same-named trait path (for example `Show.show` inside `Demo.Show :: module { ... }`); the precompiled `std.Traversable` helpers now rely on that module-relative form internally, while `examples/traits/50_qualified_trait_method_paths.eidos` now covers alias/root/nested-import forms together.
+Qualified effect paths and ordinary function paths resolve independently. Use `Logger.Logger`, `Io.Writer`, or `Cap.Io.Writer` in `need`, and call ordinary module functions as `Logger.log(...)`, `Io.write(...)`, or `Cap.Io.write(...)`. See `examples/effects/51_qualified_effect_paths.eidos` and `examples/effects/52_nested_qualified_effect_paths.eidos`.
 
 Note (2026-06-18): this branch no longer treats `proof` / lawful material as part of the tutorial baseline; the experimental material lives on the dedicated proof branch.
 
@@ -649,7 +651,7 @@ Current trait-constraint solving behavior (2026-03-15):
 11. `Option.sequence`, `Seq.sequence`, and `Result.sequence` are available as public container-specific helpers, and `Traversable.sequence` is now available as the generic outer-container version. Together they inherit the same specialization behavior for stable cases, so nested values like `Option[KeepEdges[String, Bool, A]]`, `Seq[KeepEdges[String, Bool, A]]`, `Result[KeepEdges[String, Bool, A], E]`, `Option[Result[A, E]]`, `Seq[Result[A, E]]`, or `Result[Result[A, E], E]` can be flipped directly through stdlib code.
 
 ### 3.5.1 Module `export` and `re-export`
-Example file: `examples/53_module_exports_and_reexports.eidos`  
+Example file: `examples/basics/53_module_exports_and_reexports.eidos`  
 Current behavior:
 1. As soon as a module contains any `export` declaration, external visibility switches to explicit-export mode. Non-exported declarations still work inside the module, but they are no longer exposed automatically.
 2. If a module contains no `export` at all, the current compatibility behavior remains implicit full export.
@@ -666,10 +668,10 @@ Demo.Facade :: module
 }
 ```
 
-This `Facade` module publicly exposes a module alias `BaseApi` and an effect alias `W`; ordinary functions are re-exported separately. See `examples/53_module_exports_and_reexports.eidos` for the full runnable example.
+This `Facade` module publicly exposes a module alias `BaseApi` and an effect alias `W`; ordinary functions are re-exported separately. See `examples/basics/53_module_exports_and_reexports.eidos` for the full runnable example.
 
 ### 3.6 List Comprehension (Current Status)
-Example file: `examples/08_list_comprehension.eidos`  
+Example file: `examples/basics/08_list_comprehension.eidos`  
 Current implementation status:
 1. AST/NameResolver/Types support multi-qualifier scope/type behavior (multiple generators + guards).
 2. HIR now preserves a dedicated `ListComprehension` node (no early expansion into a constant list).
@@ -685,7 +687,7 @@ doubled :: [x * 2 | x <- [1, 2, 3]];
 ```
 
 ### 3.7 Borrow Signature Inference (CFG Join-Aware)
-Example file: `examples/38_borrow_effect_decoupling.eidos`
+Example file: `examples/ownership/38_borrow_effect_decoupling.eidos`
 Current status (2026-03-15):
 1. `LoanSignatureInferer` now uses CFG/dataflow program-point inference instead of only linear alias heuristics.
 2. Return-borrow constraints are aggregated across all `return` sites, with parameter origins unioned after control-flow joins.
@@ -731,7 +733,7 @@ write :: String -> Unit need Writer
 8. Borrow checking is independent from effect authorization; even when legacy `@borrow(...)` is recognized as migration input, it does not grant read, write, or move permission.
 
 ### 3.10 `match when` Branch Guards (Lowered Through MIR)
-Example files: `examples/10_match_guard.eidos`, `examples/27_pattern_guard_binding.eidos`  
+Example files: `examples/pattern/10_match_guard.eidos`, `examples/pattern/27_pattern_guard_binding.eidos`  
 
 Update (2026-03-16): `pattern when guard => expr` is now fully wired through lowering, not only type checking:
 1. HIR match branches now preserve the `Guard` expression.
@@ -758,10 +760,10 @@ choose :: Int -> Int
 }
 ```
 
-A duplicate literal key in one template group produces `W4301` because the later key is unreachable. See `examples/70_decision_table.eidos` for the complete example.
+A duplicate literal key in one template group produces `W4301` because the later key is unreachable. See `examples/pattern/70_decision_table.eidos` for the complete example.
 
 ### 3.11 ViewPattern (standard syntax `(expr -> pattern)`)
-Example file: `examples/11_advanced_patterns.eidos`
+Example file: `examples/pattern/11_advanced_patterns.eidos`
 
 ```eidos
 normalize :: Int -> Int { x => x }
@@ -914,7 +916,7 @@ Current status (2026-03-17):
    - There are now dedicated regressions that lock cases where a single `W4200` must carry both unresolved-guard hints and suppression traces (list/ADT), preventing either explain-note family from silently regressing.
 
 ### 3.12 List/Rest Pattern (list matching)
-Example files: `examples/16_list_rest_pattern.eidos`, `examples/17_list_guarded_coverage.eidos`, `examples/18_view_guard_unsat.eidos`, `examples/19_view_guard_finite_set.eidos`, `examples/20_guard_algebra_unsat.eidos`, `examples/23_view_guard_other_and_not_unsat.eidos`, `examples/24_view_guard_nested_as_other_unsat.eidos`, `examples/25_view_guard_mixed_view_nonview_conservative.eidos`  
+Example files: `examples/pattern/16_list_rest_pattern.eidos`, `examples/pattern/17_list_guarded_coverage.eidos`, `examples/pattern/18_view_guard_unsat.eidos`, `examples/pattern/19_view_guard_finite_set.eidos`, `examples/pattern/20_guard_algebra_unsat.eidos`, `examples/pattern/23_view_guard_other_and_not_unsat.eidos`, `examples/pattern/24_view_guard_nested_as_other_unsat.eidos`, `examples/pattern/25_view_guard_mixed_view_nonview_conservative.eidos`  
 Supported forms (wired through Parser/Ast/HIR/NameResolver/Types/MIR):
 
 ```text
@@ -960,12 +962,12 @@ Semantics update (2026-03-19):
 18. Int-domain token matching for list/view finite reasoning now uses three-valued evaluation (`match` / `no-match` / `unknown`) for `or/and/not`: for `or`, analysis now recovers precise covered diagnostics not only with an irrefutable non-view fallback (for example `((normalize -> (1..2)) | _)`), but also when a non-view alternative is deterministically matched for the current token (for example `(((normalize -> (1..2)) | 2) as x) when x == 2`); unresolved mixed paths still degrade conservatively.
 19. Mixed uncertain-view detection now also recognizes nested wrappers (for example `!((normalize -> p))`, `as((normalize -> p))`, and nested `or/and` forms): if no deterministic non-view arm can prove the current token match, the branch remains conservative and no false covered warning is emitted.
 20. List finite-split discrete literal domains now also cover `Char`: branches like `['a']` and `['b']` are no longer over-approximated by shape-only length coverage; char ranges such as `['a'..'c']` can now stably cover a later `['b']` branch and produce the expected `W4201 covered` diagnostic.
-21. For guarded list coverage sources made only of uncertain-view alternatives (no provable deterministic non-view hit), covered-style `W4201` is now conservatively suppressed, avoiding false reports where a branch like `[((normalize -> (1..2)) | (normalize -> 3))]` incorrectly shadows a later `[3]`. If a deterministic non-view hit can be proven, or the `view-inner` is provably always/never over the finite domain, precise covered diagnostics are still preserved (see `examples/26_view_guard_uncertain_only_conservative.eidos`).
+21. For guarded list coverage sources made only of uncertain-view alternatives (no provable deterministic non-view hit), covered-style `W4201` is now conservatively suppressed, avoiding false reports where a branch like `[((normalize -> (1..2)) | (normalize -> 3))]` incorrectly shadows a later `[3]`. If a deterministic non-view hit can be proven, or the `view-inner` is provably always/never over the finite domain, precise covered diagnostics are still preserved (see `examples/pattern/26_view_guard_uncertain_only_conservative.eidos`).
 22. Deep `not` mixed uncertain-view list branches (for example `[!((normalize -> (2..3)) & 2)]`) now follow the same boundary as ADT: restore `W4201 covered` when the target token is provably excluded by inner non-view constraints (for example target `[3]`), and stay conservative when inner uncertainty is still unresolved (for example target `[2]`).
 
 ### 3.13 Prelude Core Image and explicit `std` package
 
-Example files: `examples/29_precompiled_stdlib.eidos`, `examples/42_stdlib_safe_and_traits.eidos`
+Example files: `examples/stdlib/29_precompiled_stdlib.eidos`, `examples/stdlib/42_stdlib_safe_and_traits.eidos`
 
 Eidosc distributes a precompiled **Prelude Core Image** separately from the ordinary `std` package. Prelude is not a package and is opened automatically. It supplies the core functional contracts and types required by language elaboration: `Display`, `Option`, `Result`, `Either`, `Ordering`, `Seq`, `Functor`, `Applicative`, `Monad`, `Foldable`, `Traversable`, `Semigroup`, `Monoid`, and `Alternative`.
 
@@ -1014,29 +1016,29 @@ Chinese version: [`BNF.zh-CN.md`](BNF.zh-CN.md).
 The following behaviors are validated by `verify-examples.ps1`:
 
 1. Nested call type-checks with a curried signature (`add(1)(2)`), from Parser through Types.  
-   Example: `examples/06_nested_call_parser_only.eidos`.
+   Example: `examples/basics/06_nested_call_parser_only.eidos`.
 2. A block tail expression is correctly treated as the block value in return-type unification.  
-   Example: `examples/07_block_result_known_issue.eidos`.
+   Example: `examples/basics/07_block_result_known_issue.eidos`.
 3. List comprehension preserves full structure at HIR; MIR lowers both static and dynamic sources and uses runtime list APIs for core read/write semantics; LLVM now includes `array_get/array_set` mapping plus slot-backed backedge local updates; native smoke runs in clang-only environments; non-`VarPattern` generator patterns now report `E5101`.  
-   Example: `examples/08_list_comprehension.eidos`.
+   Example: `examples/basics/08_list_comprehension.eidos`.
 4. Marker effect calls pass `types` and `llvm`; authorization is checked statically and erased before MIR runtime semantics.
-   Example: `examples/09_effect_tag_call.eidos`.
+   Example: `examples/effects/09_effect_tag_call.eidos`.
 5. `(expr -> pattern)` passes `hir` and `mir`.  
-   Example: `examples/11_advanced_patterns.eidos`.
+   Example: `examples/pattern/11_advanced_patterns.eidos`.
 6. Pattern-entry forms `if let` and `while let` now flow through HIR/MIR: `if let` lowers to two-branch `match`, and `while let` lowers to `loop + match + break`.  
-   Examples: `examples/13_if_let_pattern.eidos`, `examples/14_while_let_pattern.eidos`.
+   Examples: `examples/pattern/13_if_let_pattern.eidos`, `examples/pattern/14_while_let_pattern.eidos`.
 7. `let?` binding sugar is wired through Parser/NameResolver/Types and eliminated during HIR construction into ordinary `match` + `return`; HIR/MIR/LLVM have no dedicated `let?` nodes.
-   Examples: `examples/63_let_question_option_result.eidos`, `projects/test/src/stdlib/std_let_question_binding.eidos`.
+   Examples: `examples/basics/63_let_question_option_result.eidos`, `projects/test/src/stdlib/std_let_question_binding.eidos`.
 8. List/rest pattern forms (`[]` / `[head, ..tail]` / `[..]`) now flow through HIR/MIR with guarded length checks and tail materialization semantics; guarded list branches also participate in finite-case coverage reasoning.
-   Examples: `examples/16_list_rest_pattern.eidos`, `examples/17_list_guarded_coverage.eidos`, `examples/18_view_guard_unsat.eidos`, `examples/19_view_guard_finite_set.eidos`, `examples/20_guard_algebra_unsat.eidos`, `examples/21_view_guard_mixed_and_not_unsat.eidos`, `examples/22_nested_view_combinator_coverage.eidos`, `examples/23_view_guard_other_and_not_unsat.eidos`, `examples/24_view_guard_nested_as_other_unsat.eidos`, `examples/25_view_guard_mixed_view_nonview_conservative.eidos`.
+   Examples: `examples/pattern/16_list_rest_pattern.eidos`, `examples/pattern/17_list_guarded_coverage.eidos`, `examples/pattern/18_view_guard_unsat.eidos`, `examples/pattern/19_view_guard_finite_set.eidos`, `examples/pattern/20_guard_algebra_unsat.eidos`, `examples/pattern/21_view_guard_mixed_and_not_unsat.eidos`, `examples/pattern/22_nested_view_combinator_coverage.eidos`, `examples/pattern/23_view_guard_other_and_not_unsat.eidos`, `examples/pattern/24_view_guard_nested_as_other_unsat.eidos`, `examples/pattern/25_view_guard_mixed_view_nonview_conservative.eidos`.
 9. Pattern-guard binding (`when pat <- expr`) is now wired through Parser/NameResolver/Types/HIR/MIR, including the preferred function-body pattern-branch style.
-   Example: `examples/27_pattern_guard_binding.eidos`.
+   Example: `examples/pattern/27_pattern_guard_binding.eidos`.
 10. Early `return` now keeps payload type semantics across Types/HIR/MIR/LLVM: return payloads are type-checked against function result type, lowered as dedicated HIR return nodes, and compiled through MIR/LLVM return terminators without fallback diagnostics.
-   Example: `examples/28_early_return.eidos`.
-11. The embedded precompiled stdlib is now organized by capability: the core functional modules are LLVM-validated through the wider `examples/29_precompiled_stdlib.eidos` example and the shorter `examples/42_stdlib_safe_and_traits.eidos` showcase; the math/game-math/IO/network/serialization modules have dedicated import fixtures plus targeted tests; and the capability grouping itself is checked through CLI and export-table tests.
-   Examples: `examples/29_precompiled_stdlib.eidos`, `examples/42_stdlib_safe_and_traits.eidos`, `examples/55_functional_infix_chain_style.eidos`, `examples/62_option_suffix_coalesce.eidos`, `examples/63_let_question_option_result.eidos`, `examples/65_game_math_vectors.eidos`, `projects/test/src/stdlib/std_*_import.eidos`.
+   Example: `examples/basics/28_early_return.eidos`.
+11. The embedded precompiled stdlib is now organized by capability: the core functional modules are LLVM-validated through the wider `examples/stdlib/29_precompiled_stdlib.eidos` example and the shorter `examples/stdlib/42_stdlib_safe_and_traits.eidos` showcase; the math/game-math/IO/network/serialization modules have dedicated import fixtures plus targeted tests; and the capability grouping itself is checked through CLI and export-table tests.
+   Examples: `examples/stdlib/29_precompiled_stdlib.eidos`, `examples/stdlib/42_stdlib_safe_and_traits.eidos`, `examples/functional/55_functional_infix_chain_style.eidos`, `examples/basics/62_option_suffix_coalesce.eidos`, `examples/basics/63_let_question_option_result.eidos`, `examples/stdlib/65_game_math_vectors.eidos`, `projects/test/src/stdlib/std_*_import.eidos`.
 12. Returned-borrow origin rules are now part of the tutorial baseline: a parameter reference may flow through a local alias and still be returned, but the returned origin must remain traceable to an input parameter.
-   Example: `examples/54_return_borrow_param_alias.eidos`.
+   Example: `examples/ownership/54_return_borrow_param_alias.eidos`.
 
 ## 6. Practical Tips
 1. Prefer directly inferable expressions and split complex flows into semantically named local bindings.
