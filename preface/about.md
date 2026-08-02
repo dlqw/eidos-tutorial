@@ -44,4 +44,4 @@
 powershell -ExecutionPolicy Bypass -File verify-examples.ps1
 ```
 
-> 双语说明：本教程中文版为当前维护主线；英文版（`README.en.md` 及各章节 `*.en.md` 镜像）在结构重构期间标注"待同步"，稳定后跟进。
+> 双语说明：中文版为当前维护主线。英文版目前仅有 `README.en.md`（旧版结构的英文镜像，已标注"待同步"）；章节级 `*.en.md` 镜像尚未创建，将在结构定稿后逐章翻译补充。

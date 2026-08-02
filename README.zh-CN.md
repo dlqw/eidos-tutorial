@@ -85,4 +85,4 @@ powershell -ExecutionPolicy Bypass -File docs/tutorial/verify-examples.ps1
 - 版本变更记录：[`changelogs/`](changelogs/)
 - 贡献指南：[`CONTRIBUTING.md`](CONTRIBUTING.md)
 
-> 双语说明：中文版为当前维护主线；英文版（`README.en.md`）在结构重构期间标注"待同步"，稳定后跟进。
+> 双语说明：中文版为当前维护主线。英文版目前仅有 `README.en.md`（旧版结构的英文镜像，已标注"待同步"）；章节级英文镜像将在结构定稿后逐章翻译补充。
