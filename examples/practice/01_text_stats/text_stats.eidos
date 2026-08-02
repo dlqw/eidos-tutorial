@@ -1,0 +1,26 @@
+import std.File
+import std.Text
+
+// 文本概览：读取文件（缺省回退），统计总字符数与非空白字符数。
+// 逐步增强：先加输入，再加统计，最后用分支组合输出判断。
+count_non_blank :: String -> Int -> Int
+{
+    text => index => {
+        if index >= Text.len(text) then { 0 }
+        else {
+            c := text.char_at_or(index, ' ');
+            extra := if c == ' ' then { 0 } else { 1 };
+            extra + count_non_blank(text, index + 1)
+        }
+    }
+}
+
+main :: Unit -> Int
+{
+    _ => {
+        content := File.read_text_or("missing.txt", "a b c");
+        total := Text.len(content);
+        non_blank := count_non_blank(content, 0);
+        if !Text.is_blank(content) && non_blank > 0 then { total + non_blank } else { 0 }
+    }
+}
