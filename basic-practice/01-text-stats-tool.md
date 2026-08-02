@@ -2,7 +2,7 @@
 
 示例文件：`examples/practice/01_text_stats/text_stats.eidos`（已纳入 `verify-examples.ps1` 验证）
 
-像 rust-course 的"文件搜索工具"一样，这个实战项目**边学边做、逐步增强**：每一步只用前面章节已经验证过的能力。
+这个实战项目**边学边做、逐步增强**：每一步只用前面章节已经验证过的能力。
 
 ## 第 1 步：读取文本
 
