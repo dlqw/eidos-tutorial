@@ -18,9 +18,9 @@ add :: Int -> Int -> Int
     left => right => left + right
 }
 
-gt_two :: Int -> Bool
+gt_two :: Ref[Int] -> Bool
 {
-    x => x > 2
+    x => *x > 2
 }
 
 positive_opt :: Int -> Option[Int]

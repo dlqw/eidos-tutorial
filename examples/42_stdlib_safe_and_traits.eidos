@@ -34,9 +34,9 @@ add :: Int -> Int -> Int
     left => right => left + right
 }
 
-is_three :: Int -> Bool
+is_three :: Ref[Int] -> Bool
 {
-    x => x == 3
+    x => *x == 3
 }
 
 lift_plus_ten :: Int -> Option[Int]
