@@ -12,7 +12,7 @@ inc :: Int -> Int { x => x + 1 }
 add :: Int -> Int -> Int { left => right => left + right }
 lift_result :: Int -> Result.With[String, Int] { x => Ok(x + 1) }
 recover_err :: String -> Result[Int, String] { _ => Ok(5) }
-gt_two :: Int -> Bool { x => x > 2 }
+gt_two :: Ref[Int] -> Bool { x => *x > 2 }
 sum_left :: Int -> Int -> Int { acc => x => acc + x }
 sum_right :: Int -> Int -> Int { x => acc => x + acc }
 pair_sum :: (Int, Int) -> Int { (left, right) => left + right }
