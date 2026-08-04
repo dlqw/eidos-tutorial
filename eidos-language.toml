@@ -1,6 +1,7 @@
 version = "0.8.0-alpha.1"
 status = "prerelease"
 
+# Eidos 核心（语言 + Eidosc + Std）为单一版本域：本版本号即编译器与标准库版本，
+# 不再声明跨组件 Eidosc 兼容区间（治理决策 core-single-version-line-2026-08-04）。
 [compatibility]
-eidosc = ">=0.5.0-alpha.1 <0.6.0"
 manifestSchemas = [3]

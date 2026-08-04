@@ -8,7 +8,7 @@ name = "dev.eidos.tutorial.build-host"
 version = "0.1.0"
 
 [dependencies]
-std = "0.1.0-alpha.1"
+std = "0.8.0-alpha.1"
 
 [build]
 program = "build.eidos"
