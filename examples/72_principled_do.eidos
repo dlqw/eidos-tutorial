@@ -1,0 +1,36 @@
+import std.Option
+
+independent :: Unit -> Option[Int]
+{
+    do {
+        left <- Some(20)
+        right <- Some(21)
+        Some(left + right)
+    }
+}
+
+dependent :: Int -> Option[Int]
+{
+    seed => do {
+        first <- Some(seed)
+        second <- Some(first + 1)
+        Some(second)
+    }
+}
+
+refutable :: Option[Int] -> Option[Int]
+{
+    value => do {
+        Some(inner) <- Some(value)
+        Some(inner + 1)
+    }
+}
+
+main :: Unit -> Int
+{
+    independent_value := unwrap_or(independent())(0);
+    dependent_value := unwrap_or(dependent(20))(0);
+    matched_value := unwrap_or(refutable(Some(20)))(0);
+    empty_value := unwrap_or(refutable(None()))(1);
+    independent_value + dependent_value + matched_value + empty_value
+}

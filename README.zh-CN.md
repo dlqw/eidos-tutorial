@@ -974,6 +974,8 @@ main :: Unit -> Int need io {
 
 `print` / `println` 是普通的 `Display` trait 约束重载，并非编译器特判；基础类型和核心 ADT 都提供 `Display` instance。operator 与 `do` elaboration 按 Prelude 声明注册的 compiler-owned semantic role 查找符号，不再依赖硬编码 `std.Module.function` 路径。
 
+对于 `do`，编译器会在进入 HIR 前证明所有 effectful bind 使用同一个类型构造器和 coherent Monad evidence。相邻独立 bind 在依赖、effect 顺序、ownership 与 pattern failure proof 都成立时自动走 Applicative 组合；依赖 bind 保持顺序语义。refutable bind 匹配失败时通过 `Alternative.empty` 返回空值。程序员不需要手写 `map2`、选择 builder、添加 optimizer annotation 或更换容器。`examples/72_principled_do.eidos` 同时展示独立、依赖和 refutable 的 Option bind。
+
 非核心能力仍属于显式 `std` package：
 
 ```toml

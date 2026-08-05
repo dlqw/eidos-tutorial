@@ -249,6 +249,7 @@ primary_expr         ::= literal
                        | while_let_expr
                        | loop_expr
                        | match_expr
+                       | do_expr
                        | lambda_expr
                        | return_expr
                        | break_expr
@@ -273,6 +274,11 @@ return_expr          ::= "return" expr?
 break_expr           ::= "break" expr?
 continue_expr        ::= "continue"
 unreachable_expr     ::= "unreachable"
+
+do_expr              ::= "do" "{" do_item (";"? do_item)* ";"? "}"
+do_item              ::= pattern "<-" expr
+                       | lower_identifier ":=" expr
+                       | expr
 
 pattern              ::= "_"
                        | literal
@@ -341,6 +347,8 @@ result
 ```
 
 `decision_expr` is for table-driven conditionals where the same predicate/template changes only by argument. `decide fallback { Input.key_down(_) != 0: 87 | 265 => North() }` tests keys in source order, returns the first matching row result, and returns fallback when no row matches. The template expression must contain a `_` hole; multi-hole templates use tuple keys.
+
+`pattern <- expr` is an effectful bind, while `name := expr` is a pure local binding. All effectful items in one `do` expression must use the same `F: kind2` and have coherent `Monad[F]` evidence. A refutable bind pattern additionally requires `Alternative[F]`; match failure returns `Alternative.empty(())`. The compiler builds a dependency DAG from resolved symbols. Adjacent independent binds use left-to-right `fmap + apply + bind(identity)` only when the same-constructor, Functor/Applicative/Monad evidence, effect-order, ownership, and pattern-failure proofs all hold. Otherwise the source keeps sequential Monad lowering. No optimizer hint, builder, or special container is required.
 
 ## 8. Tutorial Guidance
 1. For reproducible behavior, start from `docs/tutorial/examples/*`.
