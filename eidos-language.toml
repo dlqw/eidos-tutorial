@@ -1,4 +1,4 @@
-version = "0.8.0-alpha.1"
+version = "0.9.0-alpha.1"
 status = "prerelease"
 
 # Eidos 核心（语言 + Eidosc + Std）为单一版本域：本版本号即编译器与标准库版本，

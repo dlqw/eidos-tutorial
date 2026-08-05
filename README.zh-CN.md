@@ -1,6 +1,6 @@
 # Eidos 教程（中文）
 
-> 语言基线：本教程以 Eidos 0.8.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`、点号 Namespace 与逗号分隔的 ADT 构造器；旧源码只通过显式迁移命令处理。
+> 语言基线：本教程以 Eidos 0.9.0-alpha.1 为准。新代码使用 `name :: Type { ... }`、`name :: expr;`、局部 `name := expr;` / `mut name := expr;`、点号 Namespace 与逗号分隔的 ADT 构造器；旧源码只通过显式迁移命令处理。
 
 ## 1. 教程范围与验证基线
 本教程只描述当前仓库中已经实现并可复现的功能。所有可运行的示例均在 [`docs/tutorial/examples/`](examples/) 目录下。
@@ -26,7 +26,7 @@ powershell -ExecutionPolicy Bypass -File docs/tutorial/verify-examples.ps1
 manifestSchema = 3
 
 [language]
-version = "0.8.0-alpha.1"
+version = "0.9.0-alpha.1"
 
 [package]
 name = "dev.eidos.app"
@@ -194,7 +194,7 @@ e :: 1 `add` 2;
 
 对柯里化函数，逗号分隔的调用参数会从左到右逐个应用：`add(1, 2)` 等价于 `add(1)(2)`，`sum3(1, 2)` 仍可返回等待最后一个参数的函数。反引号中缀调用沿用同一规则：``left `add` right`` 等价于 `add(left)(right)`。
 
-#### 隐式 `Unit` body 与 `then` / `else` selection（0.8.0-alpha.1）
+#### 隐式 `Unit` body 与 `then` / `else` selection（0.9.0-alpha.1）
 
 首个运行时参数规范化为 `Unit` 时，普通 block 隐式等价于唯一的 `_ => block` 分支；显式写法仍然合法：
 
@@ -980,7 +980,7 @@ main :: Unit -> Int need io {
 
 ```toml
 [dependencies]
-std = "0.8.0-alpha.1"
+std = "0.9.0-alpha.1"
 ```
 
 | 能力 | 显式模块 | 代表接口 |
