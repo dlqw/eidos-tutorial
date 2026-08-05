@@ -48,7 +48,7 @@ operator_identifier ::= 一个或多个符号运算符字符，排除保留 toke
 ```
 说明：声明默认私有，只有显式标记 `export` 才能跨模块使用；`compiler(internal)` 无论包或模块关系如何都保持私有。`export import ...` 只会把已导入的公开绑定作为真实模块公开成员继续转发。
 说明：模块导入别名是编译期模块名，必须使用大写开头。Selective import 的成员 alias 按目标符号分层：运行时 value alias 小写，类型、构造器、trait、effect 等编译期符号 alias 大写。
-说明：依赖包中的模块使用 `packageAlias.Module.Path`，其中 `packageAlias` 是当前项目 `eidos.toml` 中的依赖键。普通标准库必须显式声明依赖（惯例为 `std = "0.1.0-alpha.1"`），并写作 `std.Seq`、`std.Console` 等。编译器分发的 Prelude Core Image 不是 package，会自动 open，通常直接使用其中的裸符号；`[language].noImplicitPrelude = true` 可关闭自动 open，已移除的 `noImplicitStdlib` 会被拒绝。
+说明：依赖包中的模块使用 `packageAlias.Module.Path`，其中 `packageAlias` 是当前项目 `eidos.toml` 中的依赖键。普通标准库必须显式声明依赖（惯例为 `std = "0.8.0-alpha.1"`），并写作 `std.Seq`、`std.Console` 等。编译器分发的 Prelude Core Image 不是 package，会自动 open，通常直接使用其中的裸符号；`[language].noImplicitPrelude = true` 可关闭自动 open，已移除的 `noImplicitStdlib` 会被拒绝。
 说明：Eidos 0.7 保持一套 Namespace 表面。package、module、type、trait、effect、constructor、编译期值及其成员统一使用 `.` 选择，例如 `std.Option.Option[Int]`、`meta.shape_of(User)` 和 `Parser :: import Compiler.Parser;`。`::` 只保留为声明绑定符。显式的 Eidos 0.5 migration 会把已移除的 `::` 限定符与 slash module path 改为点号。
 说明：隐式 Prelude Core Image 只承载 `Display`、`Option`、`Result`、`Either`、`Seq`、`Functor`、`Monad`、`Foldable`、`Traversable` 等核心类型与函数式契约；`Text`、`File`、`Console`、`Math` 等非核心模块需要显式 `std` 依赖和 import。
 说明：无别名的模块导入会同时引入模块别名和该模块公开 value / constructor 的裸名；例如 `import std.Seq` 后可写 `Seq.append(xs)(ys)` 或 `append(xs)(ys)`。name-first 模块别名绑定 `M :: import A;` 仍只引入别名，effect 也不会通过模块导入变成裸名可见。旧 `import A as M` keyword 形式只在 `legacy` 语法模式中接受；在 `0.4.0-alpha.1` 中会被拒绝并给出迁移诊断。

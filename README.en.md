@@ -985,7 +985,7 @@ Non-core facilities remain in the explicit `std` package:
 
 ```toml
 [dependencies]
-std = "0.1.0-alpha.1"
+std = "0.8.0-alpha.1"
 ```
 
 | Capability | Explicit modules | Representative APIs |

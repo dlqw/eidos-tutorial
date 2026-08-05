@@ -980,7 +980,7 @@ main :: Unit -> Int need io {
 
 ```toml
 [dependencies]
-std = "0.1.0-alpha.1"
+std = "0.8.0-alpha.1"
 ```
 
 | 能力 | 显式模块 | 代表接口 |

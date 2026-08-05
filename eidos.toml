@@ -9,7 +9,7 @@ name = "dev.eidos.tutorial"
 version = "0.1.0"
 
 [dependencies]
-std = "0.1.0-alpha.1"
+std = "0.8.0-alpha.1"
 
 [ffi]
 libraries = ["raylib", "snake_shim"]
