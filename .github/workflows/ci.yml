@@ -12,7 +12,9 @@ jobs:
     steps:
       - name: Checkout tutorial
         uses: actions/checkout@v4
-        with: { path: docs/tutorial }
+        with:
+          path: docs/tutorial
+          fetch-depth: 0
       - name: Checkout compatible Eidosc
         shell: pwsh
         env:
@@ -28,5 +30,19 @@ jobs:
         run: dotnet build Eidosc/Eidosc.sln --nologo
       - name: Verify language release metadata
         run: powershell -NoProfile -ExecutionPolicy Bypass -File docs/tutorial/scripts/verify-release-metadata.ps1
+      - name: Select tutorial verification lane
+        id: tutorial-lane
+        shell: pwsh
+        run: |
+          git -C docs/tutorial fetch origin main
+          git -C docs/tutorial diff --quiet origin/main...HEAD -- examples
+          if ($LASTEXITCODE -eq 0) {
+            "mode=fast" >> $env:GITHUB_OUTPUT
+            Write-Host "Tutorial examples unchanged; using metadata/build smoke fast lane."
+          } else {
+            "mode=full" >> $env:GITHUB_OUTPUT
+            Write-Host "Tutorial examples changed; using full example verification lane."
+          }
       - name: Verify tutorial examples
+        if: steps.tutorial-lane.outputs.mode == 'full'
         run: powershell -NoProfile -ExecutionPolicy Bypass -File docs/tutorial/verify-examples.ps1 -NoBuild
