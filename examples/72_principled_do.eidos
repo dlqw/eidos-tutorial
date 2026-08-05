@@ -28,9 +28,9 @@ refutable :: Option[Int] -> Option[Int]
 
 main :: Unit -> Int
 {
-    independent_value := unwrap_or(independent())(0);
-    dependent_value := unwrap_or(dependent(20))(0);
-    matched_value := unwrap_or(refutable(Some(20)))(0);
-    empty_value := unwrap_or(refutable(None()))(1);
+    independent_value := independent() ?? 0;
+    dependent_value := dependent(20) ?? 0;
+    matched_value := refutable(Some(20)) ?? 0;
+    empty_value := refutable(None()) ?? 1;
     independent_value + dependent_value + matched_value + empty_value
 }

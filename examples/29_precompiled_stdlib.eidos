@@ -30,59 +30,59 @@ main :: Unit -> Int need io
         src_for_char_fallback := "ab";
         src_for_len := "ab";
 
-        via_fn := Functions.apply(inc)(41);
-        via_result := unwrap_or(and_then(map(Ok(1))(inc))(lift_result))(0);
-        via_result_recover := Result.unwrap_or(Result.or_else(Err("oops"))(recover_err))(0);
-        via_result_flatten := unwrap_or(flatten(Ok(Ok(4))))(0);
-        via_seq := fold_left(filter(map([1, 2, 3])(inc))(gt_two))(0)(sum_left);
-        via_list_zip := unwrap_or(head(zip_with([1, 2, 3])([4, 5, 6])(add)))(0);
-        via_head := unwrap_or(head([1, 2, 3]))(0);
+        via_fn := 41 |> Functions.apply(inc);
+        via_result := Ok(1).map(inc).and_then(lift_result).unwrap_or(0);
+        via_result_recover := Err("oops").or_else(recover_err).unwrap_or(0);
+        via_result_flatten := Ok(Ok(4)).flatten().unwrap_or(0);
+        via_seq := [1, 2, 3].map(inc).filter(gt_two).fold_left(0, sum_left);
+        via_list_zip := [1, 2, 3].zip_with([4, 5, 6], add).head() ?? 0;
+        via_head := [1, 2, 3].head() ?? 0;
         via_tail := match tail([1, 2, 3])
         {
             Some(rest) => len(ref rest),
             None() => 0
         };
-        via_fold_right := fold_right([1, 2, 3])(0)(sum_right);
-        via_option_zip := map_or(zip(Some(2))(Some(3)))(0)(pair_sum);
-        via_option_zip_with := unwrap_or(zip_with(Some(2))(Some(3))(add))(0);
-        via_option_flatten := map_or(flatten(Some(Some(4))))(0)(inc);
-        via_option_traverse := match Option.traverse(Some(2))(positive_opt)
+        via_fold_right := [1, 2, 3].fold_right(0, sum_right);
+        via_option_zip := Some(2).zip(Some(3)).map_or(0, pair_sum);
+        via_option_zip_with := Some(2).zip_with(Some(3), add) ?? 0;
+        via_option_flatten := Some(Some(4)).flatten().map_or(0, inc);
+        via_option_traverse := match Option.traverse(Some(2), positive_opt)
         {
-            Some(inner) => Option.unwrap_or(inner)(0),
+            Some(inner) => inner ?? 0,
             None() => 0
         };
         traversable_result_input: Result.With[String, Int] := Ok(2);
-        via_result_traverse := match Result.traverse(traversable_result_input)(positive_result)
+        via_result_traverse := match Result.traverse(traversable_result_input, positive_result)
         {
-            Ok(inner) => Result.unwrap_or(inner)(0),
+            Ok(inner) => inner.unwrap_or(0),
             Err(_) => 0
         };
-        via_list_traverse := match Traversable.traverse([1, 2])(positive_opt)
+        via_list_traverse := match Traversable.traverse([1, 2], positive_opt)
         {
-            Some(values) => Option.unwrap_or(head(values))(0),
+            Some(values) => values.head() ?? 0,
             None() => 0
         };
-        via_text_char := match Text.char_at_opt(src_for_char)(1)
+        via_text_char := match src_for_char.char_at_opt(1)
         {
             Some(c) => if c == 'b' then { 1 } else { 0 },
             None() => 0
         };
-        via_text_fallback := if char_at_or(src_for_char_fallback)(9)('z') == 'z' then { 1 } else { 0 };
-        via_text_index := index_of_or("hello")("ell")(-1);
-        via_text_last_index := last_index_of_or("banana")("ana")(-1);
+        via_text_fallback := if src_for_char_fallback.char_at_or(9, 'z') == 'z' then { 1 } else { 0 };
+        via_text_index := "hello".index_of_or("ell", -1);
+        via_text_last_index := "banana".last_index_of_or("ana", -1);
         via_text_trim := trim("  ok  ");
-        via_file_fallback := read_text_or("eidos_tutorial_missing.txt")("fallback");
+        via_file_fallback := read_text_or("eidos_tutorial_missing.txt", "fallback");
         via_file_status := File.last_success(());
         via_file_error := File.last_error(());
-        via_text := char_code_at_or(src_for_opt)(1)(0) + via_text_char + via_text_fallback + via_text_index + via_text_last_index + Text.len(src_for_len);
-        via_ordering := then_compare(compare(via_head)(1))(0)(1);
-        trait_ordering := Ordering.show(compare(1)(2));
+        via_text := src_for_opt.char_code_at_or(1, 0) + via_text_char + via_text_fallback + via_text_index + via_text_last_index + Text.len(src_for_len);
+        via_ordering := via_head.compare(1).then_compare(0, 1);
+        trait_ordering := 1.compare(2) |> Ordering.show;
         trait_text := show("ok");
         if !Text.empty(src_for_empty) &&
            is_ok(Ok(1)) &&
            is_err(Err("oops")) &&
-           is_some(ok(Ok(1))) &&
-           is_some(err(Err("oops"))) &&
+           (Ok(1) |> ok |> is_some) &&
+           (Err("oops") |> err |> is_some) &&
            is_lt(via_ordering) &&
            eq_self(41) &&
            ord_self('a') &&

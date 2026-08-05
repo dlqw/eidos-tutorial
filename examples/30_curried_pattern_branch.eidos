@@ -3,13 +3,13 @@ OptionInt :: type { SomeInt:: type(Int), NoneInt :: type {} }
 
 option_string_map_list :: OptionString -> (String -> String) -> OptionString
 {
-    SomeString(value), mapper => SomeString(mapper(value)),
+    SomeString(value), mapper => SomeString(value |> mapper),
     NoneString(), _           => NoneString()
 }
 
 option_string_map_curried :: OptionString -> (String -> String) -> OptionString
 {
-    SomeString(value) => mapper => SomeString(mapper(value)),
+    SomeString(value) => mapper => SomeString(value |> mapper),
     NoneString() => _ => NoneString()
 }
 

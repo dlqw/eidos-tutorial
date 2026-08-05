@@ -16,5 +16,5 @@ record :: Box[Int] -> Box[Int] need Audit
 
 main :: Unit -> Box[Int] need Audit
 {
-    _ => apply(record)(Wrap(1))
+    apply(record, Wrap(1))
 }

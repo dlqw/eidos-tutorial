@@ -397,7 +397,7 @@ asFunction :: (|+|)(3, 4);
 
 Custom symbolic operators are left-associative at the default custom-infix precedence, between additive operators and function composition. `::` is a declaration binding token, not an expression operator. Built-in operators such as `|>`, `>>=`, `>>>`, `<<<`, `<$>`, `<*>`, and `<>` keep their standard precedence and lowering.
 
-Style convention (2026-05-28): new tutorial and standard-library examples should prefer Eidos' functional reading style. Use `value |> f |> g` for linear data flow, `f >>> g` or `g <<< f` for function composition, `f <$> value`, `mf <*> mx`, and `mx >>= f` for `Functor` / `Applicative` / `Monad` code, and chained calls such as `xs.map(f).filter(p).fold_left(seed)(step)` for container pipelines. Keep `Module.function(value)(arg)` when the qualified path makes intent or dispatch clearer. Ordinary grouped calls such as `function(value)` / `function(value, arg)` are also stable default call style and are not reported only because they could be written as fluent or infix calls. CLI/IDE/LSP reports mechanically convertible consecutive curried prefix calls as help/hint-level style suggestions with Quick Fixes: `Seq.append(a)(b)` can become fluent `a.append(b)` or grouped as `Seq.append(a, b)`.
+Functional style contract (2026-08-06): tutorial examples and derived Std implementations use Eidos' functional reading consistently. Write linear data flow as `value |> f |> g`, composition as `f >>> g` or `g <<< f`, and container pipelines as `xs.map(f).filter(p).fold_left(seed, step)`. Use `f <$> value`, `mf <*> mx`, and `mx >>= f` for `Functor` / `Applicative` / `Monad`, and use `do` when a flow contains dependencies or refutable patterns. When qualification is needed for disambiguation or exact dispatch, use grouped calls such as `Module.function(value, arg)`; consecutive curried prefix calls are reserved for partial application, grammar tests, and migration material. Local mutation remains valid only in the linear container, data-structure maintenance, and FFI kernels that implement these abstractions; derived APIs compose the orthogonal primitives. CLI/IDE/LSP still offers `a.append(b)` and `Seq.append(a, b)` Quick Fixes for legacy `Seq.append(a)(b)` input.
 
 Update (2026-03-27): Higher-kinded type parameter annotations are supported in signatures.
 1. Unary constructor kind: `F: kind2`
@@ -1039,8 +1039,8 @@ The following behaviors are validated by `verify-examples.ps1`:
    Example: `examples/54_return_borrow_param_alias.eidos`.
 
 ## 6. Practical Tips
-1. Prefer simple expressions and split complex flows into multiple `let` bindings.
-2. New examples should prefer infix and chained functional style: use `|>` for linear value flow, `<$>` / `<*>` / `>>=` for trait-driven composition, and `.map(...).filter(...).fold_left(...)` for container pipelines. Every segment's function signature must still be valid on its own before composing the chain.
+1. Prefer directly inferable expressions and split complex flows into semantically named local bindings.
+2. Use `|>` for linear value flow, `<$>` / `<*>` / `>>=` for trait-driven composition, `.map(...).filter(...).fold_left(...)` for container pipelines, and `do` for dependent or failure-aware control flow. Do not select a builder, capacity, or specialized container for performance. Every segment's function signature must still be valid on its own before composing the chain.
 3. When syntax changes, update together:
    `docs/tutorial/*.md`, `docs/tutorial/examples/*`, and `tools/editor/*`.
 4. For type-inference debugging, use `debug --debug-level diagnostic` and inspect `substitution`; it now includes `raw/resolved` bindings, binding chains, and AST usage context.
