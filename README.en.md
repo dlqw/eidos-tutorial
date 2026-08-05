@@ -1,6 +1,6 @@
 # Eidos Tutorial (English)
 
-> Language baseline: this tutorial targets Eidos 0.8.0-alpha.1. New code uses `name :: Type { ... }`, `name :: expr;`, local `name := expr;` / `mut name := expr;`, dot-qualified Namespaces, and comma-separated ADT constructors. Older source is handled only by the explicit migration command.
+> Language baseline: this tutorial targets Eidos 0.9.0-alpha.1. New code uses `name :: Type { ... }`, `name :: expr;`, local `name := expr;` / `mut name := expr;`, dot-qualified Namespaces, and comma-separated ADT constructors. Older source is handled only by the explicit migration command.
 
 ## 1. Scope and Validation Baseline
 This tutorial only describes features that are implemented and reproducible in this repository today. All runnable snippets are under [`docs/tutorial/examples/`](examples/).  
@@ -26,7 +26,7 @@ Recommended minimal `eidos.toml`:
 manifestSchema = 3
 
 [language]
-version = "0.8.0-alpha.1"
+version = "0.9.0-alpha.1"
 
 [package]
 name = "dev.eidos.app"
@@ -194,7 +194,7 @@ e :: 1 `add` 2;
 
 For curried functions, comma-separated call arguments apply the function left-to-right: `add(1, 2)` is equivalent to `add(1)(2)`, and `sum3(1, 2)` can still return a function waiting for the final argument. Backtick infix calls use the same rule: ``left `add` right`` is equivalent to `add(left)(right)`.
 
-#### Implicit `Unit` bodies and `then` / `else` selection (0.8.0-alpha.1)
+#### Implicit `Unit` bodies and `then` / `else` selection (0.9.0-alpha.1)
 
 When the first normalized runtime parameter is `Unit`, an ordinary block is implicitly equivalent to the single `_ => block` branch. The explicit spelling remains valid:
 
@@ -985,7 +985,7 @@ Non-core facilities remain in the explicit `std` package:
 
 ```toml
 [dependencies]
-std = "0.8.0-alpha.1"
+std = "0.9.0-alpha.1"
 ```
 
 | Capability | Explicit modules | Representative APIs |
