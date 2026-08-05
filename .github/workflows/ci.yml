@@ -35,8 +35,9 @@ jobs:
         shell: pwsh
         run: |
           git -C docs/tutorial fetch origin main
-          git -C docs/tutorial diff --quiet origin/main...HEAD -- examples
-          if ($LASTEXITCODE -eq 0) {
+          $changedExamples = @(git -C docs/tutorial diff --name-only origin/main...HEAD -- examples |
+            Where-Object { $_ -like "*.eidos" })
+          if ($changedExamples.Count -eq 0) {
             "mode=fast" >> $env:GITHUB_OUTPUT
             Write-Host "Tutorial examples unchanged; using metadata/build smoke fast lane."
           } else {
