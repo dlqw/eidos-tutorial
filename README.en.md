@@ -979,6 +979,8 @@ main :: Unit -> Int need io {
 
 `print` and `println` are ordinary `Display`-constrained overloads. Primitive values and core ADTs have `Display` instances. Operator and `do` elaboration resolve compiler-owned semantic roles registered by Prelude declarations; they do not depend on hard-coded `std.Module.function` paths.
 
+In `do`, the compiler proves one shared type constructor and coherent Monad evidence before HIR construction. Independent adjacent binds are combined automatically through Applicative operations when dependency, effect-order, ownership, and pattern-failure proofs permit it; dependent binds remain sequential. A refutable bind additionally uses `Alternative.empty` on mismatch. The source stays readable and does not need `map2`, a builder, an optimizer annotation, or a different container. See `examples/72_principled_do.eidos` for independent, dependent, and refutable Option binds.
+
 Non-core facilities remain in the explicit `std` package:
 
 ```toml

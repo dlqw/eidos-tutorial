@@ -249,6 +249,7 @@ primary_expr         ::= literal
                        | while_let_expr
                        | loop_expr
                        | match_expr
+                       | do_expr
                        | lambda_expr
                        | return_expr
                        | break_expr
@@ -273,6 +274,11 @@ return_expr          ::= "return" expr?
 break_expr           ::= "break" expr?
 continue_expr        ::= "continue"
 unreachable_expr     ::= "unreachable"
+
+do_expr              ::= "do" "{" do_item (";"? do_item)* ";"? "}"
+do_item              ::= pattern "<-" expr
+                       | lower_identifier ":=" expr
+                       | expr
 
 pattern              ::= "_"
                        | literal
@@ -341,6 +347,8 @@ result
 ```
 
 `decision_expr` 用于同一 predicate/template 只改变参数的表驱动条件。`decide fallback { Input.key_down(_) != 0: 87 | 265 => North() }` 按源码顺序测试每个 key，命中第一个 row 时返回 row result，否则返回 fallback。表头表达式必须包含 `_` hole；多 hole 表头使用 tuple key。
+
+`pattern <- expr` 是 effectful bind，`name := expr` 是纯局部绑定。同一个 `do` 中的 effectful item 必须使用同一个 `F: kind2`，并具有 coherent 的 `Monad[F]` evidence。refutable bind pattern 还要求 `Alternative[F]`；匹配失败返回 `Alternative.empty(())`。编译器根据已解析 Symbol 构建依赖 DAG。相邻独立 bind 只有在同构造器、Functor/Applicative/Monad evidence、effect 顺序、ownership 与 pattern failure proof 全部成立时，才按源码从左到右降低为 `fmap + apply + bind(identity)`；否则保持顺序 Monad lowering。用户不需要 optimizer hint、builder 或专用容器。
 
 ## 8. 教程建议
 1. 需要稳定复现时，优先使用 `docs/tutorial/examples/*` 中已验证样例。
