@@ -4,45 +4,45 @@ import std.Result
 
 collapse_option_result :: Result[Option[Int], String] -> Int
 {
-    Ok(inner) => Option.unwrap_or(inner)(0),
+    Ok(inner) => inner ?? 0,
     Err(_) => 0
 }
 
 collapse_seq_result :: Result[Seq[Int], String] -> Int
 {
-    Ok(values) => Seq.head_or(values)(0),
+    Ok(values) => values.head_or(0),
     Err(_) => 0
 }
 
 collapse_result_result :: Result[Result[Int, String], String] -> Int
 {
-    Ok(inner) => Result.unwrap_or(inner)(0),
+    Ok(inner) => inner.unwrap_or(0),
     Err(_) => 0
 }
 
 sequence_result_result :: Result[Result[Int, String], String] -> Result[Result[Int, String], String]
 {
-    value => sequence(value)
+    value => value |> sequence
 }
 
 main :: Unit -> Int
 {
     _ => {
-        option_direct := collapse_option_result(sequence(Some(Ok(1))));
+        option_direct := Some(Ok(1)) |> sequence |> collapse_option_result;
         option_err := match sequence(Some(Err("bad")))
         {
             Ok(Some(value)) => value,
             Err(_) => 1
         };
 
-        list_direct := collapse_seq_result(sequence([Ok(2), Ok(3)]));
+        list_direct := [Ok(2), Ok(3)] |> sequence |> collapse_seq_result;
         list_err := match sequence([Ok(2), Err("bad")])
         {
             Ok(values) => Seq.len(ref values),
             Err(_) => 1
         };
 
-        result_direct := collapse_result_result(sequence_result_result(Ok(Ok(4))));
+        result_direct := Ok(Ok(4)) |> sequence_result_result |> collapse_result_result;
         result_inner_err := match sequence_result_result(Ok(Err("inner")))
         {
             Ok(inner) => match inner

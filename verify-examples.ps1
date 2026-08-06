@@ -74,6 +74,37 @@ try
     $failed = $false
     $results = New-Object System.Collections.Generic.List[string]
 
+    $prefixTransformPattern = '\b(?:(?:Seq|Option|Result|Either|Functor)\.map|Seq\.(?:filter|flat_map|fold_left|fold_right))\s*\('
+    $prefixTransformViolations = Get-ChildItem $examplesRoot -Filter "*.eidos" |
+        Select-String -Pattern $prefixTransformPattern
+    if ($prefixTransformViolations)
+    {
+        $failed = $true
+        $results.Add("FAIL | examples | concrete sequence transforms must use fluent functional composition")
+        $prefixTransformViolations | ForEach-Object {
+            $results.Add("$($_.Path):$($_.LineNumber): $($_.Line.Trim())")
+        }
+    }
+    else
+    {
+        $results.Add("PASS | examples | fluent functional composition guard")
+    }
+
+    $functionalStyleExample = Join-Path $examplesRoot "55_functional_infix_chain_style.eidos"
+    $functionalStyleSource = Get-Content -Raw $functionalStyleExample
+    $requiredFunctionalForms = @('|>', '>>>', '<$>', '<*>', '>>=', '.map(', '.filter(', '.fold_left(', '??')
+    $missingFunctionalForms = $requiredFunctionalForms |
+        Where-Object { -not $functionalStyleSource.Contains($_) }
+    if ($missingFunctionalForms)
+    {
+        $failed = $true
+        $results.Add("FAIL | examples/55_functional_infix_chain_style.eidos | missing forms: $($missingFunctionalForms -join ', ')")
+    }
+    else
+    {
+        $results.Add("PASS | examples/55_functional_infix_chain_style.eidos | functional surface coverage")
+    }
+
     foreach ($case in $cases)
     {
         $displayPath = Resolve-Path -Relative $case.File

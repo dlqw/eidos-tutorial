@@ -3,6 +3,7 @@ import std.Result
 import std.Ordering
 import std.Seq
 import std.Text
+import std.Traversable
 
 sum_right :: Int -> Int -> Int
 {
@@ -57,53 +58,55 @@ positive_result :: Int -> Result.With[String, Int]
 main :: Unit -> Int
 {
     _ => {
-        first_head := unwrap_or(head([10, 20, 30]))(0);
+        first_head := [10, 20, 30].head() ?? 0;
         tail_len := match tail([10, 20, 30])
         {
             Some(rest) => len(ref rest),
             None() => 0
         };
-        found := unwrap_or(find([1, 2, 3, 4])(is_three))(0);
-        folded := fold_right([1, 2, 3])(0)(sum_right);
-        functor_list := fmap([1, 2])(inc);
+        found := [1, 2, 3, 4].find(is_three) ?? 0;
+        folded := [1, 2, 3].fold_right(0, sum_right);
+        functor_list := inc <$> [1, 2];
         functor_list_len := len(ref functor_list);
-        applicative_list_head := unwrap_or(head(Seq.apply([add(10), add(20)])([1, 2])))(0);
-        monad_list := bind([1, 2])(duplicate);
+        applicative_list_head := ([add(10), add(20)] <*> [1, 2]).head() ?? 0;
+        monad_list := [1, 2] >>= duplicate;
         monad_list_len := len(ref monad_list);
 
-        text_index := index_of_or("eidos")("id")(-1);
-        text_last_index := last_index_of_or("banana")("ana")(-1);
-        text_code_ok := if char_code_at_or("ab")(1)(0) > 0 then { 1 } else { 0 };
-        fallback_char := char_at_or("ab")(9)('z');
+        text_index := "eidos".index_of_or("id", -1);
+        text_last_index := "banana".last_index_of_or("ana", -1);
+        text_code_ok := if "ab".char_code_at_or(1, 0) > 0 then { 1 } else { 0 };
+        fallback_char := "ab".char_at_or(9, 'z');
 
-        option_functor := unwrap_or(fmap(Some(2))(inc))(0);
-        option_pure := unwrap_or(Option.pure(6))(0);
-        option_applicative := unwrap_or(apply(Some(add(20)))(Some(3)))(0);
-        option_folded := fold_left(Some(3))(10)(sum_left);
-        option_traversed := match traverse(Some(2))(positive_opt)
+        option_functor := (inc <$> Some(2)) ?? 0;
+        option_pure := Option.pure(6) ?? 0;
+        option_applicative := (Some(add(20)) <*> Some(3)) ?? 0;
+        option_folded := Some(3).fold_left(10, sum_left);
+        option_traversed := match Option.traverse(Some(2), positive_opt)
         {
-            Some(inner) => unwrap_or(inner)(0),
+            Some(inner) => inner ?? 0,
             None() => 0
         };
-        option_bind := unwrap_or(bind(Some(2))(lift_plus_ten))(0);
-        option_equal := if eq(Some(1))(Some(1)) then { 1 } else { 0 };
-        option_compare := if is_lt(compare(None())(Some(1))) then { 1 } else { 0 };
+        option_bind := (Some(2) >>= lift_plus_ten) ?? 0;
+        option_equal := if eq(Some(1), Some(1)) then { 1 } else { 0 };
+        option_compare := if compare(None(), Some(1)) |> is_lt then { 1 } else { 0 };
         option_shown := show(Some(8));
 
-        result_applicative := unwrap_or(apply(Ok(add(30)))(Ok(4)))(0);
-        result_folded := fold_right(Ok(3))(10)(sum_right);
+        result_function: Result.With[String, Int -> Int] := Ok(add(30));
+        result_value: Result.With[String, Int] := Ok(4);
+        result_applicative := apply(result_function, result_value).unwrap_or(0);
+        result_folded := Ok(3).fold_right(10, sum_right);
         traversable_result_input: Result.With[String, Int] := Ok(2);
-        result_traversed := match traverse(traversable_result_input)(positive_result)
+        result_traversed := match Result.traverse(traversable_result_input, positive_result)
         {
-            Ok(inner) => unwrap_or(inner)(0),
+            Ok(inner) => inner.unwrap_or(0),
             Err(_) => 0
         };
-        result_compare := if is_lt(compare(Err("a"))(Ok(1))) then { 1 } else { 0 };
+        result_compare := if compare(Err("a"), Ok(1)) |> is_lt then { 1 } else { 0 };
         result_shown := show(Ok(7));
-        ordering_shown := Ordering.show(compare(1)(2));
-        list_traversed := match traverse([1, 2])(positive_opt)
+        ordering_shown := 1.compare(2) |> Ordering.show;
+        list_traversed := match Traversable.traverse([1, 2], positive_opt)
         {
-            Some(values) => unwrap_or(head(values))(0),
+            Some(values) => values.head() ?? 0,
             None() => 0
         };
 

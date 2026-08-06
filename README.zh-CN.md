@@ -393,7 +393,7 @@ asFunction :: (|+|)(3, 4);
 
 自定义符号运算符默认左结合，优先级位于加减/拼接之后、函数组合之前。`::` 是声明绑定 token，不是表达式运算符。内建复杂运算符如 `|>`、`>>=`、`>>>`、`<<<`、`<$>`、`<*>`、`<>` 保持各自固定优先级与标准库 lowering。
 
-风格约定（2026-05-28）：新的教程与标准库示例应优先展示 Eidos 的函数式读法。线性数据流优先写 `value |> f |> g`；函数组合优先写 `f >>> g` 或 `g <<< f`；`Functor` / `Applicative` / `Monad` 场景优先展示 `f <$> value`、`mf <*> mx`、`mx >>= f`；连续容器变换优先写链式调用，例如 `xs.map(f).filter(p).fold_left(seed)(step)`。当限定路径能显著降低歧义时，仍可保留 `Module.function(value)(arg)` 写法。普通分组调用 `function(value)` / `function(value, arg)` 也是稳定的默认调用风格，不会仅因为可写成链式或中缀而提示。CLI/IDE/LSP 会把可机械转换的连续柯里化前缀调用作为 help/hint 级风格建议给出 Quick Fix：`Seq.append(a)(b)` 可改为链式 `a.append(b)`，也可改为分组调用 `Seq.append(a, b)`。
+函数式风格契约（2026-08-06）：教程示例和 Std 派生实现统一采用 Eidos 的函数式读法。线性数据流写作 `value |> f |> g`，函数组合写作 `f >>> g` 或 `g <<< f`，连续容器变换写作 `xs.map(f).filter(p).fold_left(seed, step)`；`Functor` / `Applicative` / `Monad` 场景分别使用 `f <$> value`、`mf <*> mx`、`mx >>= f`，存在多步依赖或可失败模式时使用 `do`。需要限定路径来消除歧义或展示准确 dispatch 时使用分组调用 `Module.function(value, arg)`，不再把连续柯里化前缀调用作为规范示例；部分应用、语法测试和迁移说明除外。Std 只有实现这些抽象本身的线性容器、数据结构维护和 FFI 边界可以保留局部 mutation，派生 API 必须通过正交组合子表达。CLI/IDE/LSP 仍会为旧式 `Seq.append(a)(b)` 提供 `a.append(b)` 或 `Seq.append(a, b)` Quick Fix。
 
 补充（2026-03-27）：函数签名现支持高阶类型参数 kind 注解。
 1. 一元构造器 kind：`F: kind2`
@@ -1051,8 +1051,8 @@ FFI 安全类型集合：`Int`、`Int32`、`Float`、`Bool`、`Unit`、`RawPtr`�
    样例：`examples/54_return_borrow_param_alias.eidos`。
 
 ## 6. 使用建议
-1. 优先写可直接推断的简单表达式，复杂组合可拆成多个 `let`。
-2. 新示例优先使用中缀和链式函数式风格：线性值流用 `|>`，trait 组合用 `<$>` / `<*>` / `>>=`，容器流水线用 `.map(...).filter(...).fold_left(...)`。每一段函数签名仍需能独立成立，再进行拼接。
+1. 优先写可直接推断的简单表达式，复杂组合可拆成有语义名称的局部绑定。
+2. 线性值流用 `|>`，trait 组合用 `<$>` / `<*>` / `>>=`，容器流水线用 `.map(...).filter(...).fold_left(...)`，依赖或失败控制流用 `do`；不要为了性能改选 builder、容量或专用容器。每一段函数签名仍需能独立成立，再进行拼接。
 3. 修改语法后，必须同时更新：
    `docs/tutorial/*.md`、`docs/tutorial/examples/*`、`tools/editor/*`。
 4. 需要排查类型推断时，建议使用 `debug --debug-level diagnostic` 查看 `substitution` 输出；当前已包含类型变量 `raw/resolved`、绑定链（chain）与 AST 上下文位置。

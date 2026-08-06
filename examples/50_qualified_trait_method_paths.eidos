@@ -20,33 +20,33 @@ lift_root[A, G: kind2 : Applicative.Applicative[G]] :: A -> G[A]
 
 sequence_alias[A, T: kind2 : Traversable.Traversable[T], G: kind2 : Applicative.Applicative[G]] :: T[G[A]] -> G[T[A]]
 {
-    values => Traversable.traverse(values)(local_identity_applicative)
+    values => Traversable.traverse(values, local_identity_applicative)
 }
 
 sequence_root[A, T: kind2 : Traversable.Traversable[T], G: kind2 : Applicative.Applicative[G]] :: T[G[A]] -> G[T[A]]
 {
-    values => std.Traversable.traverse(values)(local_identity_applicative)
+    values => std.Traversable.traverse(values, local_identity_applicative)
 }
 
 eq_via_module_trait[T: Traits.Eq] :: T -> T -> Bool
 {
-    left => right => Traits.Eq.eq(left)(right)
+    left, right => Traits.Eq.eq(left, right)
 }
 
 collapse_option :: Option[Option[Int]] -> Int
 {
-    Some(inner) => Option.unwrap_or(inner)(0),
+    Some(inner) => inner ?? 0,
     None() => 0
 }
 
 main :: Unit -> Int
 {
     _ => {
-        alias_lift := Option.unwrap_or(lift_alias(3))(0);
-        root_lift := Option.unwrap_or(lift_root(4))(0);
-        alias_sequence := collapse_option(sequence_alias(Some(Some(5))));
-        root_sequence := collapse_option(sequence_root(Some(Some(6))));
-        same_lift := eq_via_module_trait(alias_lift)(alias_lift);
+        alias_lift := lift_alias(3) ?? 0;
+        root_lift := lift_root(4) ?? 0;
+        alias_sequence := sequence_alias(Some(Some(5))) |> collapse_option;
+        root_sequence := sequence_root(Some(Some(6))) |> collapse_option;
+        same_lift := eq_via_module_trait(alias_lift, alias_lift);
 
         alias_lift + root_lift + alias_sequence + root_sequence
     }

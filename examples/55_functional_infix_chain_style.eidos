@@ -39,13 +39,13 @@ main :: Unit -> Int
         piped := 3 |> inc |> double;
         composed := 3 |> (inc >>> double);
         chained := 3.inc().double();
-        list_pipeline := Seq.fold_left(Seq.filter(Seq.map([1, 2, 3])(inc))(gt_two))(0)(add);
+        list_pipeline := [1, 2, 3].map(inc).filter(gt_two).fold_left(0, add);
         appended := [1, 2] <> [3, 4];
         appended_len := Seq.len(ref appended);
-        mapped_option := Option.unwrap_or(inc <$> Some(4))(0);
-        applied_option := Option.unwrap_or(Some(add(10)) <*> Some(5))(0);
-        bound_option := Option.unwrap_or(Some(2) >>= positive_opt)(0);
-        bound_result := Result.unwrap_or(Ok(2) >>= positive_result)(0);
+        mapped_option := (inc <$> Some(4)) ?? 0;
+        applied_option := (Some(add(10)) <*> Some(5)) ?? 0;
+        bound_option := (Some(2) >>= positive_opt) ?? 0;
+        bound_result := (Ok(2) >>= positive_result).unwrap_or(0);
 
         piped + composed + chained + list_pipeline + appended_len + mapped_option + applied_option + bound_option + bound_result
     }
