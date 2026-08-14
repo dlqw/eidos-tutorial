@@ -58,8 +58,12 @@ try
         "36_hkt_trait_constraint_kind_mismatch.eidos" = "kind"
     }
 
-    $cases = Get-ChildItem $examplesRoot -Filter "*.eidos" |
-        Sort-Object Name |
+    $buildHostDir = Join-Path $examplesRoot "build_host"
+
+    # 递归扫描示例（按主题子目录组织）；build_host 是独立 BuildGraph 项目，走下方单独验证。
+    $cases = Get-ChildItem $examplesRoot -Recurse -Filter "*.eidos" |
+        Where-Object { $_.FullName -notlike "$buildHostDir*" } |
+        Sort-Object FullName |
         ForEach-Object {
             $casePhase = if ($phaseOverrides.ContainsKey($_.Name)) { $phaseOverrides[$_.Name] } else { $Phase }
             [pscustomobject]@{
@@ -75,7 +79,8 @@ try
     $results = New-Object System.Collections.Generic.List[string]
 
     $prefixTransformPattern = '\b(?:(?:Seq|Option|Result|Either|Functor)\.map|Seq\.(?:filter|flat_map|fold_left|fold_right))\s*\('
-    $prefixTransformViolations = Get-ChildItem $examplesRoot -Filter "*.eidos" |
+    $prefixTransformViolations = Get-ChildItem $examplesRoot -Recurse -Filter "*.eidos" |
+        Where-Object { $_.FullName -notlike "$buildHostDir*" } |
         Select-String -Pattern $prefixTransformPattern
     if ($prefixTransformViolations)
     {
@@ -90,7 +95,7 @@ try
         $results.Add("PASS | examples | fluent functional composition guard")
     }
 
-    $functionalStyleExample = Join-Path $examplesRoot "55_functional_infix_chain_style.eidos"
+    $functionalStyleExample = Join-Path $examplesRoot "functional/55_functional_infix_chain_style.eidos"
     $functionalStyleSource = Get-Content -Raw $functionalStyleExample
     $requiredFunctionalForms = @('|>', '>>>', '<$>', '<*>', '>>=', '.map(', '.filter(', '.fold_left(', '??')
     $missingFunctionalForms = $requiredFunctionalForms |
