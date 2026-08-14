@@ -79,7 +79,8 @@ try
     $results = New-Object System.Collections.Generic.List[string]
 
     $prefixTransformPattern = '\b(?:(?:Seq|Option|Result|Either|Functor)\.map|Seq\.(?:filter|flat_map|fold_left|fold_right))\s*\('
-    $prefixTransformViolations = Get-ChildItem $examplesRoot -Filter "*.eidos" |
+    $prefixTransformViolations = Get-ChildItem $examplesRoot -Recurse -Filter "*.eidos" |
+        Where-Object { $_.FullName -notlike "$buildHostDir*" } |
         Select-String -Pattern $prefixTransformPattern
     if ($prefixTransformViolations)
     {
@@ -94,7 +95,7 @@ try
         $results.Add("PASS | examples | fluent functional composition guard")
     }
 
-    $functionalStyleExample = Join-Path $examplesRoot "55_functional_infix_chain_style.eidos"
+    $functionalStyleExample = Join-Path $examplesRoot "functional/55_functional_infix_chain_style.eidos"
     $functionalStyleSource = Get-Content -Raw $functionalStyleExample
     $requiredFunctionalForms = @('|>', '>>>', '<$>', '<*>', '>>=', '.map(', '.filter(', '.fold_left(', '??')
     $missingFunctionalForms = $requiredFunctionalForms |
