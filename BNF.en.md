@@ -17,10 +17,13 @@ declaration  ::= let_decl
                | trait_def
                | instance_def
                | name_first_decl
+               | name_first_module_mutable_binding
                | import_stmt
 
 name_first_decl ::= attribute* (lower_identifier | upper_identifier) type_params? "::"
                     ("module" | "type" | "trait" | "effect" | "instance" | "import" import_path | "comptime" expr | type) ...
+
+name_first_module_mutable_binding ::= attribute* "mut" lower_identifier (":" type)? ":=" expr ";"
 
 export_decl  ::= "export" (let_decl
                | func_def
@@ -29,6 +32,7 @@ export_decl  ::= "export" (let_decl
                | trait_def
                | instance_def
                | name_first_decl
+               | name_first_module_mutable_binding
                | import_stmt)
 
 namespace_path ::= module_path | package_path
@@ -56,6 +60,7 @@ Note: symbolic custom operators use characters from `! $ % & * + / < = > ? ^ | -
 Note: user declarations and bindings cannot use names beginning with `__` or names containing `__spec_`; that internal namespace is reserved for compiler-generated artifacts and reports `E3055`.
 Note: Eidos uses a naming-tier split: runtime values use lower-case-leading identifiers, and compile-time values use upper-case-leading identifiers. Types are first-class compile-time values, so types, traits, effects, constructors, module path segments, and generic parameters that denote types belong to the upper-case namespace. A constructor call produces a runtime value, but the constructor symbol itself is still a compile-time value.
 Note: name-first declarations cover `Name :: module`, `name :: Type -> Type { ... }`, `name :: Type -> Type;`, `name :: comptime Type -> Type { ... }`, `name :: value;`, `name :: Type = value;`, `Name :: comptime expr;`, `Name :: type`, `Name :: trait`, `Name :: effect;`, `Name :: instance Trait[...] { ... }`, and `Alias :: import Module.Path;`. Keyword-first forms are migration input, not Eidos 0.7 source syntax.
+Note: a module-level mutable binding is written `mut name := expr;` (`name (: Type)? := expr;`, mirroring local `mut`) and is allowed only at module top level; its initializer must be a compile-time scalar constant. It is an ordinary runtime mutable global: reads and writes introduce no extra effect. Inside a function body in the same module, `name := expr;` parses as an assignment to that module-level binding rather than as a fresh local binding.
 
 ## 2. Bindings and Statements
 ```bnf

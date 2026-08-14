@@ -17,10 +17,13 @@ declaration  ::= let_decl
                | trait_def
                | instance_def
                | name_first_decl
+               | name_first_module_mutable_binding
                | import_stmt
 
 name_first_decl ::= attribute* (lower_identifier | upper_identifier) type_params? "::"
                     ("module" | "type" | "trait" | "effect" | "instance" | "import" import_path | "comptime" expr | type) ...
+
+name_first_module_mutable_binding ::= attribute* "mut" lower_identifier (":" type)? ":=" expr ";"
 
 export_decl  ::= "export" (let_decl
                | func_def
@@ -29,6 +32,7 @@ export_decl  ::= "export" (let_decl
                | trait_def
                | instance_def
                | name_first_decl
+               | name_first_module_mutable_binding
                | import_stmt)
 
 namespace_path ::= module_path | package_path
@@ -56,6 +60,7 @@ operator_identifier ::= 一个或多个符号运算符字符，排除保留 toke
 说明：用户声明或绑定名不得以 `__` 开头，也不得包含 `__spec_`；这些形式属于编译器保留内部命名空间，违反时报告 `E3055`。
 说明：Eidos 采用命名分层：运行时值使用小写开头标识符；编译期值使用大写开头标识符。类型是一等编译期值，因此类型、trait、effect、构造器、模块路径和表示类型的泛型参数属于大写命名空间。构造器调用会产生运行时值，但构造器符号本身仍是编译期值。
 说明：name-first 声明包括 `Name :: module`、`name :: Type -> Type { ... }`、`name :: Type -> Type;`、`name :: comptime Type -> Type { ... }`、`name :: value;`、`name :: Type = value;`、`Name :: comptime expr;`、`Name :: type`、`Name :: trait`、`Name :: effect;`、`Name :: instance Trait[...] { ... }` 与 `Alias :: import Module.Path;`。keyword-first 形式只作为 migration 输入，不属于 Eidos 0.7 源码语法。
+说明：模块级可变绑定写作 `mut name := expr;`（`name (: Type)? := expr;` 与局部 `mut` 形态一致），只能在模块顶层声明，初始值必须是编译期标量常量。它是普通运行时可变全局变量，读写不引入额外 effect；在同一模块的函数体内，`name := expr;` 会解析为对该模块级绑定的赋值，而不是新局部绑定。
 
 ## 2. 绑定与语句
 ```bnf
