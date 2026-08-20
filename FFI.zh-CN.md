@@ -224,7 +224,7 @@ Ffi.load[Int](ptr) -> Int           // 按类型读取
 Ffi.cfn_from(func) -> Cfn[A..., R]
 ```
 
-将 Eidos 零捕获函数转换为 C 函数指针。带捕获闭包不是 C 函数指针；`Ffi.cfn_from` 会以 `E3053` 拒绝。需要把带捕获函数传给 native runtime 时，使用明确接受 Eidos closure 对象指针的 ``extern` typed tag` 参数，而不是 C 回调槽位。
+将 Eidos 零捕获函数转换为 C 函数指针。`Cfn[A..., R]` 接受零参（`Cfn[R]`）与任意 arity，并可作为类型别名、ADT/`@[repr(c)]` 字段、模块级可变绑定与函数参数/返回类型。带捕获闭包不是 C 函数指针；`Ffi.cfn_from` 会以 `E3053` 拒绝。需要把带捕获函数传给 native runtime 时，使用明确接受 Eidos closure 对象指针的 ``extern` typed tag` 参数，而不是 C 回调槽位。
 
 ```eidos
 add_one :: Int -> Int { x => x + 1 }
@@ -238,7 +238,7 @@ fp: Cfn[Int, Int] := Ffi.cfn_from(add_one);
 Ffi.cfn_call(fn_ptr, args...) -> R
 ```
 
-类型参数从 `Cfn[A, R]` 推导输入和返回类型；多参数 C 函数使用对应的 `Cfn[A..., R]` 类型。编译器根据完整 `Cfn` 类型检查任意实参数量，并把高 arity 调用直接绑定到内部 intrinsic，不要求用户选择带 arity 后缀的 API。
+类型参数从 `Cfn[A, R]` 推导输入和返回类型；多参数 C 函数使用对应的 `Cfn[A..., R]` 类型。编译器根据完整 `Cfn` 类型检查任意实参数量（零参与高 arity 同样支持），并把调用直接绑定到内部 intrinsic，不要求用户选择带 arity 后缀的 API。
 
 ```eidos
 result := Ffi.cfn_call(fp, 41);  // 通过 fp 调用，返回 42
